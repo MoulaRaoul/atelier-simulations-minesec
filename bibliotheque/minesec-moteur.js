@@ -111,6 +111,10 @@
        cadrage se fait alors dans ce qui reste visible, et non dans tout le
        canevas. `reserve: false` désactive. */
     reserve: undefined,
+    /* Part de la bande visible que la figure doit occuper au repos. Le
+       calibrage cesse ainsi d'être une impression d'œil : il se compare à un
+       nombre écrit, et se contrôle. 2/3 laisse des marges équilibrées. */
+    occupation: 2 / 3,
     distanceMin: 2.5,
     distanceMax: 24,
     sensibilite: 0.006,  /* radians par pixel glissé */
@@ -201,7 +205,9 @@
     global.addEventListener('pointerup', () => { glisse = false; });
     el.addEventListener('wheel', e => {
       e.preventDefault();
-      distanceCible = borner(distanceCible + e.deltaY * 0.004);
+      /* La molette garde ses butées, mais relatives au cadrage en cours :
+         un plafond absolu interdirait de reculer devant une grande figure. */
+      distanceCible = borner(distanceCible + e.deltaY * 0.004, distanceCadrage * 1.6);
       camera.position.z = distanceCible;   /* la molette est immédiate */
     }, { passive: false });
 
@@ -216,7 +222,20 @@
     const _pt = new THREE.Vector3();
     const _ech = new THREE.Vector3();
 
-    function borner(d) { return Math.max(o.distanceMin, Math.min(o.distanceMax, d)); }
+    /* Ce que le cadrage réclame, avant toute butée — mémorisé pour que les
+       butées de la molette s'y adaptent. */
+    let distanceCadrage = o.distance;
+
+    /* Les butées existent pour empêcher l'utilisateur de zoomer jusqu'à
+       l'absurde, non pour brider le cadrage automatique. Confondre les deux
+       rôles rendait la cible d'occupation intenable dès que la figure était
+       grande ou la bande visible étroite : sur 375×812 avec les bandeaux de
+       la charte, le cadrage réclamait 29,7 quand distanceMax valait 24 —
+       la figure occupait 83 % de la bande au lieu des 66 % visés, sans que
+       rien ne le signale. Le plafond s'efface donc devant le besoin. */
+    function borner(d, plafond) {
+      return Math.max(o.distanceMin, Math.min(Math.max(o.distanceMax, plafond || 0), d));
+    }
 
     /* Rayon englobant mesuré depuis l'origine de l'objet, et non par une
        boîte alignée sur les axes du monde : une boîte tournerait avec la
@@ -287,10 +306,27 @@
       return zoneUtile();
     }
 
-    function distancePour(objet, marge) {
-      const brut = rayonDe(objet);
-      if (!brut) return o.distance;
-      const rayon = brut * (marge || 1.25);
+    /* ─── Le cadrage vise une OCCUPATION, non une marge ───
+       On veut que le diamètre apparent de la figure vaille une fraction donnée
+       de la bande visible. Pour une sphère de rayon r vue de la distance d, le
+       demi-diamètre apparent vaut tan(asin(r/d)) en unités de tangente ; la
+       demi-bande vaut tan(angle disponible). D'où
+
+           tan(asin(r/d)) = occupation × tan(angle)   →   d = r·√(1+T²) / T
+                                                          avec T = occupation × tan(angle)
+
+       Relation exacte, inversée plutôt qu'approchée : c'est elle qui permet au
+       contrôle de vérifier l'occupation obtenue au pour-cent près. */
+    function distancePour(objet, occupation) {
+      const rayon = rayonDe(objet);
+      if (!rayon) return o.distance;
+      let occ = occupation == null ? o.occupation : occupation;
+      if (occ > 1) {
+        console.warn('minesec-moteur : occupation =', occ,
+          '— au-delà de 1, la figure déborde de la bande visible. ' +
+          'Ce paramètre n\'est plus une marge depuis le 30/08/2026.');
+      }
+      occ = Math.max(0.05, Math.min(1.5, occ));
       const z = zoneUtile();
       const tv = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
       /* Demi-angles encore disponibles une fois les bandeaux retirés. Sans
@@ -298,7 +334,20 @@
       const angV = Math.atan(tv * (z.hauteur / z.H));
       const angH = Math.atan(tv * camera.aspect * (z.largeur / z.L));
       /* Le champ le plus étroit commande : c'est lui qui coupe en premier. */
-      return rayon / Math.sin(Math.max(1e-4, Math.min(angV, angH)));
+      const T = Math.max(1e-5, occ * Math.tan(Math.max(1e-4, Math.min(angV, angH))));
+      return rayon * Math.sqrt(1 + T * T) / T;
+    }
+
+    /* Occupation réellement obtenue — le calibrage devient vérifiable. */
+    function occupationMesuree(objet) {
+      const rayon = rayonDe(objet);
+      const d = camera.position.z;
+      if (!rayon || d <= rayon) return null;
+      const z = zoneUtile();
+      const tv = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+      const ang = Math.min(Math.atan(tv * (z.hauteur / z.H)),
+                           Math.atan(tv * camera.aspect * (z.largeur / z.L)));
+      return Math.tan(Math.asin(rayon / d)) / Math.tan(ang);
     }
 
     /* Décalage vertical de la caméra pour que la figure occupe le milieu de
@@ -316,12 +365,14 @@
 
     /* cadrer() vise ; la boucle rejoint la cible en douceur, ce qui donne
        le zoom automatique de la version 2D sans à-coup. */
-    function cadrer(objet, marge) {
-      distanceCible = borner(distancePour(objet, marge));
+    function cadrer(objet, occupation) {
+      distanceCadrage = distancePour(objet, occupation);
+      distanceCible = borner(distanceCadrage, distanceCadrage);
       return distanceCible;
     }
-    function cadrerNet(objet, marge) {
-      distanceCible = borner(distancePour(objet, marge));
+    function cadrerNet(objet, occupation) {
+      distanceCadrage = distancePour(objet, occupation);
+      distanceCible = borner(distanceCadrage, distanceCadrage);
       camera.position.z = distanceCible;
       camera.position.y = recentrageVertical();
       return distanceCible;
@@ -332,14 +383,15 @@
        tourné. C'est le réflexe que la version 2D avait et que la 3D avait
        perdu en passant à une caméra fixe. */
     let suivi = null;
-    function suivre(objet, marge) { suivi = objet ? { objet, marge } : null; }
+    function suivre(objet, occupation) { suivi = objet ? { objet, occupation } : null; }
 
     function recentrer() {
       spin.rotation.y = 0;
       rig.rotation.x = o.inclinaison;
       /* Si un objet est suivi, « recentrer » veut dire le recadrer lui,
          pas revenir à une distance d'usine qui ne lui convient plus. */
-      distanceCible = suivi ? borner(distancePour(suivi.objet, suivi.marge)) : o.distance;
+      if (suivi) distanceCadrage = distancePour(suivi.objet, suivi.occupation);
+      distanceCible = suivi ? borner(distanceCadrage, distanceCadrage) : o.distance;
       camera.position.z = distanceCible;
       camera.position.y = recentrageVertical();
     }
@@ -371,7 +423,10 @@
       requestAnimationFrame(boucle);
       const dt = Math.min(horloge.getDelta(), 0.05);   /* borné : un onglet
          revenu au premier plan ne doit pas faire sauter les animations */
-      if (suivi) distanceCible = borner(distancePour(suivi.objet, suivi.marge));
+      if (suivi) {
+        distanceCadrage = distancePour(suivi.objet, suivi.occupation);
+        distanceCible = borner(distanceCadrage, distanceCadrage);
+      }
       if (Math.abs(camera.position.z - distanceCible) > 0.001) {
         camera.position.z += (distanceCible - camera.position.z)
           * Math.min(1, dt * o.aisance);
@@ -386,7 +441,7 @@
       chaqueImage: f => abonnes.push(f),
       enGlisse: () => glisse,
       cadrer, cadrerNet, suivre, recentrer, taille,
-      reserver, zoneUtile,
+      reserver, zoneUtile, occupationMesuree,
       distance: () => camera.position.z
     };
   }

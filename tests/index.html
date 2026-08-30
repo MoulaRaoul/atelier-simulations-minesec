@@ -315,6 +315,64 @@ if (!poste.ok) {
   note('le cadrage tient compte de la zone visible', false, e.message);
 }
 
+/* ══ 6 · L'occupation, cible chiffrée du cadrage ══
+   Le calibrage cessait d'être vérifiable dès qu'il reposait sur une impression
+   d'œil. Il vise désormais une part de la bande visible, et se compare. */
+section('Occupation — la figure remplit la part visée de la bande');
+if (!poste.ok) {
+  info('7 contrôles non exécutés — ce poste ne fait pas de 3D');
+} else try {
+  const cadre = document.createElement('div');
+  cadre.style.cssText = 'position:fixed;left:-4000px;top:0;width:900px;height:600px';
+  document.body.appendChild(cadre);
+  const m = MINESEC.moteur.creer({ conteneur: cadre, grille: false, reserve: false });
+  const boule = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12),
+    new THREE.MeshStandardMaterial({ color: 0x3b82f6 }));
+  m.spin.add(boule);
+
+  m.cadrerNet(m.spin);
+  egal('par défaut, la figure occupe les deux tiers de la bande',
+       m.occupationMesuree(m.spin), 2/3, 2e-3);
+
+  m.cadrerNet(m.spin, 0.5);
+  egal('occupation 0,5 respectée', m.occupationMesuree(m.spin), 0.5, 2e-3);
+  m.cadrerNet(m.spin, 0.9);
+  egal('occupation 0,9 respectée', m.occupationMesuree(m.spin), 0.9, 2e-3);
+
+  /* la cible tient quel que soit le format et les bandeaux */
+  cadre.style.width = '375px'; cadre.style.height = '812px'; m.taille();
+  m.cadrerNet(m.spin);
+  egal('la cible tient en format étroit', m.occupationMesuree(m.spin), 2/3, 2e-3);
+  m.reserver({ haut: 67, bas: 461 });
+  m.cadrerNet(m.spin);
+  egal('la cible tient une fois les bandeaux retirés',
+       m.occupationMesuree(m.spin), 2/3, 2e-3);
+
+  /* La butée de zoom ne doit pas défaire la cible en silence : c'est ce
+     qu'elle faisait avant le 30/08/2026 — 83 % obtenus pour 66 % visés, sur
+     375×812 avec les bandeaux réels, sans qu'aucun signe ne l'indique. */
+  m.reserver({ haut: 67, bas: 461 });
+  const grosse = new THREE.Mesh(new THREE.SphereGeometry(2.7, 16, 12),
+    new THREE.MeshStandardMaterial({ color: 0x22c55e }));
+  m.spin.remove(boule); m.spin.add(grosse);
+  m.cadrerNet(m.spin);
+  vrai('la butée de zoom ne défait pas la cible sur une grande figure',
+       Math.abs(m.occupationMesuree(m.spin) - 2/3) < 2e-3,
+       'occupation ' + (m.occupationMesuree(m.spin) * 100).toFixed(1) + ' % · distance '
+       + m.distance().toFixed(1) + ' (ancien plafond 24)');
+  m.spin.remove(grosse); m.spin.add(boule);
+
+  /* une occupation plus grande rapproche la caméra, jamais l'inverse */
+  m.reserver(false);
+  const dLarge = m.cadrerNet(m.spin, 0.9), dPetite = m.cadrerNet(m.spin, 0.4);
+  vrai('occuper davantage rapproche la caméra', dLarge < dPetite,
+       '0,9 → ' + dLarge.toFixed(2) + '  ·  0,4 → ' + dPetite.toFixed(2));
+
+  cadre.remove();
+} catch (e) {
+  note('le cadrage vise une occupation', false, e.message);
+}
+
 /* ══ Rapport ══ */
 const rap = document.getElementById('rapport');
 groupes.forEach(g => {

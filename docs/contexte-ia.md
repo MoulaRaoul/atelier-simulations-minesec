@@ -87,7 +87,8 @@ affiche lui-même un panneau lisible puis lève une erreur — la page montre un
 ```js
 { conteneur:'#scene',  fov:42,  distance:7.4,  regard:[0,1,0],  inclinaison:0.18,
   grille:true,  distanceMin:2.5,  distanceMax:24,  sensibilite:0.006,  aisance:4.5,
-  reserve:{ haut:'.minesec-entete', bas:'.minesec-pupitre' } }   // false pour désactiver
+  reserve:{ haut:'.minesec-entete', bas:'.minesec-pupitre' },   // false pour désactiver
+  occupation:2/3 }   // part de la bande visible que la figure doit remplir
 // fov et inclinaison en degrés / radians ; sensibilite = radians par pixel glissé ;
 // aisance = vitesse de rattrapage du cadrage.
 ```
@@ -100,8 +101,9 @@ moteur.rig     // groupe d'inclinaison (glisser vertical) — contient le sol
 moteur.spin    // groupe de rotation (glisser horizontal) — METS TES OBJETS ICI
 moteur.chaqueImage(f)          // abonne f(dt) à la boucle ; dt en secondes
 moteur.enGlisse()              // true tant que l'utilisateur fait tourner la scène
-moteur.suivre(objet, marge)    // cadrage CONTINU : garde l'objet entier à l'écran
-moteur.cadrer / cadrerNet(objet, marge)  // une fois, en douceur / immédiat
+moteur.suivre(objet, occupation)   // cadrage CONTINU : garde l'objet entier à l'écran
+moteur.cadrer / cadrerNet(objet, occupation)  // une fois, en douceur / immédiat
+moteur.occupationMesuree(objet)    // part de la bande réellement occupée
 moteur.recentrer()             // remet orientation et distance au repos
 moteur.taille()                // recalcule le format (appelé seul au redimensionnement)
 moteur.distance()              // distance actuelle de la caméra
@@ -119,8 +121,14 @@ CSS, des éléments ou des nombres de pixels. Les hauteurs sont mesurées en dir
 elles dépendent des polices et de l'appareil, et ne peuvent pas être devinées.
 
 **Le cadrage est la fonction à ne pas oublier.** Une caméra fixe laisse sortir du
-cadre les pièces qui s'écartent. `moteur.suivre(moteur.spin, 1.3)` règle le problème
-une fois pour toutes, téléphone tenu debout compris (champ horizontal plus étroit).
+cadre les pièces qui s'écartent. `moteur.suivre(moteur.spin)` règle le problème une
+fois pour toutes, téléphone tenu debout compris (champ horizontal plus étroit).
+
+**Le second paramètre est une OCCUPATION, pas une marge** (depuis le 30/08/2026) :
+c'est la part de la bande visible que la figure doit remplir, `2/3` par défaut.
+Une valeur au-delà de 1 fait déborder la figure et déclenche un avertissement.
+Le plus souvent, ne le passe pas : le réglage par défaut convient, et le calibrage
+se compare alors à un nombre écrit plutôt qu'à une impression d'œil.
 
 ---
 
@@ -270,12 +278,12 @@ piece.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo),
 moteur.spin.add(piece);
 
 /* ── Cadrage : d'abord la pose de repos, puis le suivi continu ── */
-moteur.cadrerNet(moteur.spin, 1.3);
+moteur.cadrerNet(moteur.spin);
 if (!MINESEC.moteur.reduit) {
   mvt.geste(piece, 'apparition-echelle', .15);
-  setTimeout(() => moteur.suivre(moteur.spin, 1.3), 1000);
+  setTimeout(() => moteur.suivre(moteur.spin), 1000);
 } else {
-  moteur.suivre(moteur.spin, 1.3);
+  moteur.suivre(moteur.spin);
 }
 
 /* ── Boucle propre à la simulation ── */
