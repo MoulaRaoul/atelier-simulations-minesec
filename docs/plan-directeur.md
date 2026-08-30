@@ -121,11 +121,37 @@ atelier-simulations-minesec/          ← le dépôt Git
 │   └── svt/
 ├── gabarits/
 │   └── brief-enseignant.md           ← voir Annexe A
+├── tests/
+│   └── index.html                    ← suite de non-régression de la bibliothèque
 ├── outils/
 │   └── build-hors-ligne.js           ← fabrique la version autonome un-seul-fichier
 └── archives/
     └── 2026-08-corpus-initial/       ← les 22 fichiers d'origine, intouchés
 ```
+
+---
+
+### Règle d'entretien de la bibliothèque
+
+**Toute modification de la bibliothèque impose de relancer `tests/index.html`
+avant de commiter.** On ouvre la page, on lit le bilan, et on ne commite que s'il
+est vert.
+
+La raison tient à ce que la bibliothèque est devenue : un seul fichier est
+importé par toutes les simulations, présentes et futures. Une régression n'y
+casse pas une page, elle les casse toutes — et elle ne se voit pas, parce qu'une
+scène 3D fausse reste une scène 3D plausible. Les défauts déjà attrapés par cette
+suite sont exactement de ce genre : des volumes inégaux, une figure qui dérive en
+s'écartant, un niveau d'eau vraisemblable et faux.
+
+**Un contrôle qui échoue s'examine avant d'être corrigé.** À l'écriture de cette
+suite, cinq attentes se sont révélées fausses avant le code — dont l'idée que
+l'eau monte vite au début dans une pyramide, alors qu'elle monte lentement. Un
+test rouge dit qu'il y a désaccord, pas où est l'erreur.
+
+**Un défaut corrigé laisse un contrôle derrière lui.** C'est la règle du réviseur
+des principes de conception, appliquée au code : jamais la même correction deux
+fois à la main.
 
 ---
 

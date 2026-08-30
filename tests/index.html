@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suite de non-régression — bibliothèque MINESEC</title>
+<link rel="stylesheet" href="../bibliotheque/charte.css">
+<style>
+  body { overflow: auto; padding: 22px; }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  .sous { font-family: var(--f-data); font-size: 11px; letter-spacing: .18em;
+          text-transform: uppercase; color: var(--dim); margin-bottom: 16px; }
+  .mode { font-size: 13px; color: var(--dim); margin: 0 0 18px; line-height: 1.6;
+          border-left: 2px solid var(--line); padding-left: 12px; max-width: 60rem; }
+  #bilan { font-family: var(--f-data); font-size: 15px; font-weight: 600;
+           padding: 12px 16px; border-radius: var(--r); margin-bottom: 16px;
+           border: 1px solid var(--line); background: var(--panel); }
+  #bilan.vert { border-color: var(--ok); color: var(--ok); }
+  #bilan.rouge { border-color: var(--no); color: var(--no); }
+  h2 { font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+       color: var(--dim); margin: 20px 0 8px; font-weight: 600; }
+  ol { list-style: none; padding: 0; margin: 0; font-family: var(--f-data); font-size: 12.5px; }
+  li { padding: 3px 0 3px 10px; border-left: 2px solid transparent; line-height: 1.5; }
+  li.ok { border-left-color: var(--ok); }
+  li.ko { border-left-color: var(--no); color: var(--no); background: rgba(239,68,68,.07); }
+  li .det { color: var(--dim); }
+  #banc { position: fixed; left: -4000px; top: 0; width: 640px; height: 420px; }
+</style>
+</head>
+<body>
+
+<div class="sous">MINESEC · bibliothèque · non-régression</div>
+<h1>Suite de contrôles de la bibliothèque</h1>
+<p class="mode"><b>Mode d'emploi :</b> ouvrir cette page dans un navigateur.
+Elle s'exécute seule et affiche son bilan. <b>Toute modification de la bibliothèque
+impose de la relancer avant de commiter</b> (règle inscrite au § 3 du plan directeur).
+Une connexion est nécessaire — Three.js vient de cdnjs — et une machine capable
+de WebGL, faute de quoi les contrôles des props ne peuvent pas s'exécuter.</p>
+
+<div id="bilan">exécution…</div>
+<div id="rapport"></div>
+<div id="banc"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="../bibliotheque/minesec-moteur.js"></script>
+<script src="../bibliotheque/minesec-mouvements.js"></script>
+<script src="../bibliotheque/minesec-mecaniques.js"></script>
+<script src="../bibliotheque/minesec-props.js"></script>
+<script>
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   Trois pièges rencontrés en écrivant ces contrôles, à ne pas réintroduire :
+
+   1. Le volume d'un maillage par le théorème de la divergence exige des
+      faces ORIENTÉES. Les géométries de l'atelier ne le garantissent pas :
+      on mesure depuis le centre de gravité, en valeur absolue.
+   2. Une position lue dans le repère du MONDE contient l'inclinaison de la
+      caméra ; ce n'est pas la position de la figure.
+   3. requestAnimationFrame ne tourne pas si la page n'est pas composée.
+      Les animations se font avancer à la main par mouvements.maj().
+   ══════════════════════════════════════════════════════════════════════ */
+
+const groupes = [];
+let courant = null, total = 0, echecs = 0;
+
+function section(titre) { courant = { titre, lignes: [] }; groupes.push(courant); }
+function egal(nom, obtenu, attendu, tol) {
+  const ok = Math.abs(obtenu - attendu) <= (tol == null ? 1e-9 : tol);
+  note(nom, ok, ok ? null : 'obtenu ' + obtenu + ' · attendu ' + attendu);
+}
+function vrai(nom, condition, detail) { note(nom, !!condition, detail); }
+function note(nom, ok, detail) {
+  total++; if (!ok) echecs++;
+  courant.lignes.push({ nom, ok, detail });
+}
+
+const M = MINESEC.mecaniques;
+/* Fait aboutir toutes les interpolations en cours, sans dépendre de la boucle. */
+const flush = () => MINESEC.mouvements.maj(1000);
+
+/* ══ 1 · Les lois de niveau ══ */
+section('Lois de niveau — le cœur de l\'honnêteté du dispositif');
+{
+  const pri = M.recipient({ forme: 'prisme', hauteur: 2, volume: 1 });
+  pri.rempli = .5;  egal('prisme f=½ → niveau linéaire H/2', pri.niveau(), 1);
+  pri.rempli = .25; egal('prisme f=¼ → H/4', pri.niveau(), .5);
+
+  const pyr = M.recipient({ forme: 'pyramide', hauteur: 2, volume: 1 });
+  pyr.rempli = .5;  egal('pyramide f=½ → H(1−∛½)', pyr.niveau(), 2 * (1 - Math.cbrt(.5)));
+  pyr.rempli = 7/8; egal('pyramide f=⅞ → mi-hauteur (contrôle indépendant)', pyr.niveau(), 1);
+  pyr.rempli = 0;   egal('pyramide vide → 0', pyr.niveau(), 0);
+  pyr.rempli = 1;   egal('pyramide pleine → H', pyr.niveau(), 2);
+
+  const cone = M.recipient({ forme: 'cone', hauteur: 3, volume: 1 });
+  cone.rempli = 7/8; egal('cône f=⅞ → mi-hauteur', cone.niveau(), 1.5);
+
+  const inv = M.recipient({ forme: 'pyramide-inversee', hauteur: 2, volume: 1 });
+  inv.rempli = 1/8;  egal('pyramide pointe en bas f=⅛ → mi-hauteur', inv.niveau(), 1);
+
+  vrai('l\'eau monte plus LENTEMENT que dans un prisme au début (base large)',
+       M.LOIS.effile(.1) < M.LOIS.droit(.1) && M.LOIS.effile(.9) > .5,
+       'à 90 % du volume, l\'eau est à ' + (M.LOIS.effile(.9) * 100).toFixed(0) + ' % de la hauteur');
+}
+
+/* ══ 2 · Le versement ══ */
+section('Versement — contenances exactes, jamais les libellés arrondis');
+{
+  const B = Math.sqrt(3), h = 2, vPri = B * h, vPyr = vPri / 3;
+  const cible = M.recipient({ forme: 'prisme', hauteur: h, volume: vPri, rempli: 0 });
+  const src = M.recipient({ forme: 'pyramide', hauteur: h, volume: vPyr, rempli: 1 });
+
+  let b = null;
+  M.verser(src, cible, { duree: .5, fin: x => b = x }); flush();
+  egal('la source se vide', src.rempli, 0);
+  egal('la cible est au tiers', cible.rempli, 1/3);
+  egal('le bilan annonce V(pyramide)', b.verse, vPyr);
+
+  src.remplir(); M.verser(src, cible, { duree: .1 }); flush();
+  egal('la cible est aux deux tiers', cible.rempli, 2/3);
+
+  src.remplir(); let b3 = null;
+  M.verser(src, cible, { duree: .1, fin: x => b3 = x }); flush();
+  egal('la cible est pleine après trois versements', cible.rempli, 1);
+  vrai('le troisième versement ne déborde pas', b3.deborde === false);
+  vrai('la cible se déclare pleine', cible.estPlein());
+
+  src.remplir(); let b4 = null;
+  M.verser(src, cible, { duree: .1, fin: x => b4 = x }); flush();
+  egal('un quatrième versement est refusé', b4.verse, 0);
+  egal('le surplus reste dans la source', src.rempli, 1);
+}
+
+section('Débordement — le surplus ne disparaît pas');
+{
+  const petit = M.recipient({ forme: 'prisme', hauteur: 1, volume: 1, rempli: 0 });
+  const gros = M.recipient({ forme: 'prisme', hauteur: 1, volume: 5, rempli: 1 });
+  let bd = null;
+  M.verser(gros, petit, { duree: .1, fin: x => bd = x }); flush();
+  egal('le petit ne prend que sa contenance', petit.rempli, 1);
+  egal('le gros garde le reste (4/5)', gros.rempli, .8);
+  vrai('le débordement est signalé', bd.deborde === true);
+}
+
+/* ══ 3 · Le compteur ══ */
+section('Compteur de versements');
+{
+  const c = M.compteur(3); c.un(); c.un();
+  vrai('pastilles ●●○', c.pastilles() === '●●○', c.pastilles());
+  vrai('texte « Versement 3 / 3 »', c.texte() === 'Versement 3 / 3', c.texte());
+  c.un();
+  vrai('achevé après trois', c.acheve());
+  vrai('reset remet à zéro', c.reset().fait === 0);
+}
+
+/* ══ 4 · Les props ══ */
+section('Props — récipient transparent, robinet, filet');
+try {
+  const moteur = MINESEC.moteur.creer({ conteneur: '#banc', grille: false });
+  vrai('la coupe locale est éteinte par défaut', moteur.rendu.localClippingEnabled === false);
+
+  const rec = MINESEC.props.recipientTransparent(moteur, 'pyramide', { hauteur: 2, rayon: 1, cotes: 4 });
+  vrai('recipientTransparent allume la coupe locale', moteur.rendu.localClippingEnabled === true);
+  moteur.spin.add(rec.groupe);
+  vrai('le groupe porte paroi, arêtes, eau et surface', rec.groupe.children.length === 4,
+       rec.groupe.children.length + ' enfants');
+
+  rec.majNiveau(0);
+  vrai('à vide, eau et surface sont masquées', !rec.eau.visible && !rec.surface.visible);
+
+  const y1 = rec.majNiveau(.5);
+  egal('pyramide f=½ → même loi que les mécaniques', y1, 2 * (1 - Math.cbrt(.5)));
+  const y2 = rec.majNiveau(7/8);
+  egal('pyramide f=⅞ → mi-hauteur', y2, 1);
+  vrai('le plan de coupe suit le niveau', rec.plan.constant === y2);
+  vrai('la surface est posée au niveau', Math.abs(rec.surface.position.y - y2) < .01);
+
+  const large = (rec.majNiveau(.05), rec.surface.scale.x);
+  rec.majNiveau(7/8);
+  const etroite = rec.surface.scale.x;
+  vrai('la surface rétrécit en montant dans une pyramide', etroite < large,
+       etroite.toFixed(2) + ' < ' + large.toFixed(2));
+
+  const pr = MINESEC.props.recipientTransparent(moteur, 'prisme', { hauteur: 2, rayon: 1, cotes: 3 });
+  pr.majNiveau(.2); const a = pr.surface.scale.x;
+  pr.majNiveau(.9); const b = pr.surface.scale.x;
+  egal('la surface d\'un prisme ne change pas de taille', a, b);
+  egal('prisme f=½ → niveau linéaire', pr.majNiveau(.5), 1);
+
+  const rob = MINESEC.props.robinet({ echelle: 1 });
+  vrai('le robinet compte quatre pièces', rob.children.length === 4, rob.children.length + '');
+  vrai('le robinet expose la position de son bec', !!rob.userData.bec);
+
+  const fil = MINESEC.props.filet();
+  vrai('le filet est invisible au repos', fil.visible === false);
+  fil.userData.tendre(new THREE.Vector3(0, 2, 0), new THREE.Vector3(0, .5, 0));
+  vrai('le filet tendu est visible et de la bonne longueur',
+       fil.visible && Math.abs(fil.children[0].scale.y - 1.5) < 1e-9, 'longueur ' + fil.children[0].scale.y);
+  fil.userData.couper();
+  vrai('le filet coupé redevient invisible', fil.visible === false);
+
+  const cone = MINESEC.props.recipientTransparent(moteur, 'cone', { hauteur: 3, rayon: 1 });
+  egal('cône f=⅞ → mi-hauteur', cone.majNiveau(7/8), 1.5);
+} catch (e) {
+  note('les props s\'initialisent', false, e.message);
+}
+
+/* ══ Rapport ══ */
+const rap = document.getElementById('rapport');
+groupes.forEach(g => {
+  const h = document.createElement('h2'); h.textContent = g.titre; rap.appendChild(h);
+  const ol = document.createElement('ol');
+  g.lignes.forEach(l => {
+    const li = document.createElement('li');
+    li.className = l.ok ? 'ok' : 'ko';
+    li.textContent = (l.ok ? '✓ ' : '✗ ') + l.nom;
+    if (l.detail) { const s = document.createElement('span'); s.className = 'det';
+      s.textContent = '  — ' + l.detail; li.appendChild(s); }
+    ol.appendChild(li);
+  });
+  rap.appendChild(ol);
+});
+const bilan = document.getElementById('bilan');
+bilan.textContent = echecs
+  ? echecs + ' ÉCHEC(S) sur ' + total + ' contrôles'
+  : 'TOUT PASSE — ' + total + ' contrôles';
+bilan.className = echecs ? 'rouge' : 'vert';
+window.__resultat = { total, echecs, groupes };
+</script>
+</body>
+</html>

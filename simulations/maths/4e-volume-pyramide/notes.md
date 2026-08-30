@@ -132,6 +132,20 @@ cette version en fait environ 150, dont aucune n'est du socle technique.
 
 ---
 
+## À prévoir — étape D, mode Versement
+
+**Question de sortie retenue :** « Quand 90 % du volume est versé, à quelle
+hauteur est l'eau ? »
+
+**Réponse : 54 % de la hauteur.** La surprise *est* le but. Presque tous les
+élèves — et beaucoup d'adultes — répondront « 90 % », par report inconscient de
+la règle du prisme. C'est précisément l'erreur que le mode Versement doit rendre
+impossible à conserver : dans une pyramide posée sur sa base, le vide au-dessus
+de l'eau est un solide semblable, donc `h = H × (1 − ∛(1−f))`.
+
+La question ne se pose qu'après avoir versé : on ne demande pas de deviner une
+règle qu'on n'a pas encore éprouvée. Elle vérifie que le déclic a eu lieu.
+
 ## Pistes
 
 - Rendre les dimensions réglables (largeur, profondeur, hauteur) comme le
