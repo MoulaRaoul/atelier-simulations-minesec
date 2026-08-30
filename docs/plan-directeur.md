@@ -199,6 +199,24 @@ Ces documents s'engendrent **depuis les sources**, jamais de mémoire : on relit
 listes. Le premier tirage l'a montré — un filtre trop étroit avait compté
 27 mouvements au lieu de 28, `ouverture-echelleY` portant une majuscule.
 
+#### Le plafond de la fiche de contexte
+
+`docs/contexte-ia.md` ne doit pas dépasser **350 lignes** (plafond relevé de 300
+le 30/08/2026, l'arrivée de `minesec-mecaniques.js` et `minesec-props.js` ayant
+porté la fiche de deux modules à quatre).
+
+**Clause anti-décoration : un plafond touché une seconde fois déclenche une
+restructuration, jamais un second relèvement.** La fiche se scindera alors en un
+tronc commun — atelier, jetons, règles, mode d'emploi — et une section par module,
+que l'on colle selon le besoin. Relever indéfiniment reviendrait à laisser la
+fiche enfler jusqu'à ce que plus personne ne la colle en entier ; elle cesserait
+alors de faire son travail sans que rien ne le signale.
+
+**L'exemple de scène complète reste dans le tronc commun**, quel que soit le
+découpage. Une IA apprend par imitation : l'amputer dégraderait sa production
+bien plus sûrement qu'une liste de signatures manquante. Quand il faudra tailler,
+on taillera ailleurs.
+
 ---
 
 ## 6 · La définition de « fini »
