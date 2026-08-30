@@ -212,6 +212,13 @@ Il n'y a rien à apprendre par cœur : dans Claude Code, on demande en français
 
 **Phase 3 — Industrialisation.** Mettre en service le gabarit de brief enseignant ; générer un catalogue `index.html` automatique ; écrire le script de build hors-ligne.
 
+> **Priorité arrêtée le 30/08/2026 — le build hors-ligne passe devant.** Dès le mode
+> Versement livré, `outils/build-hors-ligne.js` devient le chantier immédiat, avant le
+> catalogue et avant le gabarit. Raison : chaque module ajouté à la bibliothèque creuse
+> l'écart entre « cela fonctionne sur ma machine » et « cela fonctionne en salle sans
+> connexion ». Une simulation que l'établissement ne peut pas ouvrir n'est pas une
+> simulation livrée. Les autres travaux de la Phase 3 suivront.
+
 **Phase 4 — Expansion.** Compléter les familles de la banque des opérations ; constituer `minesec-props.js` ; ouvrir les packs disciplinaires (maths, informatique, SVT, puis les autres).
 
 **Horizon.** Un portail catalogue destiné aux enseignants — l'`environnement_ent_interactif` montre que l'idée germe déjà.
