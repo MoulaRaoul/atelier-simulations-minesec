@@ -38,6 +38,30 @@ n'existe pas (Three.js est chargé depuis cdnjs).
 
 ---
 
+## Les cas étudiés
+
+**Cas 1 — le prisme droit à base triangulaire.** Découpage `ABCA'` · `BCA'B'` ·
+`CA'B'C'`. Trois tétraèdres de **formes différentes** et de volumes égaux : c'est
+la différence de forme qui surprend, donc qui fait le déclic.
+
+**Cas 2 — le cube et ses trois yangma** (Phase 2, 30/08/2026). Cube `[0,a]³`,
+sommet commun à l'origine ; chaque pyramide prend les points dont une coordonnée
+donnée est la plus grande, sa base étant la face opposée. Les trois se déduisent
+l'une de l'autre par **rotation de 120° autour de la diagonale** : elles sont
+donc superposables, et non seulement de même volume. Le bouton « Superposer les
+trois » ramène les rotations à zéro et le démontre à l'écran — c'est l'argument
+que le cas 1 ne peut pas offrir. Géométrie reprise de `labo-volume-pyramide.html`.
+
+Deux pièges rencontrés et corrigés :
+
+- La direction d'écartement doit partir du **centre de gravité** de la pyramide
+  (au quart de la hauteur au-dessus de la base), non du centre de sa face. Avec
+  le centre de face, les trois directions valaient (1,0,0), (0,1,0), (0,0,1) :
+  leur somme n'étant pas nulle, l'ensemble dérivait au lieu de s'ouvrir sur place.
+- Le cube est centré sur l'origine — sa diagonale de rotation doit y passer. On
+  le relève d'une unité par la **position** des pièces, jamais par la géométrie :
+  translater la géométrie ferait quitter la diagonale à l'axe de rotation.
+
 ## Choix faits
 
 **Le découpage retenu** est le partage classique d'un prisme droit à base

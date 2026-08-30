@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Le prisme et ses 3 pyramides · Volume — 4e</title>
+<title>Le volume de la pyramide · Prisme et cube — 4e</title>
 
 <!-- La charte et la bibliothèque : écrites une fois, importées ici. -->
 <link rel="stylesheet" href="../../../bibliotheque/charte.css">
@@ -11,6 +11,7 @@
   /* Jetons propres à CETTE simulation — ils ne remontent pas dans la charte. */
   :root { --p1: #3b82f6; --p2: #f59e0b; --p3: #22c55e; }
   body { overflow: hidden; }
+  .cache { display: none; }
 </style>
 </head>
 <body>
@@ -20,14 +21,21 @@
 <header class="minesec-entete">
   <div>
     <div class="minesec-surtitre">MINESEC · Mathématiques · 4<sup>e</sup></div>
-    <h1>Le prisme se découpe en <b>3 pyramides</b> de même volume</h1>
+    <h1 id="titre">Le prisme se découpe en <b>3 pyramides</b> de même volume</h1>
   </div>
   <span class="minesec-etiquette">bibliothèque MINESEC · Three.js r128</span>
 </header>
 
 <div class="minesec-pupitre">
   <div class="minesec-carte minesec-actions">
+    <span style="font-size:12px;color:var(--dim);font-family:var(--f-data)">CAS</span>
+    <button id="casPrisme" class="primaire">Prisme</button>
+    <button id="casCube">Cube</button>
+  </div>
+
+  <div class="minesec-carte minesec-actions">
     <button id="btnDecomp" class="primaire">Décomposer</button>
+    <button id="btnSuper" class="cache">Superposer les trois</button>
     <button id="btnRot" aria-pressed="true">Rotation auto</button>
     <button id="btnVue">Recentrer la vue</button>
   </div>
@@ -39,18 +47,18 @@
       <span class="minesec-jeton"><i class="minesec-pastille" style="background:var(--p1)"></i>P₁</span>
       <span class="minesec-jeton"><i class="minesec-pastille" style="background:var(--p2)"></i>P₂</span>
       <span class="minesec-jeton"><i class="minesec-pastille" style="background:var(--p3)"></i>P₃</span>
-      <span>— trois volumes égaux</span>
+      <span id="legFin">— trois volumes égaux</span>
     </div>
   </div>
 
   <div class="minesec-carte minesec-valeurs" id="valeurs">
-    <div class="ligne"><span>Aire de la base B</span><span id="vB">—</span></div>
-    <div class="ligne"><span>Hauteur h</span><span id="vH">—</span></div>
-    <div class="ligne"><span>V(prisme) = B × h</span><span id="vP">—</span></div>
-    <div class="ligne cle"><span><b>V(pyramide) = B × h ÷ 3</b></span><span id="vY">—</span></div>
+    <div class="ligne"><span id="l1">Aire de la base B</span><span id="v1">—</span></div>
+    <div class="ligne"><span id="l2">Hauteur h</span><span id="v2">—</span></div>
+    <div class="ligne"><span id="l3">V(solide)</span><span id="v3">—</span></div>
+    <div class="ligne cle"><span><b id="l4">V(pyramide)</b></span><span id="v4">—</span></div>
   </div>
 
-  <div class="minesec-aide">Glissez pour orienter · molette pour zoomer · Espace : décomposer / recomposer</div>
+  <div class="minesec-aide" id="aide">Glissez pour orienter · molette pour zoomer · Espace : décomposer / recomposer</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -60,99 +68,204 @@
 "use strict";
 
 /* ══ Ce qui appartient en propre à cette simulation ══
-   Prisme droit à base triangulaire équilatérale, découpé selon le
-   partage classique ABCA' · BCA'B' · CA'B'C' — trois tétraèdres de
-   volumes égaux. Tout le reste (scène, orbite, boucle, mouvements)
-   vient de la bibliothèque.                                        */
+   Deux découpages classiques, un par cas étudié. Tout le reste — scène,
+   orbite, boucle, mouvements, cadrage — vient de la bibliothèque.       */
 
 const moteur = MINESEC.moteur.creer({ conteneur: '#scene', fov: 42, distance: 7.4 });
 const mvt = MINESEC.mouvements.brancher(moteur);
 const reduit = MINESEC.moteur.reduit;
+const TEINTES = [[0x3b82f6, 0xa7c2f7], [0xf59e0b, 0xf8d192], [0x22c55e, 0xa4e6ba]];
 
-const H = 2, COTE = 2;
-const A  = [-1, 0,  0.577], B  = [1, 0,  0.577], C  = [0, 0, -1.155];
-const A2 = [-1, H,  0.577], B2 = [1, H,  0.577], C2 = [0, H, -1.155];
-
-function pyramide(pts, face, arete) {
-  const faces = [[0,1,2],[0,1,3],[0,2,3],[1,2,3]];
-  const pos = [];
-  faces.forEach(f => f.forEach(i => pos.push(pts[i][0], pts[i][1], pts[i][2])));
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geo.computeVertexNormals();
-
+/* Fabrique un solide « trait ouvert » : faces translucides + arêtes. */
+function solide(geo, i) {
   const g = new THREE.Group();
   g.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-    color: face, roughness: .42, metalness: .05, flatShading: true,
-    side: THREE.DoubleSide, transparent: true, opacity: .96
+    color: TEINTES[i][0], roughness: .42, metalness: .05, flatShading: true,
+    side: THREE.DoubleSide, transparent: true, opacity: .96,
+    /* Décalages distincts : superposées, les trois pièces occupent le même
+       espace ; sans cela leurs faces se disputeraient le même pixel. */
+    polygonOffset: true, polygonOffsetFactor: -1 - i, polygonOffsetUnits: -1 - i
   })));
   g.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo),
-    new THREE.LineBasicMaterial({ color: arete })));
-
-  /* Direction d'écartement : du centre du prisme vers celui de la pièce. */
-  const centre = new THREE.Vector3();
-  pts.forEach(p => centre.add(new THREE.Vector3(p[0], p[1], p[2])));
-  g.userData.dir = centre.multiplyScalar(.25).sub(new THREE.Vector3(0, H/2, 0)).normalize();
+    new THREE.LineBasicMaterial({ color: TEINTES[i][1] })));
   return g;
 }
 
-const pyras = [
-  pyramide([A,  B,  C,  A2], 0x3b82f6, 0xa7c2f7),   /* P₁ */
-  pyramide([B,  C,  A2, B2], 0xf59e0b, 0xf8d192),   /* P₂ */
-  pyramide([C,  A2, B2, C2], 0x22c55e, 0xa4e6ba)    /* P₃ */
-];
-pyras.forEach(p => moteur.spin.add(p));
+function geoDepuis(sommets, faces) {
+  const pos = [];
+  faces.forEach(f => f.forEach(i => pos.push(sommets[i][0], sommets[i][1], sommets[i][2])));
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  return g;
+}
 
-/* Cadrage : le moteur garde la figure entière à l'écran, à tout écartement.
-   On fixe d'abord le cadre sur la figure au repos… */
-moteur.cadrerNet(moteur.spin, 1.3);
+/* ─── CAS 1 · Prisme droit à base triangulaire ───
+   Découpage ABCA' · BCA'B' · CA'B'C' : trois tétraèdres de volumes égaux,
+   de formes différentes. C'est cette différence de forme qui surprend. */
+function casPrisme() {
+  const H = 2, COTE = 2;
+  const A = [-1,0,0.577], B = [1,0,0.577], C = [0,0,-1.155];
+  const A2 = [-1,H,0.577], B2 = [1,H,0.577], C2 = [0,H,-1.155];
+  const FACES = [[0,1,2],[0,1,3],[0,2,3],[1,2,3]];
+  const jeux = [[A,B,C,A2], [B,C,A2,B2], [C,A2,B2,C2]];
 
-/* …puis l'entrée en scène — famille nº 1 de la banque, échelonnée. */
-if (!reduit) {
-  pyras.forEach((p, i) => mvt.geste(p, 'apparition-echelle', .15 + i * .18));
-  /* Le suivi ne démarre qu'une fois l'entrée jouée : sinon la caméra
-     suivrait le grossissement des pièces au lieu de cadrer la figure. */
-  setTimeout(() => moteur.suivre(moteur.spin, 1.3), 1300);
-} else {
-  moteur.suivre(moteur.spin, 1.3);
+  const pieces = jeux.map((pts, i) => {
+    const g = solide(geoDepuis(pts, FACES), i);
+    const c = new THREE.Vector3();
+    pts.forEach(p => c.add(new THREE.Vector3(p[0], p[1], p[2])));
+    g.userData.dir = c.multiplyScalar(.25).sub(new THREE.Vector3(0, H/2, 0)).normalize();
+    return g;
+  });
+
+  const B_aire = Math.sqrt(3) / 4 * COTE * COTE;
+  const vSolide = B_aire * H;
+  return {
+    pieces, ampli: 1.7, superposable: false, hauteurRegard: 0,
+    titre: 'Le prisme se découpe en <b>3 pyramides</b> de même volume',
+    legende: '— trois volumes égaux',
+    valeurs: [
+      ['Aire de la base B', B_aire, 'u²'],
+      ['Hauteur h', H, 'u'],
+      ['V(prisme) = B × h', vSolide, 'u³'],
+      ['V(pyramide) = B × h ÷ 3', vSolide / 3, 'u³']   /* dérivé, jamais l'arrondi */
+    ]
+  };
+}
+
+/* ─── CAS 2 · Le cube et ses trois yangma ───
+   Cube [0,a]³, sommet commun à l'origine. Chaque pyramide prend les points
+   dont une coordonnée donnée est la plus grande ; sa base est la face
+   opposée. Les trois se déduisent l'une de l'autre par rotation de 120°
+   autour de la diagonale — elles sont donc SUPERPOSABLES, et non seulement
+   de même volume. C'est l'argument que le cas 1 ne peut pas offrir.     */
+function casCube() {
+  const a = 2;
+  /* Pyramide de référence : sommet O, base la face x = a. */
+  const S = [[0,0,0], [a,0,0], [a,a,0], [a,a,a], [a,0,a]];
+  const FACES = [[1,2,3],[1,3,4], [0,1,2],[0,2,3],[0,3,4],[0,4,1]];
+  const geo = geoDepuis(S, FACES);
+  geo.translate(-a/2, -a/2, -a/2);          /* cube centré sur la scène */
+
+  const axe = new THREE.Vector3(1, 1, 1).normalize();
+  const pieces = [0, 1, 2].map(i => {
+    const g = solide(geo, i);
+    /* La rotation qui envoie la face x=a sur y=a puis sur z=a. */
+    g.userData.rot = i * 2 * Math.PI / 3;
+    g.rotateOnAxis(axe, g.userData.rot);
+    /* Direction d'écartement : du centre du cube vers le CENTRE DE GRAVITÉ
+       de la pièce — lequel se trouve au quart de la hauteur au-dessus de la
+       base, non au centre de la face. Avec le centre de face, les trois
+       directions valaient (1,0,0), (0,1,0), (0,0,1) : leur somme n'étant pas
+       nulle, l'ensemble dérivait en s'écartant au lieu de s'ouvrir sur place. */
+    const c = new THREE.Vector3(a/4, -a/8, -a/8).applyAxisAngle(axe, g.userData.rot);
+    g.userData.dir = c.normalize();
+    return g;
+  });
+
+  const vCube = a * a * a;
+  return {
+    /* Le cube est centré sur l'origine — la diagonale de rotation doit y
+       passer. On le relève d'une unité pour le placer devant le regard du
+       moteur, qui vise (0, 1, 0). Décaler la POSITION, jamais la géométrie :
+       sinon l'axe de rotation quitterait la diagonale. */
+    pieces, ampli: 1.5, superposable: true, axe, hauteurRegard: 1,
+    titre: 'Le cube se découpe en <b>3 pyramides identiques</b>',
+    legende: '— superposables, pas seulement de même volume',
+    valeurs: [
+      ['Arête a', a, 'u'],
+      ['Aire de la base a²', a * a, 'u²'],
+      ['V(cube) = a³', vCube, 'u³'],
+      ['V(yangma) = a³ ÷ 3', vCube / 3, 'u³']
+    ]
+  };
 }
 
 /* ══ État et pupitre ══ */
-const etat = { ecart: 0, cible: 0, rotation: !reduit };
-const AMPLI = 1.7;
-const ui = ['btnDecomp','btnRot','btnVue','sep','sepVal','valeurs','vB','vH','vP','vY']
+const etat = { ecart: 0, cible: 0, rotation: !reduit, cas: null, super: 0, cibleSuper: 0 };
+const ui = ['titre','casPrisme','casCube','btnDecomp','btnSuper','btnRot','btnVue',
+            'sep','sepVal','valeurs','legFin','aide','l1','l2','l3','l4','v1','v2','v3','v4']
   .reduce((o, id) => (o[id] = document.getElementById(id), o), {});
-
-const aireBase = Math.sqrt(3) / 4 * COTE * COTE;   /* triangle équilatéral */
-ui.vB.textContent = '≈ ' + aireBase.toFixed(2).replace('.', ',') + ' u²';
-ui.vH.textContent = H + ' u';
-ui.vP.textContent = '≈ ' + (aireBase * H).toFixed(2).replace('.', ',') + ' u³';
-ui.vY.textContent = '≈ ' + (aireBase * H / 3).toFixed(2).replace('.', ',') + ' u³';
+const fr = x => x.toFixed(2).replace('.', ',');
 ui.btnRot.setAttribute('aria-pressed', String(etat.rotation));
 
+function choisir(fabrique, bouton) {
+  mvt.toutArreter();
+  if (etat.cas) etat.cas.pieces.forEach(p => moteur.spin.remove(p));
+  etat.cas = fabrique();
+  etat.cas.pieces.forEach(p => moteur.spin.add(p));
+  etat.ecart = etat.cible = 0;
+  etat.super = etat.cibleSuper = 0;
+
+  ui.titre.innerHTML = etat.cas.titre;
+  ui.legFin.textContent = etat.cas.legende;
+  etat.cas.valeurs.forEach((v, i) => {
+    ui['l' + (i+1)].textContent = v[0];
+    ui['v' + (i+1)].textContent = '≈ ' + fr(v[1]) + ' ' + v[2];
+  });
+  ui.btnSuper.classList.toggle('cache', !etat.cas.superposable);
+  ui.btnSuper.setAttribute('aria-pressed', 'false');
+  [ui.casPrisme, ui.casCube].forEach(b => b.classList.toggle('primaire', b === bouton));
+
+  moteur.cadrerNet(moteur.spin, 1.3);
+  if (!reduit) {
+    etat.cas.pieces.forEach((p, i) => mvt.geste(p, 'apparition-echelle', .1 + i * .16));
+    setTimeout(() => moteur.suivre(moteur.spin, 1.3), 1200);
+  } else {
+    moteur.suivre(moteur.spin, 1.3);
+  }
+  appliquer();
+}
+
 function appliquer() {
-  pyras.forEach(p => p.position.copy(p.userData.dir).multiplyScalar(etat.ecart * AMPLI));
+  const c = etat.cas;
+  c.pieces.forEach(p => p.position.copy(p.userData.dir)
+    .multiplyScalar(etat.ecart * c.ampli)
+    .setY(p.userData.dir.y * etat.ecart * c.ampli + (c.hauteurRegard || 0)));
+  if (c.superposable) {
+    /* super = 1 : toutes ramenées sur la pyramide de référence. */
+    c.pieces.forEach(p => {
+      p.rotation.set(0, 0, 0);
+      p.rotateOnAxis(c.axe, p.userData.rot * (1 - etat.super));
+    });
+  }
   const pc = Math.round(etat.ecart * 100);
   ui.sep.value = pc;
-  ui.sepVal.textContent = pc + ' %';
-  ui.valeurs.classList.toggle('revele', etat.ecart > .6);
+  ui.sepVal.textContent = pc + ' %';
+  ui.valeurs.classList.toggle('revele', etat.ecart > .6 || etat.super > .6);
   ui.btnDecomp.textContent = etat.cible > .5 ? 'Recomposer' : 'Décomposer';
+  ui.btnSuper.textContent = etat.cibleSuper > .5 ? 'Remettre en place' : 'Superposer les trois';
+  ui.btnSuper.setAttribute('aria-pressed', String(etat.cibleSuper > .5));
 }
 
 moteur.chaqueImage(dt => {
   if (etat.rotation && !moteur.enGlisse()) moteur.spin.rotation.y += dt * .25;
+  let bouge = false;
   if (Math.abs(etat.ecart - etat.cible) > .0005) {
-    etat.ecart += (etat.cible - etat.ecart) * Math.min(1, dt * 4.5);
+    etat.ecart += (etat.cible - etat.ecart) * Math.min(1, dt * 4.5); bouge = true;
     if (Math.abs(etat.ecart - etat.cible) <= .0005) etat.ecart = etat.cible;
-    appliquer();
   }
+  if (Math.abs(etat.super - etat.cibleSuper) > .0005) {
+    etat.super += (etat.cibleSuper - etat.super) * Math.min(1, dt * 3.2); bouge = true;
+    if (Math.abs(etat.super - etat.cibleSuper) <= .0005) etat.super = etat.cibleSuper;
+  }
+  if (bouge) appliquer();
 });
 
-function basculer() { etat.cible = etat.cible > .5 ? 0 : 1; appliquer(); }
+function basculer() { etat.cible = etat.cible > .5 ? 0 : 1; etat.cibleSuper = 0; appliquer(); }
+function superposer() {
+  etat.cibleSuper = etat.cibleSuper > .5 ? 0 : 1;
+  if (etat.cibleSuper) etat.cible = 0;      /* superposer suppose recomposé */
+  appliquer();
+}
 
+ui.casPrisme.addEventListener('click', () => choisir(casPrisme, ui.casPrisme));
+ui.casCube.addEventListener('click', () => choisir(casCube, ui.casCube));
 ui.btnDecomp.addEventListener('click', basculer);
+ui.btnSuper.addEventListener('click', superposer);
 ui.sep.addEventListener('input', e => {
   etat.cible = etat.ecart = e.target.value / 100;
+  etat.cibleSuper = etat.super = 0;
   appliquer();
 });
 ui.btnRot.addEventListener('click', () => {
@@ -161,12 +274,12 @@ ui.btnRot.addEventListener('click', () => {
 });
 ui.btnVue.addEventListener('click', () => { moteur.recentrer(); appliquer(); });
 addEventListener('keydown', e => {
-  if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
-    e.preventDefault(); basculer();
-  }
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+  if (e.code === 'Space') { e.preventDefault(); basculer(); }
+  else if (e.code === 'KeyS' && etat.cas.superposable) { e.preventDefault(); superposer(); }
 });
 
-appliquer();
+choisir(casPrisme, ui.casPrisme);
 </script>
 </body>
 </html>
