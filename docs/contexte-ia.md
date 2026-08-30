@@ -4,7 +4,7 @@
 > colle cette fiche, puis `docs/principes-de-conception.md`, puis ton brief.**
 > Le fichier produit ira dans `prototypes/` du dépôt `atelier-simulations-minesec`.
 
-*Fiche engendrée depuis les sources le 30 août 2026 (commit `211b0cb`). Toute
+*Fiche engendrée depuis les sources le 30 août 2026 (commit `3b8df99`). Toute
 évolution de l'API de la bibliothèque impose de la régénérer dans le même commit.*
 
 ---
@@ -85,36 +85,25 @@ affiche lui-même un panneau lisible puis lève une erreur — la page montre un
 **Options** (toutes facultatives, valeurs par défaut indiquées) :
 
 ```js
-{
-  conteneur: '#scene',   // sélecteur CSS ou élément DOM
-  fov: 42,               // champ vertical de la caméra, en degrés
-  distance: 7.4,         // distance initiale de la caméra
-  regard: [0, 1, 0],     // point visé
-  inclinaison: 0.18,     // basculement vertical au repos, en radians
-  grille: true,          // afficher le sol quadrillé
-  distanceMin: 2.5, distanceMax: 24,   // butées de zoom
-  sensibilite: 0.006,    // radians par pixel glissé
-  aisance: 4.5           // vitesse de rattrapage du cadrage
-}
+{ conteneur:'#scene',  fov:42,  distance:7.4,  regard:[0,1,0],  inclinaison:0.18,
+  grille:true,  distanceMin:2.5,  distanceMax:24,  sensibilite:0.006,  aisance:4.5 }
+// fov et inclinaison en degrés / radians ; sensibilite = radians par pixel glissé ;
+// aisance = vitesse de rattrapage du cadrage.
 ```
 
 **Instance retournée :**
 
 ```js
-moteur.scene          // la THREE.Scene, si tu as besoin d'y toucher directement
-moteur.camera         // la THREE.PerspectiveCamera
-moteur.rig            // groupe d'inclinaison (glisser vertical) — contient le sol
-moteur.spin           // groupe de rotation (glisser horizontal) — METS TES OBJETS ICI
-moteur.rendu          // le THREE.WebGLRenderer
-
-moteur.chaqueImage(f)        // abonne f(dt) à la boucle de rendu ; dt en secondes
-moteur.enGlisse()            // true tant que l'utilisateur fait tourner la scène
-moteur.suivre(objet, marge)  // cadrage CONTINU : garde l'objet entier à l'écran
-moteur.cadrer(objet, marge)  // vise la bonne distance une fois, en douceur
-moteur.cadrerNet(objet, marge) // idem, mais immédiat, sans transition
-moteur.recentrer()           // remet orientation et distance au repos
-moteur.taille()              // recalcule le format (appelé seul au redimensionnement)
-moteur.distance()            // distance actuelle de la caméra
+moteur.scene / camera / rendu    // les objets Three.js, si tu dois y toucher
+moteur.rig     // groupe d'inclinaison (glisser vertical) — contient le sol
+moteur.spin    // groupe de rotation (glisser horizontal) — METS TES OBJETS ICI
+moteur.chaqueImage(f)          // abonne f(dt) à la boucle ; dt en secondes
+moteur.enGlisse()              // true tant que l'utilisateur fait tourner la scène
+moteur.suivre(objet, marge)    // cadrage CONTINU : garde l'objet entier à l'écran
+moteur.cadrer / cadrerNet(objet, marge)  // une fois, en douceur / immédiat
+moteur.recentrer()             // remet orientation et distance au repos
+moteur.taille()                // recalcule le format (appelé seul au redimensionnement)
+moteur.distance()              // distance actuelle de la caméra
 ```
 
 **Le cadrage est la fonction à ne pas oublier.** Une caméra fixe laisse sortir du
@@ -147,7 +136,40 @@ une progression adoucie de 0 à 1, et `fin()` facultative à l'achèvement.
 
 ---
 
-## 5 · Les 7 familles et les 28 mouvements
+## 5 · API de `minesec-mecaniques.js` et `minesec-props.js`
+
+Les comportements réutilisables et les objets de scène. Première mécanique bâtie :
+**verser**.
+
+```js
+MINESEC.mecaniques.recipient({ forme, hauteur, volume, rempli })  // un contenant
+MINESEC.mecaniques.verser(source, cible, { duree, retard, chaque, fin })
+MINESEC.mecaniques.compteur(attendu)   // « Versement 2 / 3 » et pastilles ●●○
+MINESEC.props.recipientTransparent(moteur, forme, dims)  // paroi + eau + surface
+MINESEC.props.robinet({ echelle })     // prop robinet ; userData.bec = sortie de l'eau
+MINESEC.props.filet()                  // filet d'eau ; tendre(a, b) / couper()
+```
+
+Formes : `prisme` `cylindre` `cube` `boite` (section constante) · `pyramide` `cone`
+(posés sur leur base) · `pyramide-inversee` `cone-inverse` (pointe en bas).
+
+Un récipient expose `niveau()`, `contenu()`, `libre()`, `estPlein()`, `estVide()`,
+`vider()`, `remplir()`. `recipientTransparent` retourne `{ groupe, majNiveau(f) }` :
+`majNiveau` prend une fraction de **volume** et place l'eau à la bonne hauteur.
+
+**Le niveau n'est pas proportionnel au volume.** Dans un prisme, si. Dans une pyramide
+ou un cône posés sur leur base, le vide au-dessus de l'eau est un solide semblable, donc
+`h = H × (1 − ∛(1−f))` : à 90 % du volume versé, l'eau n'est qu'à 54 % de la hauteur.
+N'anime jamais un niveau linéairement — ce serait plus simple et faux.
+
+**Ne nourris jamais ces modules de valeurs arrondies.** Si « 1,15 » et « 3,46 » servent
+de contenances réelles, trois versements laissent 0,29 % de vide et un quatrième est
+accepté. Dérive les contenances les unes des autres (`vPyramide = vPrisme / 3`) et
+réserve l'arrondi à l'affichage.
+
+---
+
+## 6 · Les 7 familles et les 28 mouvements
 
 ```
 1 · APPARITION      apparition-fondu · apparition-echelle · apparition-glissee
@@ -174,7 +196,7 @@ Attention à la casse : `ouverture-echelleY` porte un Y majuscule, tous les autr
 
 ---
 
-## 6 · Exemple minimal de scène complète
+## 7 · Exemple minimal de scène complète
 
 Squelette à reprendre tel quel. Chemins : `../bibliotheque/` depuis `prototypes/`, `../../../bibliotheque/` depuis `simulations/discipline/classe-notion/`.
 
@@ -266,7 +288,7 @@ document.getElementById('reg').addEventListener('input', e => {
 
 ---
 
-## 7 · Règles à respecter
+## 8 · Règles à respecter
 
 - **Nommage** : minuscules, kebab-case, sans accents ni espaces, **sans suffixe de version** (jamais `__1_`, `-v2`, `-final`) — c'est le travail de Git.
 - **Trois entrées par action** : bouton, curseur, clavier — tableau, doigt, souris.
@@ -277,7 +299,7 @@ document.getElementById('reg').addEventListener('input', e => {
 
 ---
 
-## 8 · Mode d'emploi
+## 9 · Mode d'emploi
 
 **Colle cette fiche, puis `docs/principes-de-conception.md`, puis ton brief.**
 
