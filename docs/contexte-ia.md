@@ -1,8 +1,8 @@
 # Fiche de contexte — Atelier de simulations MINESEC
 
-> **Colle cette fiche en début de conversation avec l'IA de ton choix
-> (Gemini, ChatGPT, Claude, autre), puis ton brief.** Le fichier produit ira
-> dans `prototypes/` du dépôt `atelier-simulations-minesec`.
+> **En début de conversation avec l'IA de ton choix (Gemini, ChatGPT, Claude, autre) :
+> colle cette fiche, puis `docs/principes-de-conception.md`, puis ton brief.**
+> Le fichier produit ira dans `prototypes/` du dépôt `atelier-simulations-minesec`.
 
 *Fiche engendrée depuis les sources le 30 août 2026 (commit `211b0cb`). Toute
 évolution de l'API de la bibliothèque impose de la régénérer dans le même commit.*
@@ -25,8 +25,7 @@ tout cela vient des modules ci-dessous. Une simulation bien écrite fait 100 à 
 
 ## 2 · Les jetons de `charte.css`
 
-Une couleur = un sens, jamais une décoration. N'invente aucune couleur : si le
-besoin n'entre dans aucun jeton, dis-le plutôt que d'improviser.
+Une couleur = un sens, jamais une décoration. N'invente aucune couleur : si le besoin n'entre dans aucun jeton, dis-le plutôt que d'improviser.
 
 ```css
 /* Surfaces */
@@ -80,9 +79,8 @@ MINESEC.moteur.avertir(conteneur, message)  // affiche un panneau aux couleurs d
 MINESEC.moteur.MESSAGES         // { webgl, three } : les textes des deux échecs possibles
 ```
 
-**Garde intégrée.** Si Three.js manque ou si la machine ne sait pas faire de WebGL,
-`creer()` affiche lui-même un panneau lisible dans le conteneur puis lève une erreur —
-la page montre un texte, jamais un cadre noir. Aucun balisage de secours à prévoir.
+**Garde intégrée.** Si Three.js manque ou si la machine ne sait pas faire de WebGL, `creer()`
+affiche lui-même un panneau lisible puis lève une erreur — la page montre un texte, jamais un cadre noir.
 
 **Options** (toutes facultatives, valeurs par défaut indiquées) :
 
@@ -144,9 +142,8 @@ MINESEC.mouvements.teintes               // { OK, NO, AMBRE } en hexadécimal
 `jouer` prend `d` (durée en secondes), `retard` (facultatif), `f(k)` appelée avec
 une progression adoucie de 0 à 1, et `fin()` facultative à l'achèvement.
 
-`geste` opère sur un `Object3D` fait de `Mesh` (faces) et de `LineSegments`
-(arêtes) — le « trait ouvert » en volume de la charte. Le `retard` échelonne une
-série : l'œil suit les pièces l'une après l'autre, au lieu d'un mouvement d'ensemble.
+`geste` opère sur un `Object3D` fait de `Mesh` (faces) et de `LineSegments` (arêtes) — le
+« trait ouvert » en volume. Le `retard` échelonne une série : l'œil suit les pièces l'une après l'autre.
 
 ---
 
@@ -271,8 +268,7 @@ document.getElementById('reg').addEventListener('input', e => {
 
 ## 7 · Règles à respecter
 
-- **Nommage** : minuscules, kebab-case, sans accents, sans espaces, **sans suffixe
-  de version** (jamais `__1_`, `-v2`, `-final`) — c'est le travail de Git.
+- **Nommage** : minuscules, kebab-case, sans accents ni espaces, **sans suffixe de version** (jamais `__1_`, `-v2`, `-final`) — c'est le travail de Git.
 - **Trois entrées par action** : bouton, curseur, clavier — tableau, doigt, souris.
 - **Respecter `prefers-reduced-motion`** via `MINESEC.moteur.reduit`.
 - **Le focus clavier reste visible** — la charte s'en charge, ne l'annule pas.
@@ -283,14 +279,18 @@ document.getElementById('reg').addEventListener('input', e => {
 
 ## 8 · Mode d'emploi
 
-1. **Colle cette fiche** en début de conversation avec l'IA de ton choix.
-2. **Colle ensuite ton brief** — le gabarit `gabarits/brief-enseignant.md` : discipline,
-   classe, notion, objectif observable, ce que l'élève manipule et doit constater,
-   question de sortie, contraintes.
-3. **Récupère le fichier produit** et dépose-le dans `prototypes/` du dépôt, sous
-   un nom en kebab-case.
-4. **Ouvre-le dans un navigateur** pour vérifier qu'il s'affiche et répond.
-5. **Reviens dans Claude Code** : il branchera la simulation sur la bibliothèque, la
+**Colle cette fiche, puis `docs/principes-de-conception.md`, puis ton brief.**
+
+1. **Cette fiche** — ce que la bibliothèque sait faire, et comment l'appeler.
+2. **Les principes de conception** — les huit règles et leurs tests, qui décident
+   *ce qu'il faut faire* de cette bibliothèque. Sans eux, l'IA produira du code
+   conforme mais des formulaires à lire plutôt que des scènes à manipuler.
+3. **Ton brief** — `gabarits/brief-enseignant.md` : discipline, classe, notion,
+   objectif observable, ce que l'élève manipule et doit constater, question de
+   sortie, contraintes.
+4. **Récupère le fichier produit** et dépose-le dans `prototypes/`, en kebab-case.
+5. **Ouvre-le dans un navigateur** pour vérifier qu'il s'affiche et répond.
+6. **Reviens dans Claude Code** : il branchera la simulation sur la bibliothèque, la
    rangera dans `simulations/discipline/classe-notion/`, écrira son `notes.md` et
    figera l'étape par un commit.
 

@@ -90,6 +90,7 @@ atelier-simulations-minesec/          ← le dépôt Git
 ├── README.md                         ← présentation du projet en une page
 ├── docs/
 │   ├── plan-directeur.md             ← ce document
+│   ├── principes-de-conception.md    ← les huit principes et leurs tests
 │   ├── contexte-ia.md                ← fiche à coller en tête de conversation
 │   │                                    avec n'importe quelle IA (voir § 5)
 │   ├── charte-visuelle.html          ← la charte actuelle, conservée comme référence
@@ -137,19 +138,29 @@ Chaque simulation, de la demande à la mise à disposition, suit six étapes :
 5. **Publication** — GitHub Pages sert la version en ligne ; le script de build fabrique la version hors-ligne autonome pour les établissements sans connexion.
 6. **Catalogue** — la simulation reçoit son entrée dans l'index général et son `notes.md` est complété.
 
-### Règle d'entretien de la fiche de contexte
+### Règle d'entretien des documents d'usage
 
-**Toute évolution de l'API de la bibliothèque impose de régénérer
-`docs/contexte-ia.md` dans le même commit.** Signatures ajoutées ou modifiées,
-jetons de charte, noms de mouvements, classes CSS : dès que l'un d'eux change,
-la fiche change avec lui, et les deux voyagent ensemble.
+On appelle **documents d'usage** ceux qui sortent du dépôt pour être collés
+ailleurs — aujourd'hui `docs/contexte-ia.md` et `docs/principes-de-conception.md`.
+Ils partent travailler chez des outils qui ne voient pas le dépôt, et ne peuvent
+donc pas constater qu'ils sont périmés.
 
-La raison est simple : cette fiche est lue par des outils qui ne voient pas le
-dépôt. Une fiche en retard d'une version ne se signale par aucune erreur — elle
-produit du code qui semble correct et ne fonctionne pas. La séparer de son code,
-même d'un seul commit, c'est rouvrir la porte au désordre que Git avait fermée.
+**Toute évolution de l'API de la bibliothèque impose de régénérer la fiche de
+contexte dans le même commit.** Signatures ajoutées ou modifiées, jetons de
+charte, noms de mouvements, classes CSS : dès que l'un d'eux change, la fiche
+change avec lui, et les deux voyagent ensemble.
 
-La fiche s'engendre **depuis les sources**, jamais de mémoire : on relit
+**La même règle vaut entre documents d'usage.** Un principe ajouté, renuméroté ou
+reformulé se répercute le jour même sur le mode d'emploi de la fiche ; une
+séquence de collage modifiée d'un côté se corrige de l'autre. Les deux documents
+s'annoncent mutuellement : ils se tiennent à jour ensemble ou pas du tout.
+
+La raison est la même dans les deux cas : un document d'usage en retard ne se
+signale par aucune erreur — il produit du travail qui semble correct et ne
+fonctionne pas. Le séparer de son code, même d'un seul commit, c'est rouvrir la
+porte au désordre que Git avait fermée.
+
+Ces documents s'engendrent **depuis les sources**, jamais de mémoire : on relit
 `charte.css`, `minesec-moteur.js` et `minesec-mouvements.js` et on en extrait les
 listes. Le premier tirage l'a montré — un filtre trop étroit avait compté
 27 mouvements au lieu de 28, `ouverture-echelleY` portant une majuscule.

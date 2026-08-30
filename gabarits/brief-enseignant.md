@@ -49,4 +49,4 @@ sont vrais :
 
 ---
 
-*Gabarit issu de l'Annexe A du [plan directeur](../docs/plan-directeur-atelier-minesec.md).*
+*Gabarit issu de l'Annexe A du [plan directeur](../docs/plan-directeur.md).*

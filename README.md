@@ -31,7 +31,8 @@ moteur se fait une fois, pas neuf.
 ```
 atelier-simulations-minesec/
 ├── README.md            ← ce fichier
-├── docs/                ← plan directeur, charte de référence, leçons
+├── docs/                ← plan directeur, principes de conception, fiche de
+│                           contexte pour les IA, leçons
 ├── bibliotheque/        ← LE cœur : écrit une fois, importé partout
 ├── banques/             ← les vitrines HTML consultables des banques
 ├── studios/             ← les bancs d'essai
@@ -83,7 +84,7 @@ Une simulation n'est terminée que lorsque tous ces points sont vrais :
 ## Feuille de route
 
 - **Phase 0 — Fondation.** Archivage du corpus initial, arborescence, premier commit. ✅
-- **Phase 1 — Extraction.** Sortir `charte.css`, `minesec-moteur.js` et `minesec-mouvements.js` ; brancher la première simulation nouvelle génération.
+- **Phase 1 — Extraction.** Sortir `charte.css`, `minesec-moteur.js` et `minesec-mouvements.js` ; brancher la première simulation nouvelle génération. ✅
 - **Phase 2 — Consolidation.** Élire la version canonique de la famille pyramide/prisme, archiver les autres itérations.
 - **Phase 3 — Industrialisation.** Gabarit de brief en service, catalogue automatique, build hors-ligne.
 - **Phase 4 — Expansion.** Compléter les banques, ouvrir les packs disciplinaires.
@@ -98,7 +99,7 @@ on n'y modifie, n'y renomme et n'y supprime rien.
 
 ## Documentation
 
-Le [plan directeur](docs/plan-directeur-atelier-minesec.md) décrit l'ensemble du
+Le [plan directeur](docs/plan-directeur.md) décrit l'ensemble du
 projet : l'audit du corpus, le système cible, le pipeline, le glossaire et le
 gabarit de brief enseignant.
 
