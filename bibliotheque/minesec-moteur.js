@@ -404,7 +404,14 @@
       const h = conteneur.clientHeight || global.innerHeight || 1;
       camera.aspect = l / h;
       camera.updateProjectionMatrix();
-      rendu.setSize(l, h, false);
+      /* `updateStyle` laissé à true — c'est-à-dire NON passé à false.
+         Three.js dimensionne le tampon de rendu à l×h×densité ; sans mise à
+         jour du style, le navigateur déduit la taille d'affichage du seul
+         attribut width, et le canevas s'affiche alors à la taille du tampon.
+         Sur un écran à densité double, il faisait le double du conteneur,
+         ancré en haut à gauche : la moitié droite de la scène sortait du
+         cadre. Défaut invisible sur un écran à densité 1. */
+      rendu.setSize(l, h);
     }
     global.addEventListener('resize', taille);
     if (global.ResizeObserver) new ResizeObserver(taille).observe(conteneur);

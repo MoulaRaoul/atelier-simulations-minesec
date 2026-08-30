@@ -256,7 +256,7 @@ if (!poste.ok) {
    d'adresse et un pupitre plus hauts. D'où ces contrôles. */
 section('Cadrage — la figure tient dans ce qui reste visible');
 if (!poste.ok) {
-  info('7 contrôles non exécutés — ce poste ne fait pas de 3D');
+  info('8 contrôles non exécutés — ce poste ne fait pas de 3D');
 } else try {
   const cadre = document.createElement('div');
   cadre.style.cssText = 'position:fixed;left:-4000px;top:0;width:375px;height:812px';
@@ -305,6 +305,22 @@ if (!poste.ok) {
   vrai('un bandeau démesuré est borné plutôt que d\'annuler la scène',
        z2.hauteur >= 375 * 0.17, 'hauteur utile ' + z2.hauteur.toFixed(0) + ' px sur 375');
 
+  /* Le canevas doit s'AFFICHER à la taille du conteneur, quelle que soit la
+     densité de l'écran. Sur un écran à densité double, il faisait le double,
+     ancré en haut à gauche : la moitié droite de la scène sortait du cadre.
+     Invisible sur un écran à densité 1 — d'où ce contrôle, qui compare la
+     taille d'affichage et non celle du tampon de rendu. */
+  const dom = m.rendu.domElement;
+  /* On force la densité 2, sans quoi le contrôle serait trivialement vrai sur
+     un écran ordinaire et ne mordrait que chez celui qui a un bon écran. */
+  const densiteVraie = m.rendu.getPixelRatio();
+  m.rendu.setPixelRatio(2); m.taille();
+  vrai('le canevas s\'affiche à la taille du conteneur, même en densité 2',
+       Math.abs(dom.clientWidth - 812) <= 2 && Math.abs(dom.clientHeight - 375) <= 2,
+       'affiché ' + dom.clientWidth + '×' + dom.clientHeight + ' · tampon '
+       + dom.width + '×' + dom.height);
+  m.rendu.setPixelRatio(densiteVraie); m.taille();
+
   m.reserver(false);
   vrai('la réserve se retire et rend tout le canevas',
        m.zoneUtile().hauteur === 375 && Math.abs(m.camera.position.y - yRepos) < 1e-6,
@@ -320,7 +336,7 @@ if (!poste.ok) {
    d'œil. Il vise désormais une part de la bande visible, et se compare. */
 section('Occupation — la figure remplit la part visée de la bande');
 if (!poste.ok) {
-  info('7 contrôles non exécutés — ce poste ne fait pas de 3D');
+  info('8 contrôles non exécutés — ce poste ne fait pas de 3D');
 } else try {
   const cadre = document.createElement('div');
   cadre.style.cssText = 'position:fixed;left:-4000px;top:0;width:900px;height:600px';
