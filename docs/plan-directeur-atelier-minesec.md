@@ -49,7 +49,7 @@ L'atelier est donc déjà là. Ce qui manque, ce sont **les étagères** : un ra
 | `Pyra_prism` | Simulation (maths) | Famille pyramide/prisme — itération |
 | `b_tisseur_3d_prisme_et_pyramide` | Simulation (maths) | Famille pyramide/prisme — itération |
 | `labo-volume-pyramide` | Simulation (maths) | Famille pyramide/prisme — itération |
-| `prisme-3-pyramides` | Simulation (maths) | Famille pyramide/prisme — itération 2D (refondue en 3D le 30/08/2026) |
+| `prisme-3-pyramides` | Simulation (maths) | Famille pyramide/prisme — itération 2D (refondue en 3D le 30/08/2026). **Conservée comme solution de secours hors-ligne** : rendu en canvas 2D, sans aucune dépendance externe, elle fonctionne sans connexion là où la version 3D exige Three.js depuis un CDN. Version de référence : celle de l'archive |
 | `simulation_pyramide_et_prisme` | Simulation (maths) | Famille pyramide/prisme — itération |
 | `simulation_volumes` | Simulation (maths) | Famille pyramide/prisme — itération |
 | `versement-robinet` | Simulation (maths) | Famille pyramide/prisme — itération |
