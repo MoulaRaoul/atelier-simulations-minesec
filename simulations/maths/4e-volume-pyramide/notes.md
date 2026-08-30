@@ -126,7 +126,15 @@ cette version en fait environ 150, dont aucune n'est du socle technique.
       solution de secours sans connexion
 - [x] Elle fonctionne au tactile, à la souris et au clavier
 - [ ] **Elle a été essayée sur un téléphone et sur un PC de salle informatique** —
-      vérifiée en simulation de format, pas encore sur matériel réel
+      **essai du 30/08/2026, Infinix Smart8 sous Chrome : défaut trouvé, corrigé,
+      non revalidé.** En portrait, la figure se cachait derrière le pupitre — seuls
+      des éclats de pyramides dépassaient aux bords. Mesure faite depuis : sur
+      375 × 812, l'en-tête occupe 67 px et le pupitre **461 px, soit 57 % de la
+      hauteur** ; il ne restait que 284 px visibles. Le moteur cadrait pour le
+      canevas entier et centrait la figure au milieu de l'écran, c'est-à-dire au
+      milieu du pupitre. Corrigé par `moteur.reserver()` (voir plus bas). **La case
+      reste décochée jusqu'à un nouvel essai sur l'appareil : une case ne ment jamais.**
+      Le comportement en paysage n'a pas été relevé — à vérifier au même passage
 - [x] Son `notes.md` contient le brief d'origine et les choix faits
 - [ ] **Elle figure au catalogue** — le catalogue n'existe pas encore (Phase 3)
 

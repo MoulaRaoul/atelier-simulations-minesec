@@ -86,7 +86,8 @@ affiche lui-même un panneau lisible puis lève une erreur — la page montre un
 
 ```js
 { conteneur:'#scene',  fov:42,  distance:7.4,  regard:[0,1,0],  inclinaison:0.18,
-  grille:true,  distanceMin:2.5,  distanceMax:24,  sensibilite:0.006,  aisance:4.5 }
+  grille:true,  distanceMin:2.5,  distanceMax:24,  sensibilite:0.006,  aisance:4.5,
+  reserve:{ haut:'.minesec-entete', bas:'.minesec-pupitre' } }   // false pour désactiver
 // fov et inclinaison en degrés / radians ; sensibilite = radians par pixel glissé ;
 // aisance = vitesse de rattrapage du cadrage.
 ```
@@ -104,7 +105,18 @@ moteur.cadrer / cadrerNet(objet, marge)  // une fois, en douceur / immédiat
 moteur.recentrer()             // remet orientation et distance au repos
 moteur.taille()                // recalcule le format (appelé seul au redimensionnement)
 moteur.distance()              // distance actuelle de la caméra
+moteur.reserver(spec)          // déclare les bandeaux qui recouvrent la scène
+moteur.zoneUtile()             // { haut, bas, gauche, droite, largeur, hauteur, L, H }
 ```
+
+**Les bandeaux sont pris en compte tout seuls.** Par défaut le moteur réserve
+`.minesec-entete` et `.minesec-pupitre` : il cadre dans ce qui reste visible et
+décale la caméra pour que la figure occupe le milieu de cette bande, non le milieu
+de l'écran. Sur un téléphone tenu debout, le pupitre peut couvrir **57 % de la
+hauteur** — sans cela, la figure se cache derrière lui. Passe `reserve: false`
+pour désactiver, ou `reserver({ haut, bas, gauche, droite })` avec des sélecteurs
+CSS, des éléments ou des nombres de pixels. Les hauteurs sont mesurées en direct :
+elles dépendent des polices et de l'appareil, et ne peuvent pas être devinées.
 
 **Le cadrage est la fonction à ne pas oublier.** Une caméra fixe laisse sortir du
 cadre les pièces qui s'écartent. `moteur.suivre(moteur.spin, 1.3)` règle le problème

@@ -107,6 +107,10 @@
     regard: [0, 1, 0],   /* point visé */
     inclinaison: 0.18,   /* basculement vertical au repos (radians) */
     grille: true,
+    /* Bandeaux qui recouvrent la scène. Par défaut ceux de la charte : le
+       cadrage se fait alors dans ce qui reste visible, et non dans tout le
+       canevas. `reserve: false` désactive. */
+    reserve: undefined,
     distanceMin: 2.5,
     distanceMax: 24,
     sensibilite: 0.006,  /* radians par pixel glissé */
@@ -141,7 +145,8 @@
     /* ─── Scène, caméra, lumières ─── */
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(o.fov, 1, 0.1, 200);
-    camera.position.set(0, o.regard[1] + 0.7, o.distance);
+    const yBase = o.regard[1] + 0.7;   /* hauteur de caméra au repos */
+    camera.position.set(0, yBase, o.distance);
     camera.lookAt(o.regard[0], o.regard[1], o.regard[2]);
 
     /* Le test ci-dessus peut réussir et la création échouer quand même
@@ -234,14 +239,79 @@
       return rayon;
     }
 
+    /* ─── La zone réellement visible ───
+       Une simulation de la charte pose un en-tête en haut et un pupitre en
+       bas. Sur un téléphone tenu debout, ces deux bandeaux peuvent manger
+       plus de la moitié de la hauteur : cadrer pour le canevas entier revient
+       alors à cacher la figure derrière le pupitre. On mesure les bandeaux en
+       direct — leur hauteur dépend des polices, du texte et de l'appareil, et
+       ne peut donc pas être devinée. */
+    let reserve;
+
+    function mesureBord(v, cote, rc) {
+      if (v == null) return 0;
+      if (typeof v === 'number') return Math.max(0, v);
+      const el = typeof v === 'string' ? document.querySelector(v) : v;
+      if (!el || !el.getBoundingClientRect) return 0;
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) return 0;      /* masqué : n'occulte rien */
+      if (cote === 'haut')   return Math.max(0, r.bottom - rc.top);
+      if (cote === 'bas')    return Math.max(0, rc.bottom - r.top);
+      if (cote === 'gauche') return Math.max(0, r.right - rc.left);
+      return Math.max(0, rc.right - r.left);
+    }
+
+    function zoneUtile() {
+      const L = conteneur.clientWidth || global.innerWidth || 1;
+      const H = conteneur.clientHeight || global.innerHeight || 1;
+      if (!reserve) return { haut:0, bas:0, gauche:0, droite:0, largeur:L, hauteur:H, L, H };
+      const rc = conteneur.getBoundingClientRect();
+      let haut = mesureBord(reserve.haut, 'haut', rc);
+      let bas = mesureBord(reserve.bas, 'bas', rc);
+      let gauche = mesureBord(reserve.gauche, 'gauche', rc);
+      let droite = mesureBord(reserve.droite, 'droite', rc);
+      /* Garde-fou : si les bandeaux dévorent presque tout, mieux vaut une
+         figure un peu couverte qu'une figure réduite à un point. */
+      const MAX = 0.82;
+      if (haut + bas > H * MAX) { const k = H * MAX / (haut + bas); haut *= k; bas *= k; }
+      if (gauche + droite > L * MAX) { const k = L * MAX / (gauche + droite); gauche *= k; droite *= k; }
+      return { haut, bas, gauche, droite, largeur: L - gauche - droite, hauteur: H - haut - bas, L, H };
+    }
+
+    function reserver(spec) {
+      reserve = (spec === false || spec == null) ? null : spec;
+      /* Appliquer tout de suite, sans attendre la boucle : celle-ci ne tourne
+         pas dans un onglet masqué, et un cadrage différé serait un cadrage
+         faux pendant tout ce temps. */
+      camera.position.y = recentrageVertical();
+      return zoneUtile();
+    }
+
     function distancePour(objet, marge) {
       const brut = rayonDe(objet);
       if (!brut) return o.distance;
       const rayon = brut * (marge || 1.25);
-      const vFov = THREE.MathUtils.degToRad(camera.fov);
-      const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
+      const z = zoneUtile();
+      const tv = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+      /* Demi-angles encore disponibles une fois les bandeaux retirés. Sans
+         réserve, on retrouve exactement le champ de la caméra. */
+      const angV = Math.atan(tv * (z.hauteur / z.H));
+      const angH = Math.atan(tv * camera.aspect * (z.largeur / z.L));
       /* Le champ le plus étroit commande : c'est lui qui coupe en premier. */
-      return rayon / Math.sin(Math.min(vFov, hFov) / 2);
+      return rayon / Math.sin(Math.max(1e-4, Math.min(angV, angH)));
+    }
+
+    /* Décalage vertical de la caméra pour que la figure occupe le milieu de
+       ce qui reste visible, et non le milieu de l'écran — donc à moitié
+       cachée. On translate la caméra : son orientation, elle, ne bouge pas. */
+    function recentrageVertical() {
+      const z = zoneUtile();
+      if (!z.haut && !z.bas) return yBase;
+      const centreBande = z.haut + z.hauteur / 2;
+      const decalagePx = centreBande - z.H / 2;
+      const mondeParPixel =
+        2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.position.z / z.H;
+      return yBase + decalagePx * mondeParPixel;
     }
 
     /* cadrer() vise ; la boucle rejoint la cible en douceur, ce qui donne
@@ -253,6 +323,7 @@
     function cadrerNet(objet, marge) {
       distanceCible = borner(distancePour(objet, marge));
       camera.position.z = distanceCible;
+      camera.position.y = recentrageVertical();
       return distanceCible;
     }
 
@@ -270,6 +341,7 @@
          pas revenir à une distance d'usine qui ne lui convient plus. */
       distanceCible = suivi ? borner(distancePour(suivi.objet, suivi.marge)) : o.distance;
       camera.position.z = distanceCible;
+      camera.position.y = recentrageVertical();
     }
 
     /* ─── Redimensionnement ───
@@ -286,6 +358,11 @@
     if (global.ResizeObserver) new ResizeObserver(taille).observe(conteneur);
     taille();
 
+    /* Par défaut, les bandeaux de la charte : toute simulation qui les emploie
+       hérite du cadrage dans la zone visible sans avoir rien à demander. */
+    reserver(o.reserve === false ? false
+      : (o.reserve || { haut: '.minesec-entete', bas: '.minesec-pupitre' }));
+
     /* ─── Boucle de rendu ─── */
     const abonnes = [];
     const horloge = new THREE.Clock();
@@ -299,6 +376,7 @@
         camera.position.z += (distanceCible - camera.position.z)
           * Math.min(1, dt * o.aisance);
       }
+      camera.position.y = recentrageVertical();
       for (let i = 0; i < abonnes.length; i++) abonnes[i](dt);
       rendu.render(scene, camera);
     })();
@@ -308,6 +386,7 @@
       chaqueImage: f => abonnes.push(f),
       enGlisse: () => glisse,
       cadrer, cadrerNet, suivre, recentrer, taille,
+      reserver, zoneUtile,
       distance: () => camera.position.z
     };
   }

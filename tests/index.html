@@ -248,6 +248,73 @@ if (!poste.ok) {
   note('les props s\'initialisent', false, e.message);
 }
 
+/* ══ 5 · Cadrage dans la zone visible ══
+   Défaut constaté sur Infinix Smart8 / Chrome, en portrait, le 30/08/2026 :
+   la figure se cachait derrière le pupitre. suivre() cadrait pour le canevas
+   entier alors que les bandeaux en couvraient plus de la moitié. Un test
+   simulé à 375×812 passait — l'appareil réel a des polices, une barre
+   d'adresse et un pupitre plus hauts. D'où ces contrôles. */
+section('Cadrage — la figure tient dans ce qui reste visible');
+if (!poste.ok) {
+  info('7 contrôles non exécutés — ce poste ne fait pas de 3D');
+} else try {
+  const cadre = document.createElement('div');
+  cadre.style.cssText = 'position:fixed;left:-4000px;top:0;width:375px;height:812px';
+  document.body.appendChild(cadre);
+
+  const m = MINESEC.moteur.creer({ conteneur: cadre, grille: false, reserve: false });
+  const cube = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2),
+    new THREE.MeshStandardMaterial({ color: 0x3b82f6 }));
+  m.spin.add(cube);
+
+  const z0 = m.zoneUtile();
+  vrai('sans réserve, la zone utile est le canevas entier',
+       z0.hauteur === 812 && z0.largeur === 375, z0.largeur + '×' + z0.hauteur);
+  m.cadrerNet(m.spin, 1.3);
+  const yRepos = m.camera.position.y;
+
+  /* PORTRAIT — un pupitre de 300 px, un en-tête de 70 px.
+     Sur un écran étroit, le champ horizontal contraint déjà la taille : ce
+     n'est donc PAS elle qui posait problème sur le téléphone, mais la
+     position. La figure visait le milieu de l'écran, c'est-à-dire le milieu
+     du pupitre. Le contrôle porte donc sur le décalage. */
+  const z1 = m.reserver({ haut: 70, bas: 300 });
+  vrai('la zone utile retire les bandeaux', z1.hauteur === 812 - 370,
+       'hauteur utile ' + z1.hauteur + ' px sur 812');
+  m.cadrerNet(m.spin, 1.3);
+  vrai('portrait : la caméra se décale vers le milieu de la bande visible',
+       m.camera.position.y < yRepos - 0.3,
+       'y ' + yRepos.toFixed(3) + ' → ' + m.camera.position.y.toFixed(3));
+  vrai('portrait : le décalage monte la figure, il ne la descend pas',
+       m.camera.position.y < yRepos);
+
+  /* PAYSAGE — là, c'est bien la taille qui coince : le champ horizontal est
+     large, le pupitre mange la hauteur. La caméra doit reculer. */
+  cadre.style.width = '812px'; cadre.style.height = '375px';
+  m.taille();
+  m.reserver(false);
+  const paysageLibre = m.cadrerNet(m.spin, 1.3);
+  m.reserver({ bas: 200 });
+  const paysageReserve = m.cadrerNet(m.spin, 1.3);
+  vrai('paysage : la caméra recule pour tenir dans la bande',
+       paysageReserve > paysageLibre * 1.4,
+       paysageLibre.toFixed(2) + ' → ' + paysageReserve.toFixed(2));
+
+  /* garde-fou : des bandeaux démesurés ne doivent pas réduire la figure à rien */
+  const z2 = m.reserver({ haut: 300, bas: 300 });
+  vrai('un bandeau démesuré est borné plutôt que d\'annuler la scène',
+       z2.hauteur >= 375 * 0.17, 'hauteur utile ' + z2.hauteur.toFixed(0) + ' px sur 375');
+
+  m.reserver(false);
+  vrai('la réserve se retire et rend tout le canevas',
+       m.zoneUtile().hauteur === 375 && Math.abs(m.camera.position.y - yRepos) < 1e-6,
+       'y revenu à ' + m.camera.position.y.toFixed(3));
+
+  cadre.remove();
+} catch (e) {
+  note('le cadrage tient compte de la zone visible', false, e.message);
+}
+
 /* ══ Rapport ══ */
 const rap = document.getElementById('rapport');
 groupes.forEach(g => {
