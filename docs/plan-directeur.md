@@ -99,7 +99,8 @@ atelier-simulations-minesec/          ← le dépôt Git
 ├── docs/
 │   ├── plan-directeur.md             ← ce document
 │   ├── backlog-mobile.md             ← constats mobiles en attente du design
-│   ├── principes-de-conception.md    ← les huit principes et leurs tests
+│   ├── principes-de-conception.md    ← les neuf principes et leurs tests
+│   ├── charte-figma.md               ← le pont Figma ↔ dépôt, table des jetons
 │   ├── contexte-ia.md                ← fiche à coller en tête de conversation
 │   │                                    avec n'importe quelle IA (voir § 5)
 │   ├── charte-visuelle.html          ← la charte actuelle, conservée comme référence

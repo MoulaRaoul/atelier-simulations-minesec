@@ -324,7 +324,7 @@ document.getElementById('reg').addEventListener('input', e => {
 **Colle cette fiche, puis `docs/principes-de-conception.md`, puis ton brief.**
 
 1. **Cette fiche** — ce que la bibliothèque sait faire, et comment l'appeler.
-2. **Les principes de conception** — les huit règles et leurs tests, qui décident
+2. **Les principes de conception** — les neuf règles et leurs tests, qui décident
    *ce qu'il faut faire* de cette bibliothèque. Sans eux, l'IA produira du code
    conforme mais des formulaires à lire plutôt que des scènes à manipuler.
 3. **Ton brief** — `gabarits/brief-enseignant.md` : discipline, classe, notion,

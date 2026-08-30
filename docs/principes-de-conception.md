@@ -7,7 +7,7 @@ Ces principes ne sont pas des goûts personnels : ils convergent avec le cadre d
 
 ---
 
-## Les huit principes
+## Les neuf principes
 
 **1 · Montrer, ne pas écrire.**
 L'objet remplace l'étiquette ; le texte est l'exception, jamais le moyen par défaut. Un flacon reconnaissable vaut mieux qu'un nom de produit affiché.
@@ -41,6 +41,12 @@ Toute manipulation de l'élève produit une réponse perceptible — flamme, fum
 Jetons de `charte.css`, mécaniques et props des banques, familles de mouvements : on pioche avant d'inventer. Ce qui manque aux banques et se révèle utile y entre après la revue — et profite à tous.
 *Test : ai-je vérifié que cela n'existait pas déjà ?*
 
+**9 · La charte habille l'enveloppe, jamais la science.**
+Les jetons, les familles de mouvements et le vocabulaire des boutons gouvernent l'**interface** : bandeau, pupitre, cartes, commandes, états. La **zone de simulation** est un contenu propre à chaque ressource — les couleurs d'une réaction chimique, d'un circuit, d'un tissu végétal ou d'un solide obéissent à la matière représentée, non à la règle « une couleur, une fonction ». Confondre les deux mène à l'un de ces deux échecs : fausser la science pour respecter la charte, ou relâcher la charte pour servir la science.
+*Test : cette couleur décrit-elle un état de l'interface, ou une propriété du monde ? La règle « une couleur, une fonction » ne s'applique qu'à la première.*
+
+> *Origine : décision D5 de [`charte-figma.md`](charte-figma.md), actée par la maquette elle-même — « Zone de simulation : contenu propre à chaque ressource, non concerné par la charte ». Ajouté le 30/08/2026.*
+
 ---
 
 ## L'exemple fondateur — le laboratoire du feu
@@ -55,7 +61,7 @@ Jetons de `charte.css`, mécaniques et props des banques, familles de mouvements
 
 ## Comment utiliser ce document
 
-**En création** : parcourir les huit tests avant de déclarer un prototype prêt.
+**En création** : parcourir les neuf tests avant de déclarer un prototype prêt.
 **En revue** : toute remarque cite un principe par son numéro — « le principe 2 demande que… ». On ne discute jamais de goûts, on applique des règles communes ; l'auteur de la simulation en garde l'entière paternité.
 **Avec l'IA** : coller ce document après la fiche de contexte en début de conversation ; l'outil produira des scènes à manipuler plutôt que des formulaires à lire.
 
