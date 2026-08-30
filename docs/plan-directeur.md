@@ -46,13 +46,13 @@ L'atelier est donc déjà là. Ce qui manque, ce sont **les étagères** : un ra
 | `laboratoire_3d_minesec` | Studio | Utilise Tailwind, seul fichier hors charte — à convertir ou classer comme expérience |
 | `lecon-1-anatomie` | Documentation | « Toute scène est faite de ces parts » |
 | `lecon-2-prop` | Documentation | « Comment un prop est écrit » |
-| `Pyra_prism` | Simulation (maths) | Famille pyramide/prisme — itération |
-| `b_tisseur_3d_prisme_et_pyramide` | Simulation (maths) | Famille pyramide/prisme — itération |
-| `labo-volume-pyramide` | Simulation (maths) | Famille pyramide/prisme — itération |
+| `Pyra_prism` | Simulation (maths) | Famille pyramide/prisme — **la base dessinée à main levée** : l'élève trace un polygone quelconque au doigt (`free-draw-area`, validation, effacement), qui est ensuite extrudé en prisme et en pyramide. Seule itération à ne pas imposer une liste de bases. 835 lignes, la plus longue de la famille |
+| `b_tisseur_3d_prisme_et_pyramide` | Simulation (maths) | Famille pyramide/prisme — **le cadrage constructif** : on ne démonte pas un solide, on le bâtit. Choix de la base, puis compteur « Versement 1 / 3 » et « Recommencer la construction ». C'est d'ici que vient l'idée de compter les versements plutôt que de les subir |
+| `labo-volume-pyramide` | Simulation (maths) | Famille pyramide/prisme — **le cas du cube et le yangma**, avec `yangmaGeo()` (sommet sur un coin, volume S³/3) et `poseAssemblee()` qui emboîte les trois pyramides congruentes par changement de base. Onze étapes guidées, du prisme à la conclusion, dont les trois versements. La plus aboutie sur le plan narratif — matière première du cas 2 et du mode Versement |
 | `prisme-3-pyramides` | Simulation (maths) | Famille pyramide/prisme — itération 2D (refondue en 3D le 30/08/2026). **Conservée comme solution de secours hors-ligne** : rendu en canvas 2D, sans aucune dépendance externe, elle fonctionne sans connexion là où la version 3D exige Three.js depuis un CDN. Version de référence : celle de l'archive |
-| `simulation_pyramide_et_prisme` | Simulation (maths) | Famille pyramide/prisme — itération |
-| `simulation_volumes` | Simulation (maths) | Famille pyramide/prisme — itération |
-| `versement-robinet` | Simulation (maths) | Famille pyramide/prisme — itération |
+| `simulation_pyramide_et_prisme` | Simulation (maths) | Famille pyramide/prisme — **le noyau minimal** : 277 lignes, trois commandes (rotation, fil de fer, réinitialiser). Ne démontre rien, mais montre le strict nécessaire pour observer les deux solides — utile comme étalon de sobriété |
+| `simulation_volumes` | Simulation (maths) | Famille pyramide/prisme — **la généralisation paramétrique** : sélecteur de base (triangle, carré, pentagone, hexagone) et hauteur réglable, le rapport ⅓ tenant pour toutes. Le dernier choix, « Cercle (Cône & Cylindre) », atteint le cône par un polygone à 32 côtés — l'idée du cas-limite vient de là |
+| `versement-robinet` | Simulation (maths) | Famille pyramide/prisme — **la preuve expérimentale** : cycle robinet → remplissage → versement, avec `niveauPour(T, f)` qui calcule le niveau d'après le volume réel (« le niveau suit le volume, image par image ; rien n'est truqué »), jets, gouttes et ondes de surface. Deux jeux de durées, normal et abrégé. Rendu en canvas 2D — à porter en 3D |
 | `versement-robinet__1_` | — | **Doublon strict** du précédent (identique à l'octet près) — ⚠️ **absent de l'archive versée** |
 | `simulateur_architecture_pc` | Simulation (informatique) | Niveau 4e |
 | `environnement_ent_interactif__2_` | Simulation (informatique) | « Assembler, Allumer et Imprimer » — préfigure aussi l'idée d'un portail |
@@ -68,6 +68,14 @@ n'a pas été archivé.
 **Un doublon strict — déjà résolu.** Les deux `versement-robinet` étaient identiques octet pour octet. Au moment de l'archivage, un seul figurait dans le dossier versé : la disparition sans risque annoncée ici a donc eu lieu d'elle-même. Le corpus archivé compte 21 fichiers HTML pour **14 354 lignes**, plus l'icône `book-open.svg`.
 
 **Un historique de versions tenu à la main.** Sept fichiers, soit 3 926 lignes (27 % du corpus archivé), tournent autour d'une seule notion : le volume de la pyramide et du prisme. Ce ne sont pas des redites honteuses — ce sont des itérations successives, conservées par prudence faute d'outil de versionnage. Git reprendra ce rôle ; il restera à élire **une version canonique** et à ranger les autres en archives, chacune avec une ligne d'explication.
+
+*Fait en Phase 2 (30/08/2026).* La version canonique élue est la lignée
+`prisme-3-pyramides`, refondue en 3D puis branchée sur la bibliothèque : elle vit
+désormais dans `simulations/maths/4e-volume-pyramide/`. Les six autres itérations
+restent en archives, chacune documentée ci-dessus par ce qu'elle apportait. Aucune
+n'est à jeter : trois d'entre elles — le cube et le yangma de `labo-volume-pyramide`,
+le sélecteur de bases de `simulation_volumes`, le cycle de versement de
+`versement-robinet` — sont la matière première des extensions à venir.
 
 **Un moteur réécrit neuf fois.** Neuf fichiers reconstruisent chacun leur scène, leur caméra, leur rendu et leur boucle d'animation. Aujourd'hui, corriger un défaut du moteur exige de reporter la correction neuf fois. Après extraction, une fois.
 
