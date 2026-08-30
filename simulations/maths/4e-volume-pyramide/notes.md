@@ -62,6 +62,38 @@ Deux pièges rencontrés et corrigés :
   le relève d'une unité par la **position** des pièces, jamais par la géométrie :
   translater la géométrie ferait quitter la diagonale à l'axe de rotation.
 
+## Le mode Versement — la preuve expérimentale
+
+Ajouté en Phase 2 (étape C, 30/08/2026), cible **poste de bureau**. Touche **V**
+pour passer d'une preuve à l'autre.
+
+La géométrie démontre par **découpage**, le versement mesure par **transvasement**.
+Les deux portent sur le **même prisme** — base triangulaire équilatérale de côté 2,
+hauteur 2 — pour que l'élève ne puisse pas croire que le rapport ⅓ dépend de la
+figure choisie. Les contenances se dérivent l'une de l'autre (`vPyramide =
+vPrisme / 3`), jamais des libellés arrondis.
+
+**Un seul bouton**, dont le libellé dit le geste : « Remplir la pyramide », puis
+« Verser dans le prisme », puis « Recommencer ». L'élève n'a jamais à choisir
+entre plusieurs commandes plausibles — le geste suivant se déduit de l'état.
+
+**Verser est un vrai geste** : la pyramide se soulève, s'incline au-dessus du
+prisme, se vide, puis revient. C'est le geste du laboratoire, pas celui du
+questionnaire (principe 2).
+
+**Sobriété tenue** : un filet d'eau, pas de gouttes ni de particules. Les effets
+attendront la preuve que les salles suivent.
+
+Le compteur ● ● ○ vient de `b_tisseur_3d` : on **compte** les versements, on ne
+les subit pas. La conclusion « Il faut exactement 3 pyramides » ne s'allume qu'au
+troisième — elle se gagne.
+
+Vérifié : 33,3 % → 66,7 % → 100,0 % exactement, le quatrième versement refusé,
+la pyramide revenue au repos, et le retour en Géométrie reconstruit sa scène.
+
+**Reste pour l'étape D** : le cas du cône et son renvoi scénarisé vers ce mode,
+la montée 3 → 32 côtés sur bouton, et la question de sortie ci-dessous.
+
 ## Choix faits
 
 **Le découpage retenu** est le partage classique d'un prisme droit à base
