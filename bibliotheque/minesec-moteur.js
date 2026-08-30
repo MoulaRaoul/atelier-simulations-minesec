@@ -30,6 +30,76 @@
     ? global.matchMedia('(prefers-reduced-motion: reduce)').matches
     : false;
 
+  /* ─── Garde : la 3D n'est pas disponible partout ───
+     Mécanisme repris de studio-3d.html, qui affichait un panneau d'alerte
+     plutôt que de laisser un cadre noir. Ici le moteur fabrique lui-même le
+     panneau : aucune simulation n'a de balisage à prévoir.
+
+     Un écran vide est le pire des messages — l'élève croit que la machine
+     est cassée, l'enseignant qu'il s'y prend mal. Un texte lisible dit quoi
+     faire ensuite. */
+
+  const MESSAGES = {
+    webgl: {
+      titre: 'Cette simulation nécessite un ordinateur plus récent',
+      detail: 'Demandez la version hors-ligne à votre enseignant.'
+    },
+    three: {
+      titre: 'Cette simulation n’a pas pu se charger',
+      detail: 'Vérifiez la connexion Internet, ou demandez la version hors-ligne à votre enseignant.'
+    }
+  };
+
+  /* Vrai si la machine sait faire du WebGL. On crée un canevas jetable :
+     c'est le seul test fiable, la présence de l'objet ne suffit pas. */
+  function disponible() {
+    try {
+      const c = document.createElement('canvas');
+      return !!(global.WebGLRenderingContext &&
+        (c.getContext('webgl') || c.getContext('experimental-webgl')));
+    } catch (e) { return false; }
+  }
+
+  /* Panneau aux couleurs de la charte, avec valeurs de repli au cas où
+     charte.css ne serait pas chargé — un message doit s'afficher même
+     quand tout le reste a échoué. */
+  function avertir(conteneur, msg) {
+    if (!conteneur) return null;
+    const boite = document.createElement('div');
+    boite.className = 'minesec-avertissement';
+    boite.setAttribute('role', 'alert');
+    boite.style.cssText = [
+      'position:absolute', 'inset:0', 'display:flex',
+      'align-items:center', 'justify-content:center', 'padding:24px',
+      'background:var(--bg,#121416)', 'color:var(--txt,#e8ebee)',
+      'font-family:var(--f-txt,"Segoe UI",Roboto,Arial,sans-serif)',
+      'text-align:center', 'z-index:3'
+    ].join(';');
+
+    const carte = document.createElement('div');
+    carte.style.cssText = [
+      'max-width:34rem', 'padding:22px 26px',
+      'background:var(--panel,#1a1d21)',
+      'border:1px solid var(--line,#3f454d)',
+      'border-left:3px solid var(--saisir,#f59e0b)',
+      'border-radius:var(--r,12px)'
+    ].join(';');
+
+    const titre = document.createElement('p');
+    titre.textContent = msg.titre;
+    titre.style.cssText = 'margin:0 0 8px;font-size:17px;font-weight:600;line-height:1.35';
+
+    const detail = document.createElement('p');
+    detail.textContent = msg.detail;
+    detail.style.cssText = 'margin:0;font-size:14px;line-height:1.5;color:var(--dim,#98a1ab)';
+
+    carte.appendChild(titre); carte.appendChild(detail);
+    boite.appendChild(carte);
+    if (getComputedStyle(conteneur).position === 'static') conteneur.style.position = 'relative';
+    conteneur.appendChild(boite);
+    return boite;
+  }
+
   const DEFAUTS = {
     conteneur: '#scene',
     fov: 42,
@@ -44,16 +114,28 @@
   };
 
   function creer(options) {
-    if (typeof THREE === 'undefined') {
-      throw new Error('minesec-moteur : Three.js doit être chargé avant ce module.');
-    }
     const o = Object.assign({}, DEFAUTS, options || {});
 
+    /* Le conteneur se résout en premier : sans lui, pas même d'endroit où
+       afficher l'avertissement. */
     const conteneur = typeof o.conteneur === 'string'
       ? document.querySelector(o.conteneur)
       : o.conteneur;
     if (!conteneur) {
       throw new Error('minesec-moteur : conteneur introuvable (' + o.conteneur + ').');
+    }
+
+    /* Deux échecs possibles, deux causes distinctes, deux messages :
+       Three.js absent (connexion, CDN bloqué) ou WebGL indisponible
+       (machine trop ancienne, pilote désactivé). Dans les deux cas on
+       affiche avant de lever : la page montre un texte, jamais du vide. */
+    if (typeof THREE === 'undefined') {
+      avertir(conteneur, MESSAGES.three);
+      throw new Error('minesec-moteur : Three.js doit être chargé avant ce module.');
+    }
+    if (!disponible()) {
+      avertir(conteneur, MESSAGES.webgl);
+      throw new Error('minesec-moteur : WebGL indisponible sur cette machine.');
     }
 
     /* ─── Scène, caméra, lumières ─── */
@@ -62,7 +144,15 @@
     camera.position.set(0, o.regard[1] + 0.7, o.distance);
     camera.lookAt(o.regard[0], o.regard[1], o.regard[2]);
 
-    const rendu = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    /* Le test ci-dessus peut réussir et la création échouer quand même
+       (mémoire vidéo saturée, contexte refusé). On rattrape aussi ce cas. */
+    let rendu;
+    try {
+      rendu = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    } catch (e) {
+      avertir(conteneur, MESSAGES.webgl);
+      throw e;
+    }
     rendu.setPixelRatio(Math.min(global.devicePixelRatio || 1, 2));
     conteneur.appendChild(rendu.domElement);
 
@@ -222,6 +312,6 @@
     };
   }
 
-  MINESEC.moteur = { creer, reduit };
+  MINESEC.moteur = { creer, reduit, disponible, avertir, MESSAGES };
 
 })(window);

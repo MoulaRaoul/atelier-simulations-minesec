@@ -57,13 +57,12 @@ besoin n'entre dans aucun jeton, dis-le plutôt que d'improviser.
 `.minesec-reglage` · `.minesec-legende` `.minesec-jeton` `.minesec-pastille` ·
 `.minesec-valeurs` (avec `.ligne` et `.cle`) · `.minesec-aide`
 
-Les `button` et `input[type=range]` sont déjà stylés. `button.primaire` marque
-l'action principale ; `button[aria-pressed="true"]` marque une bascule
-enclenchée (elle passe en `--ok`, jamais en `--accent`).
+Les `button` et `input[type=range]` sont déjà stylés. `button.primaire` marque l'action
+principale ; `button[aria-pressed="true"]` marque une bascule enclenchée (elle passe en
+`--ok`, jamais en `--accent`).
 
-La classe `.revele` posée sur `.minesec-valeurs` fait apparaître la ligne
-`.cle` : **la conclusion se gagne par le geste, elle ne se donne pas au
-chargement.**
+La classe `.revele` posée sur `.minesec-valeurs` fait apparaître la ligne `.cle` :
+**la conclusion se gagne par le geste, elle ne se donne pas au chargement.**
 
 ---
 
@@ -76,7 +75,14 @@ ni pédagogie : c'est le travail de la simulation.
 ```js
 MINESEC.moteur.creer(options)   // crée un moteur et retourne son instance
 MINESEC.moteur.reduit           // booléen : l'utilisateur a demandé « mouvement réduit »
+MINESEC.moteur.disponible()     // true si la machine sait faire de la 3D (WebGL)
+MINESEC.moteur.avertir(conteneur, message)  // affiche un panneau aux couleurs de la charte
+MINESEC.moteur.MESSAGES         // { webgl, three } : les textes des deux échecs possibles
 ```
+
+**Garde intégrée.** Si Three.js manque ou si la machine ne sait pas faire de WebGL,
+`creer()` affiche lui-même un panneau lisible dans le conteneur puis lève une erreur —
+la page montre un texte, jamais un cadre noir. Aucun balisage de secours à prévoir.
 
 **Options** (toutes facultatives, valeurs par défaut indiquées) :
 
@@ -88,8 +94,7 @@ MINESEC.moteur.reduit           // booléen : l'utilisateur a demandé « mouvem
   regard: [0, 1, 0],     // point visé
   inclinaison: 0.18,     // basculement vertical au repos, en radians
   grille: true,          // afficher le sol quadrillé
-  distanceMin: 2.5,      // butée de zoom avant
-  distanceMax: 24,       // butée de zoom arrière
+  distanceMin: 2.5, distanceMax: 24,   // butées de zoom
   sensibilite: 0.006,    // radians par pixel glissé
   aisance: 4.5           // vitesse de rattrapage du cadrage
 }
@@ -168,8 +173,7 @@ ANIMATIONS LIBRES   respiration · rotation-continue · flottement · oscillatio
 (en boucle)         halo
 ```
 
-Attention à la casse : `ouverture-echelleY` porte un Y majuscule, tous les
-autres sont en minuscules.
+Attention à la casse : `ouverture-echelleY` porte un Y majuscule, tous les autres non.
 
 ---
 
@@ -185,10 +189,7 @@ Squelette à reprendre tel quel. Chemins : `../bibliotheque/` depuis `prototypes
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Titre de la simulation · Classe</title>
 <link rel="stylesheet" href="../bibliotheque/charte.css">
-<style>
-  :root { --piece: #3b82f6; }   /* jetons propres à CETTE simulation */
-  body { overflow: hidden; }
-</style>
+<style>:root { --piece: #3b82f6; } body { overflow: hidden; }</style>
 </head>
 <body>
 
@@ -272,8 +273,7 @@ document.getElementById('reg').addEventListener('input', e => {
 
 - **Nommage** : minuscules, kebab-case, sans accents, sans espaces, **sans suffixe
   de version** (jamais `__1_`, `-v2`, `-final`) — c'est le travail de Git.
-- **Trois entrées par action** quand c'est possible : bouton, curseur, clavier —
-  la simulation sert au tableau, au doigt et à la souris.
+- **Trois entrées par action** : bouton, curseur, clavier — tableau, doigt, souris.
 - **Respecter `prefers-reduced-motion`** via `MINESEC.moteur.reduit`.
 - **Le focus clavier reste visible** — la charte s'en charge, ne l'annule pas.
 - **Des valeurs non rondes** : un élève qui voit 6 et 2 soupçonne un cas fabriqué.
@@ -284,9 +284,9 @@ document.getElementById('reg').addEventListener('input', e => {
 ## 8 · Mode d'emploi
 
 1. **Colle cette fiche** en début de conversation avec l'IA de ton choix.
-2. **Colle ensuite ton brief** — le gabarit `gabarits/brief-enseignant.md` :
-   discipline, classe, notion, objectif observable, ce que l'élève manipule, ce
-   qu'il doit constater, question de sortie, contraintes.
+2. **Colle ensuite ton brief** — le gabarit `gabarits/brief-enseignant.md` : discipline,
+   classe, notion, objectif observable, ce que l'élève manipule et doit constater,
+   question de sortie, contraintes.
 3. **Récupère le fichier produit** et dépose-le dans `prototypes/` du dépôt, sous
    un nom en kebab-case.
 4. **Ouvre-le dans un navigateur** pour vérifier qu'il s'affiche et répond.
