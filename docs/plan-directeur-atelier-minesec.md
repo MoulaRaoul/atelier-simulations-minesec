@@ -1,6 +1,11 @@
 # Plan directeur — Atelier de simulations MINESEC
 
-**Version 1 · 30 août 2026** · établi d'après l'audit du corpus existant : 22 fichiers, ≈ 14 900 lignes.
+**Version 1.1 · 30 août 2026** · établi d'après l'audit du corpus existant : 22 fichiers HTML, ≈ 14 900 lignes.
+
+> **Révision du 30/08/2026, après archivage.** L'archive effectivement versée dans
+> `archives/2026-08-corpus-initial/` compte **22 fichiers : 21 HTML (14 354 lignes) et une icône
+> `book-open.svg`**. Le doublon strict `versement-robinet__1_` n'y figure pas ; l'icône, elle,
+> n'avait pas été recensée lors de l'audit. Aucun contenu unique n'est perdu — voir § 2.1 et § 2.2.
 
 Ce document répond à deux questions : *de quoi s'agit-il ?* et *comment procède-t-on ?* Il est destiné à vivre dans le dépôt (`docs/plan-directeur.md`) et à être révisé à chaque étape franchie.
 
@@ -48,16 +53,21 @@ L'atelier est donc déjà là. Ce qui manque, ce sont **les étagères** : un ra
 | `simulation_pyramide_et_prisme` | Simulation (maths) | Famille pyramide/prisme — itération |
 | `simulation_volumes` | Simulation (maths) | Famille pyramide/prisme — itération |
 | `versement-robinet` | Simulation (maths) | Famille pyramide/prisme — itération |
-| `versement-robinet__1_` | — | **Doublon strict** du précédent (identique à l'octet près) |
+| `versement-robinet__1_` | — | **Doublon strict** du précédent (identique à l'octet près) — ⚠️ **absent de l'archive versée** |
 | `simulateur_architecture_pc` | Simulation (informatique) | Niveau 4e |
 | `environnement_ent_interactif__2_` | Simulation (informatique) | « Assembler, Allumer et Imprimer » — préfigure aussi l'idée d'un portail |
 | `labyrinthe_logique_interface_v2` | Simulation (informatique) | Logique, niveau 6e |
+| `book-open.svg` | Banque | Icône SVG isolée — présente dans l'archive, non recensée lors de l'audit initial |
+
+Soit, dans l'archive versée : **21 fichiers HTML + 1 icône SVG = 22 fichiers**. La ligne
+`versement-robinet__1_` est conservée ci-dessus comme trace de l'audit, mais ce fichier
+n'a pas été archivé.
 
 ### 2.2 Constats
 
-**Un doublon strict.** Les deux `versement-robinet` sont identiques octet pour octet. L'un des deux disparaîtra sans aucun risque une fois le corpus archivé.
+**Un doublon strict — déjà résolu.** Les deux `versement-robinet` étaient identiques octet pour octet. Au moment de l'archivage, un seul figurait dans le dossier versé : la disparition sans risque annoncée ici a donc eu lieu d'elle-même. Le corpus archivé compte 21 fichiers HTML pour **14 354 lignes**, plus l'icône `book-open.svg`.
 
-**Un historique de versions tenu à la main.** Sept fichiers, soit 3 926 lignes (26 % du corpus), tournent autour d'une seule notion : le volume de la pyramide et du prisme. Ce ne sont pas des redites honteuses — ce sont des itérations successives, conservées par prudence faute d'outil de versionnage. Git reprendra ce rôle ; il restera à élire **une version canonique** et à ranger les autres en archives, chacune avec une ligne d'explication.
+**Un historique de versions tenu à la main.** Sept fichiers, soit 3 926 lignes (27 % du corpus archivé), tournent autour d'une seule notion : le volume de la pyramide et du prisme. Ce ne sont pas des redites honteuses — ce sont des itérations successives, conservées par prudence faute d'outil de versionnage. Git reprendra ce rôle ; il restera à élire **une version canonique** et à ranger les autres en archives, chacune avec une ligne d'explication.
 
 **Un moteur réécrit neuf fois.** Neuf fichiers reconstruisent chacun leur scène, leur caméra, leur rendu et leur boucle d'animation. Aujourd'hui, corriger un défaut du moteur exige de reporter la correction neuf fois. Après extraction, une fois.
 
