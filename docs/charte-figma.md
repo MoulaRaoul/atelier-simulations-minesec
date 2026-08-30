@@ -73,7 +73,34 @@ Couleur jamais seule — toujours doublée d'une forme, d'un mot ou d'une icône
 
 Les jetons « verre » sont définis en pourcentage d'un autre jeton. Traduction CSS proposée pour la v2 : `color-mix(in srgb, var(--txt) 8%, transparent)` (avec repli `rgba` figé pour les moteurs anciens — à trancher au chantier v2).
 
-## 6 · Cadres de référence
+## 6 · Backlog v2
+
+**La v2 attend la crête et la validation hiérarchique des maquettes Clair.** Rien
+de ce qui suit ne se commence avant. On note pour ne pas redécouvrir.
+
+**V1 — Extraire trois valeurs, non en créer trois** *(trouvaille E2)*. `--on-accent`,
+`--grid` et le verre existent déjà dans le code, mais **en dur** : `#0b1220` dans
+`button.primaire`, `0x3f454d` / `0x22262b` passés au `GridHelper` de
+`minesec-moteur.js`, `rgba(26,29,33,.92)` dans `.minesec-carte`. Une valeur en dur
+ne bascule pas quand le mode change : c'est exactement ce que le bi-mode devra
+dénouer. Le travail est donc une extraction, plus courte qu'une création — et le
+`GridHelper` rappelle qu'un jeton de charte peut vivre hors du CSS, dans du WebGL
+qui ne lit pas les variables.
+
+**V2 — Le verre : la définition du designer fera foi** *(trouvaille E4)*. Figma
+fonde le verre sur le **texte** (txt 8 % clair, 10 % sombre) ; le code le fonde sur
+le **panneau** (`--panel` à 92 %). Écart de méthode, non de valeur : **la définition
+Figma est retenue**, et l'aspect changera. **À vérifier sur maquette avant bascule**
+— un verre fondé sur le texte se comporte autrement selon le mode, et c'est
+précisément le genre d'écart qu'un test unitaire ne voit pas.
+
+**V3 — Typographie et mesures restent à extraire.** Six jetons du code n'ont pas
+d'équivalent dans la table : `--f-txt`, `--f-data`, `--fs`, `--r`, `--r-ctrl`,
+`--gap`. La doctrine du § 4 fixe déjà des mesures côté Figma — cibles 48 px
+(40 px compact), polices système uniquement — sans qu'elles soient portées en
+jetons. À couvrir par le pont le jour où Figma les portera.
+
+## 7 · Cadres de référence
 
 `0:1` Lisez-moi · `4:4448` Palette · `20:15` Pourquoi ces couleurs · `38:15654` Mobile 390×844 Sombre. Autres cadres mobiles : à référencer au fil du chantier « pupitre » du designer.
 

@@ -191,7 +191,17 @@ reformulé se répercute le jour même sur le mode d'emploi de la fiche ; une
 séquence de collage modifiée d'un côté se corrige de l'autre. Les deux documents
 s'annoncent mutuellement : ils se tiennent à jour ensemble ou pas du tout.
 
-La raison est la même dans les deux cas : un document d'usage en retard ne se
+**Troisième obligation — la règle du pont.** Le dessin vit dans Figma, le code
+dans le dépôt ; [`docs/charte-figma.md`](charte-figma.md) tient la correspondance.
+**Toute évolution validée dans Figma se traduit par un commit sur `charte.css`** —
+lequel régénère la fiche de contexte dans le même commit, par la règle ci-dessus.
+Une charte Figma qui bouge sans commit produit des maquettes que le code ne sait
+plus tenir, sans qu'aucune erreur ne le signale. Le mot qui compte est *validée* :
+une exploration de maquette n'oblige à rien, une décision arbitrée oblige tout de
+suite. En sens inverse, un jeton ajouté au code sans exister dans Figma se signale
+dans la table du § 2 du pont, qui se confronte à `charte.css` à chaque révision.
+
+La raison est la même dans les trois cas : un document d'usage en retard ne se
 signale par aucune erreur — il produit du travail qui semble correct et ne
 fonctionne pas. Le séparer de son code, même d'un seul commit, c'est rouvrir la
 porte au désordre que Git avait fermée.

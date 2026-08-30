@@ -45,7 +45,7 @@ Jetons de `charte.css`, mécaniques et props des banques, familles de mouvements
 Les jetons, les familles de mouvements et le vocabulaire des boutons gouvernent l'**interface** : bandeau, pupitre, cartes, commandes, états. La **zone de simulation** est un contenu propre à chaque ressource — les couleurs d'une réaction chimique, d'un circuit, d'un tissu végétal ou d'un solide obéissent à la matière représentée, non à la règle « une couleur, une fonction ». Confondre les deux mène à l'un de ces deux échecs : fausser la science pour respecter la charte, ou relâcher la charte pour servir la science.
 *Test : cette couleur décrit-elle un état de l'interface, ou une propriété du monde ? La règle « une couleur, une fonction » ne s'applique qu'à la première.*
 
-> *Origine : décision D5 de [`charte-figma.md`](charte-figma.md), actée par la maquette elle-même — « Zone de simulation : contenu propre à chaque ressource, non concerné par la charte ». Ajouté le 30/08/2026.*
+> *Origine : décision D5 de [`charte-figma.md`](charte-figma.md) — « Zone de simulation : contenu propre à chaque ressource, non concerné par la charte ». **Ratifié explicitement par Moula Raoul le 30/08/2026** : ce principe est une décision, non une inférence tirée d'un document.*
 
 ---
 
