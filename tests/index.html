@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Suite de non-régression — bibliothèque MINESEC</title>
+<title>Vérification du poste · MINESEC</title>
 <link rel="stylesheet" href="../bibliotheque/charte.css">
 <style>
   body { overflow: auto; padding: 22px; }
@@ -12,6 +12,19 @@
           text-transform: uppercase; color: var(--dim); margin-bottom: 16px; }
   .mode { font-size: 13px; color: var(--dim); margin: 0 0 18px; line-height: 1.6;
           border-left: 2px solid var(--line); padding-left: 12px; max-width: 60rem; }
+  /* Le verdict s'adresse à l'enseignant : il passe avant tout le reste. */
+  #verdict { border: 1px solid var(--line); border-left-width: 4px;
+             border-radius: var(--r); background: var(--panel);
+             padding: 22px 26px; margin-bottom: 20px; max-width: 60rem; }
+  #verdict .grand { font-size: 23px; font-weight: 600; line-height: 1.3; }
+  #verdict .suite { font-size: 14px; color: var(--txt); margin-top: 9px; line-height: 1.5; }
+  #verdict .carte { font-family: var(--f-data); font-size: 12px; color: var(--dim);
+                    margin-top: 14px; padding-top: 11px; border-top: 1px dashed var(--line); }
+  #verdict.apte { border-left-color: var(--ok); }
+  #verdict.apte .grand { color: var(--ok); }
+  #verdict.inapte { border-left-color: var(--saisir); }
+  #verdict.inapte .grand { color: var(--saisir); }
+  li.neutre { border-left-color: var(--dim); color: var(--dim); }
   #bilan { font-family: var(--f-data); font-size: 15px; font-weight: 600;
            padding: 12px 16px; border-radius: var(--r); margin-bottom: 16px;
            border: 1px solid var(--line); background: var(--panel); }
@@ -29,13 +42,15 @@
 </head>
 <body>
 
-<div class="sous">MINESEC · bibliothèque · non-régression</div>
-<h1>Suite de contrôles de la bibliothèque</h1>
-<p class="mode"><b>Mode d'emploi :</b> ouvrir cette page dans un navigateur.
-Elle s'exécute seule et affiche son bilan. <b>Toute modification de la bibliothèque
-impose de la relancer avant de commiter</b> (règle inscrite au § 3 du plan directeur).
-Une connexion est nécessaire — Three.js vient de cdnjs — et une machine capable
-de WebGL, faute de quoi les contrôles des props ne peuvent pas s'exécuter.</p>
+<div class="sous">MINESEC · vérification du poste et de la bibliothèque</div>
+<h1>Cet ordinateur peut-il faire tourner les simulations ?</h1>
+
+<div id="verdict"><div class="grand">Vérification en cours…</div></div>
+
+<p class="mode"><b>Pour le lecteur technique.</b> Cette page est aussi la suite de
+non-régression de la bibliothèque : <b>toute modification de celle-ci impose de la
+relancer avant de commiter</b> (règle inscrite au § 3 du plan directeur). Une
+connexion est nécessaire — Three.js vient de cdnjs.</p>
 
 <div id="bilan">exécution…</div>
 <div id="rapport"></div>
@@ -61,10 +76,33 @@ de WebGL, faute de quoi les contrôles des props ne peuvent pas s'exécuter.</p>
       Les animations se font avancer à la main par mouvements.maj().
    ══════════════════════════════════════════════════════════════════════ */
 
+/* ─── Aptitude du poste ───
+   Question de l'enseignant, posée avant celle du développeur : cet ordinateur
+   sait-il faire de la 3D ? On crée un canevas jetable — seul test fiable — et
+   on demande au pilote son nom, utile pour repérer les modèles en cause lors
+   d'un recensement de salle. */
+function aptitudePoste() {
+  const c = document.createElement('canvas');
+  let gl = null;
+  try { gl = c.getContext('webgl') || c.getContext('experimental-webgl'); } catch (e) {}
+  if (!gl) return { ok: false, carte: null };
+  let carte = null;
+  try {
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    if (ext) carte = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
+    if (!carte) carte = gl.getParameter(gl.RENDERER);
+  } catch (e) {}
+  return { ok: true, carte: carte || null };
+}
+const poste = aptitudePoste();
+
 const groupes = [];
 let courant = null, total = 0, echecs = 0;
 
 function section(titre) { courant = { titre, lignes: [] }; groupes.push(courant); }
+/* Une ligne d'information, qui n'est ni réussite ni échec : un contrôle non
+   exécuté ne doit pas se compter comme un contrôle passé. */
+function info(texte, detail) { courant.lignes.push({ nom: texte, ok: true, detail, neutre: true }); }
 function egal(nom, obtenu, attendu, tol) {
   const ok = Math.abs(obtenu - attendu) <= (tol == null ? 1e-9 : tol);
   note(nom, ok, ok ? null : 'obtenu ' + obtenu + ' · attendu ' + attendu);
@@ -155,7 +193,12 @@ section('Compteur de versements');
 
 /* ══ 4 · Les props ══ */
 section('Props — récipient transparent, robinet, filet');
-try {
+if (!poste.ok) {
+  /* Ne pas exécuter vaut mieux que faire échouer : sur un poste sans 3D, un
+     bandeau rouge accuserait la bibliothèque au lieu de renseigner la salle. */
+  info('17 contrôles non exécutés — ce poste ne fait pas de 3D',
+       'ce n\'est pas un défaut de la bibliothèque');
+} else try {
   const moteur = MINESEC.moteur.creer({ conteneur: '#banc', grille: false });
   vrai('la coupe locale est éteinte par défaut', moteur.rendu.localClippingEnabled === false);
 
@@ -212,8 +255,8 @@ groupes.forEach(g => {
   const ol = document.createElement('ol');
   g.lignes.forEach(l => {
     const li = document.createElement('li');
-    li.className = l.ok ? 'ok' : 'ko';
-    li.textContent = (l.ok ? '✓ ' : '✗ ') + l.nom;
+    li.className = l.neutre ? 'neutre' : (l.ok ? 'ok' : 'ko');
+    li.textContent = (l.neutre ? '· ' : l.ok ? '✓ ' : '✗ ') + l.nom;
     if (l.detail) { const s = document.createElement('span'); s.className = 'det';
       s.textContent = '  — ' + l.detail; li.appendChild(s); }
     ol.appendChild(li);
@@ -223,9 +266,33 @@ groupes.forEach(g => {
 const bilan = document.getElementById('bilan');
 bilan.textContent = echecs
   ? echecs + ' ÉCHEC(S) sur ' + total + ' contrôles'
-  : 'TOUT PASSE — ' + total + ' contrôles';
+  : 'TOUT PASSE — ' + total + ' contrôles'
+    + (poste.ok ? '' : ' · les 17 contrôles 3D n\'ont pas pu s\'exécuter ici');
 bilan.className = echecs ? 'rouge' : 'vert';
-window.__resultat = { total, echecs, groupes };
+
+/* ─── Le verdict ───
+   Écrit pour l'enseignant, pas pour le développeur : une phrase qui tranche,
+   une phrase qui dit quoi faire, et le nom de la carte pour le recensement. */
+function afficherVerdict(p) {
+  const v = document.getElementById('verdict');
+  v.className = p.ok ? 'apte' : 'inapte';
+  v.innerHTML =
+    '<div class="grand">' +
+      (p.ok ? 'Ce poste convient aux simulations 3D'
+            : 'Ce poste ne fait pas de 3D — il attendra la version hors-ligne') +
+    '</div>' +
+    '<div class="suite">' +
+      (p.ok
+        ? 'Vous pouvez ouvrir les simulations sur cet ordinateur.'
+        : 'Notez cet ordinateur dans le recensement de la salle : il lui faudra la '
+          + 'version hors-ligne. Ce n\'est pas une panne, et rien n\'est à réparer.') +
+    '</div>' +
+    '<div class="carte">Carte graphique : ' +
+      (p.carte ? p.carte : 'non communiquée par le navigateur') + '</div>';
+}
+afficherVerdict(poste);
+
+window.__resultat = { total, echecs, groupes, poste, afficherVerdict };
 </script>
 </body>
 </html>
