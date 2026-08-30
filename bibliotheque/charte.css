@@ -1,0 +1,170 @@
+/* ══════════════════════════════════════════════════════════════════════
+   charte.css — CHARTE VISUELLE MINESEC
+   Extrait de archives/2026-08-corpus-initial/charte-visuelle-et-mecanique-v1.html
+   (Phase 1, 30/08/2026).
+
+   Ne contient que les jetons GLOBAUX, valables pour toute simulation.
+   Les jetons propres à une simulation (--boitier, --panneau, --metal du
+   simulateur PC, par exemple) restent chez elle : ils n'ont rien à faire ici.
+
+   Usage : <link rel="stylesheet" href="../../../bibliotheque/charte.css">
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─── Surfaces ─── */
+  --bg: #121416;        /* fond de l'application */
+  --panel: #1a1d21;     /* bandeaux, pupitre, cartes */
+  --panel2: #25282d;    /* creux, champs, matériel inerte */
+  --line: #3f454d;      /* toute bordure au repos */
+
+  /* ─── Texte ─── */
+  --txt: #e8ebee;       /* texte courant */
+  --dim: #98a1ab;       /* texte secondaire, étiquettes */
+
+  /* ─── Fonctions : une couleur = un sens, jamais une décoration ─── */
+  --accent: #3b82f6;    /* ACTIF       : choisi, survolé, ce sur quoi on agit */
+  --ok: #22c55e;        /* JUSTE       : fonctionne, équilibre atteint */
+  --no: #ef4444;        /* REFUS       : dommage, hors service */
+  --saisir: #f59e0b;    /* SAISISSABLE : objet disponible à prendre */
+
+  /* ─── Typographie ─── */
+  --f-txt: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-data: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+  --fs: 16px;
+
+  /* ─── Rythme ─── */
+  --r: 12px;            /* rayon des cartes */
+  --r-ctrl: 9px;        /* rayon des contrôles */
+  --gap: 10px;
+}
+
+/* ══ Socle ══ */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--f-txt);
+  font-size: var(--fs);
+}
+
+/* ══ Scène 3D plein cadre ══ */
+.minesec-scene { position: fixed; inset: 0; }
+.minesec-scene canvas { display: block; }
+
+/* ══ En-tête ══ */
+.minesec-entete {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 2;
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 18px;
+  pointer-events: none;           /* la scène reste manipulable au travers */
+}
+.minesec-surtitre {
+  font-family: var(--f-data); font-size: 11px; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--dim); margin-bottom: 4px;
+}
+.minesec-entete h1 { font-size: 17px; font-weight: 600; margin: 0; line-height: 1.35; }
+.minesec-entete h1 b { color: var(--accent); font-weight: 600; }
+.minesec-etiquette {
+  font-family: var(--f-data); font-size: 11px; color: var(--dim);
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 4px 11px; margin-left: auto; white-space: nowrap;
+}
+
+/* ══ Pupitre de commandes ══ */
+.minesec-pupitre {
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 2;
+  display: flex; gap: var(--gap); flex-wrap: wrap; align-items: stretch;
+}
+.minesec-carte {
+  background: rgba(26, 29, 33, .92);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  backdrop-filter: blur(6px);
+}
+.minesec-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ══ Boutons — vocabulaire commun à toutes les simulations ══ */
+button {
+  font: inherit; color: var(--txt);
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctrl);
+  padding: 9px 14px; cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button.primaire {
+  background: var(--accent); border-color: var(--accent);
+  color: #0b1220; font-weight: 600;
+}
+/* Un bouton-bascule enclenché porte la couleur JUSTE, jamais l'accent :
+   l'accent dit « ce sur quoi on agit », l'ok dit « c'est en marche ». */
+button[aria-pressed="true"] { border-color: var(--ok); color: var(--ok); }
+
+/* ══ Réglages (curseurs) ══ */
+.minesec-reglage {
+  display: flex; flex-direction: column; gap: 7px;
+  min-width: 200px; flex: 1;
+}
+.minesec-reglage label {
+  font-size: 12px; color: var(--dim);
+  display: flex; justify-content: space-between;
+  font-family: var(--f-data);
+}
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
+
+/* ══ Pastilles de légende ══ */
+.minesec-legende {
+  display: flex; gap: 10px; align-items: center;
+  font-size: 12px; color: var(--dim); flex-wrap: wrap;
+}
+.minesec-jeton { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-data); }
+.minesec-pastille { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+/* ══ Tableau de valeurs ══ */
+.minesec-valeurs { min-width: 255px; }
+.minesec-valeurs .ligne {
+  font-family: var(--f-data); font-size: 13px;
+  display: flex; justify-content: space-between; gap: 16px; padding: 2px 0;
+}
+.minesec-valeurs .ligne span:last-child { color: var(--dim); }
+/* La conclusion reste en retrait tant que l'élève n'a pas fait le geste
+   qui la démontre : elle se révèle, elle ne se donne pas. */
+.minesec-valeurs .cle {
+  margin-top: 6px; padding-top: 7px;
+  border-top: 1px dashed var(--line);
+  opacity: .35; transition: opacity .45s;
+}
+.minesec-valeurs.revele .cle { opacity: 1; }
+.minesec-valeurs .cle b { color: var(--saisir); font-weight: 600; }
+
+/* ══ Ligne d'aide ══ */
+.minesec-aide {
+  width: 100%; text-align: center;
+  font-size: 11px; color: var(--dim); font-family: var(--f-data);
+}
+
+/* ══ Accessibilité — le focus clavier doit toujours se voir ══ */
+button:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ══ Téléphone ══ */
+@media (max-width: 720px) {
+  .minesec-entete h1 { font-size: 14px; }
+  .minesec-etiquette { display: none; }
+  .minesec-pupitre { gap: 8px; }
+  .minesec-valeurs { min-width: 0; flex: 1 1 100%; }
+  .minesec-actions { flex: 1 1 100%; justify-content: space-between; }
+}
+
+/* ══ Mouvement réduit — réglage système de l'utilisateur, il fait loi ══ */
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: .01ms !important; }
+}
