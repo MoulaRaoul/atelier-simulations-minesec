@@ -90,6 +90,8 @@ atelier-simulations-minesec/          ← le dépôt Git
 ├── README.md                         ← présentation du projet en une page
 ├── docs/
 │   ├── plan-directeur.md             ← ce document
+│   ├── contexte-ia.md                ← fiche à coller en tête de conversation
+│   │                                    avec n'importe quelle IA (voir § 5)
 │   ├── charte-visuelle.html          ← la charte actuelle, conservée comme référence
 │   ├── lecon-1-anatomie.html
 │   └── lecon-2-prop.html
@@ -129,11 +131,28 @@ Les noms s'écrivent en minuscules, en *kebab-case* (mots reliés par des tirets
 Chaque simulation, de la demande à la mise à disposition, suit six étapes :
 
 1. **Brief** — l'enseignant remplit le gabarit (Annexe A) : notion, objectif observable, variables manipulables, constat attendu.
-2. **Prototype** — en conversation avec Claude, on produit une première version jouable (artifact HTML) et on itère sur la pédagogie, pas sur la technique.
+2. **Prototype** — avec l'IA de son choix, munie de la fiche de contexte (`docs/contexte-ia.md`), on produit une première version jouable et on itère sur la pédagogie, pas sur la technique. La conversation Claude reste la table à dessin des cas complexes ; pour le reste, n'importe quelle IA munie de la fiche produit du code compatible avec la bibliothèque. Le fichier obtenu se dépose dans `prototypes/`.
 3. **Revue** — le prototype est confronté à la « définition de fini » (section 6) et au brief ; l'enseignant valide.
 4. **Intégration** — dans Claude Code, la simulation est branchée sur la bibliothèque, rangée dans son dossier, et un commit fige l'étape.
 5. **Publication** — GitHub Pages sert la version en ligne ; le script de build fabrique la version hors-ligne autonome pour les établissements sans connexion.
 6. **Catalogue** — la simulation reçoit son entrée dans l'index général et son `notes.md` est complété.
+
+### Règle d'entretien de la fiche de contexte
+
+**Toute évolution de l'API de la bibliothèque impose de régénérer
+`docs/contexte-ia.md` dans le même commit.** Signatures ajoutées ou modifiées,
+jetons de charte, noms de mouvements, classes CSS : dès que l'un d'eux change,
+la fiche change avec lui, et les deux voyagent ensemble.
+
+La raison est simple : cette fiche est lue par des outils qui ne voient pas le
+dépôt. Une fiche en retard d'une version ne se signale par aucune erreur — elle
+produit du code qui semble correct et ne fonctionne pas. La séparer de son code,
+même d'un seul commit, c'est rouvrir la porte au désordre que Git avait fermée.
+
+La fiche s'engendre **depuis les sources**, jamais de mémoire : on relit
+`charte.css`, `minesec-moteur.js` et `minesec-mouvements.js` et on en extrait les
+listes. Le premier tirage l'a montré — un filtre trop étroit avait compté
+27 mouvements au lieu de 28, `ouverture-echelleY` portant une majuscule.
 
 ---
 
