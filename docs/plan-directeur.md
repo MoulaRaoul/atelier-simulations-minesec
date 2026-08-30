@@ -98,6 +98,7 @@ atelier-simulations-minesec/          ← le dépôt Git
 ├── README.md                         ← présentation du projet en une page
 ├── docs/
 │   ├── plan-directeur.md             ← ce document
+│   ├── backlog-mobile.md             ← constats mobiles en attente du design
 │   ├── principes-de-conception.md    ← les huit principes et leurs tests
 │   ├── contexte-ia.md                ← fiche à coller en tête de conversation
 │   │                                    avec n'importe quelle IA (voir § 5)
@@ -266,6 +267,27 @@ Il n'y a rien à apprendre par cœur : dans Claude Code, on demande en français
 **Phase 4 — Expansion.** Compléter les familles de la banque des opérations ; constituer `minesec-props.js` ; ouvrir les packs disciplinaires (maths, informatique, SVT, puis les autres).
 
 **Horizon.** Un portail catalogue destiné aux enseignants — l'`environnement_ent_interactif` montre que l'idée germe déjà.
+
+### Décision d'architecture du 30/08/2026 — desktop d'abord, mobile par le design
+
+**Les simulations se développent et se valident d'abord sur poste de bureau. La
+version mobile ne sera pas obtenue en corrigeant la version de bureau écran par
+écran : elle sera dessinée, puis intégrée.**
+
+**Propriétaire : Moula Raoul.** Les maquettes mobiles sont produites dans Figma et
+entrent dans l'atelier par le pont Figma → charte. **Sans date : ce chantier est
+nommé, non planifié** — le nommer suffit à empêcher qu'il se dissolve en
+corrections ponctuelles.
+
+La raison vient de deux constats faits sur appareil réel, et non d'une préférence :
+un pupitre occupant 57 % de la hauteur n'est pas un défaut de cadrage mais un
+défaut de mise en page, et un format simulé sur poste de bureau ne reproduit ni
+les polices, ni la barre d'adresse, ni la hauteur réelle des bandeaux.
+
+**En attendant, les défauts mobiles se consignent, ils ne se chassent pas.** Ils
+sont réunis dans [`docs/backlog-mobile.md`](backlog-mobile.md) et seront repris
+sur la mise en page redessinée. Corriger à l'aveugle une mise en page destinée à
+disparaître, c'est instruire un dossier périmé.
 
 ---
 

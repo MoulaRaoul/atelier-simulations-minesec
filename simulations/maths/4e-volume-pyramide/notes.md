@@ -132,9 +132,14 @@ cette version en fait environ 150, dont aucune n'est du socle technique.
       375 × 812, l'en-tête occupe 67 px et le pupitre **461 px, soit 57 % de la
       hauteur** ; il ne restait que 284 px visibles. Le moteur cadrait pour le
       canevas entier et centrait la figure au milieu de l'écran, c'est-à-dire au
-      milieu du pupitre. Corrigé par `moteur.reserver()` (voir plus bas). **La case
-      reste décochée jusqu'à un nouvel essai sur l'appareil : une case ne ment jamais.**
-      Le comportement en paysage n'a pas été relevé — à vérifier au même passage
+      milieu du pupitre. Corrigé par `moteur.reserver()`.
+      **Re-test du 30/08/2026 sur `928dc3c` : progrès partiel.** La figure remonte
+      bien dans la bande visible — la correction agit — mais elle dévie à droite et
+      se fait rogner par le bord, et le pupitre couvre toujours 57 %.
+      **Mobile confié au design ; re-test après implémentation des maquettes Figma.**
+      Les deux constats restants sont consignés dans `docs/backlog-mobile.md`
+      (M1, M2) et ne seront pas corrigés à l'aveugle : l'écran sera redessiné.
+      **La case reste décochée : une case ne ment jamais.**
 - [x] Son `notes.md` contient le brief d'origine et les choix faits
 - [ ] **Elle figure au catalogue** — le catalogue n'existe pas encore (Phase 3)
 
