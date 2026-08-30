@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Prisme → 3 pyramides · Simulation interactive</title>
+<style>
+  :root{
+    --accent:#4f7cff;
+    --ink:#1b2536;
+    --muted:#5f6b7e;
+    --line:#e4e9f2;
+    --green:#7cb542; --red:#e5735f; --blue:#4f8cd1;
+    --panel:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:#f2f5fa; -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  .app{display:flex; height:100dvh; width:100%;}
+  /* ---------- Panel ---------- */
+  .panel{
+    width:340px; flex:0 0 340px; background:var(--panel);
+    border-right:1px solid var(--line); padding:20px 20px 28px;
+    overflow-y:auto; display:flex; flex-direction:column; gap:18px;
+  }
+  .panel h1{font-size:19px; margin:0; letter-spacing:-.2px;}
+  .lead{font-size:13px; line-height:1.5; color:var(--muted); margin:-8px 0 0;}
+  .card{border:1px solid var(--line); border-radius:14px; padding:14px 14px 16px; background:#fbfcff;}
+  .card h2{font-size:12px; text-transform:uppercase; letter-spacing:.7px; color:var(--muted); margin:0 0 12px;}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:10px 0;}
+  .row:first-of-type{margin-top:0;}
+  label.field{font-size:13px; color:var(--ink);}
+  .val{font-variant-numeric:tabular-nums; font-size:12px; color:var(--muted); min-width:42px; text-align:right;}
+  input[type=range]{ -webkit-appearance:none; appearance:none; width:100%; height:5px; border-radius:6px;
+    background:linear-gradient(90deg,var(--accent) 0%,var(--accent) var(--p,0%),#dde3ee var(--p,0%)); outline:none;}
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:17px; height:17px; border-radius:50%;
+    background:#fff; border:2px solid var(--accent); box-shadow:0 1px 3px rgba(30,50,90,.25); cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:#fff;border:2px solid var(--accent);cursor:pointer;}
+  .slider-block{margin:14px 0 4px;}
+  .slider-block:first-child{margin-top:0;}
+  .btns{display:flex; gap:8px; flex-wrap:wrap;}
+  button{ font:inherit; font-size:13px; padding:9px 12px; border-radius:10px; border:1px solid var(--line);
+    background:#fff; color:var(--ink); cursor:pointer; transition:.15s; flex:1 1 auto; white-space:nowrap;}
+  button:hover{border-color:#c9d3e6; background:#f7f9ff;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.05);}
+  .toggle{display:flex; align-items:center; gap:9px; font-size:13px; cursor:pointer; user-select:none;}
+  .toggle input{position:absolute; opacity:0; width:0; height:0;}
+  .switch{width:38px; height:22px; border-radius:12px; background:#d3dbe9; position:relative; transition:.18s; flex:0 0 auto;}
+  .switch::after{content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); transition:.18s;}
+  .toggle input:checked + .switch{background:var(--accent);}
+  .toggle input:checked + .switch::after{transform:translateX(16px);}
+  .seg{display:flex; gap:6px;}
+  .seg button{padding:8px 6px; font-size:12.5px;}
+  .seg button.active{color:#fff; border-color:transparent;}
+  .seg button[data-iso=all].active{background:#404b60;}
+  .seg button[data-iso=green].active{background:var(--green);}
+  .seg button[data-iso=red].active{background:var(--red);}
+  .seg button[data-iso=blue].active{background:var(--blue);}
+  .legend{display:flex; flex-direction:column; gap:9px; font-size:13px;}
+  .legend .item{display:flex; align-items:center; gap:10px;}
+  .chip{width:15px; height:15px; border-radius:4px; flex:0 0 auto;}
+  .legend b{font-variant-numeric:tabular-nums;}
+  .legend small{color:var(--muted); display:block; font-size:11.5px;}
+  .formula{ text-align:center; font-size:15px; padding:11px; border-radius:10px;
+    background:#eef3ff; color:#2b3c66; border:1px solid #dbe5ff; margin-top:2px;}
+  .formula .frac{font-weight:600;}
+  details summary{cursor:pointer; font-size:12px; text-transform:uppercase; letter-spacing:.7px; color:var(--muted); list-style:none;}
+  details summary::-webkit-details-marker{display:none;}
+  details summary::before{content:"▸ "; color:var(--accent);}
+  details[open] summary::before{content:"▾ ";}
+  .note{font-size:11.5px; color:var(--muted); line-height:1.45; margin:10px 0 0;}
+  .credit{font-size:11px; color:#9aa5b8; margin-top:auto; padding-top:6px;}
+  /* ---------- Stage ---------- */
+  .stage{flex:1 1 auto; position:relative; background:radial-gradient(120% 120% at 50% 30%,#f4f7fc 0%,#e6ecf6 100%);}
+  canvas{position:absolute; inset:0; width:100%; height:100%; touch-action:none; display:block;}
+  .hint{position:absolute; bottom:14px; left:50%; transform:translateX(-50%); font-size:12px; color:#7a869c;
+    background:rgba(255,255,255,.7); padding:6px 12px; border-radius:20px; backdrop-filter:blur(4px); pointer-events:none;}
+  /* ---------- Responsive ---------- */
+  @media (max-width:860px){
+    .app{flex-direction:column-reverse;}
+    .panel{width:100%; flex:0 0 auto; max-height:52dvh; border-right:none; border-top:1px solid var(--line);}
+    .stage{flex:1 1 auto; min-height:48dvh;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="panel">
+    <h1>Le prisme et ses 3 pyramides</h1>
+    <p class="lead">Un prisme droit se partage en <b>trois pyramides de même volume</b>. Faites glisser le curseur pour les détacher, puis tournez la figure pour observer.</p>
+
+    <div class="card">
+      <h2>Détacher / Assembler</h2>
+      <div class="slider-block">
+        <div class="row"><label class="field" for="sep">Écartement</label><span class="val" id="sepVal">0 %</span></div>
+        <input type="range" id="sep" min="0" max="100" value="0">
+      </div>
+      <div class="btns" style="margin-top:12px;">
+        <button id="assemble">◀ Assembler</button>
+        <button id="detach" class="primary">Détacher ▶</button>
+      </div>
+      <label class="toggle" style="margin-top:14px;">
+        <input type="checkbox" id="osc"><span class="switch"></span>Animation en boucle
+      </label>
+    </div>
+
+    <div class="card">
+      <h2>Isoler une pyramide</h2>
+      <div class="seg" id="isoSeg">
+        <button data-iso="all" class="active">Toutes</button>
+        <button data-iso="green">Verte</button>
+        <button data-iso="red">Rouge</button>
+        <button data-iso="blue">Bleue</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Affichage</h2>
+      <label class="toggle"><input type="checkbox" id="labels" checked><span class="switch"></span>Sommets (A–H)</label>
+      <label class="toggle" style="margin-top:12px;"><input type="checkbox" id="edges" checked><span class="switch"></span>Arêtes</label>
+      <label class="toggle" style="margin-top:12px;"><input type="checkbox" id="spin"><span class="switch"></span>Rotation automatique</label>
+      <div class="slider-block" style="margin-top:14px;">
+        <div class="row"><label class="field" for="zoom">Zoom</label><span class="val" id="zoomVal">115 %</span></div>
+        <input type="range" id="zoom" min="40" max="300" value="115">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Les trois pyramides</h2>
+      <div class="legend">
+        <div class="item"><span class="chip" style="background:var(--green)"></span><div><b>C&#8209;EFGH</b> — sommet C, base = face du haut<small>Volume = ⅓ du prisme</small></div></div>
+        <div class="item"><span class="chip" style="background:var(--red)"></span><div><b>C&#8209;ABFE</b> — sommet C, base = face avant<small>Volume = ⅓ du prisme</small></div></div>
+        <div class="item"><span class="chip" style="background:var(--blue)"></span><div><b>C&#8209;ADHE</b> — sommet C, base = face gauche<small>Volume = ⅓ du prisme</small></div></div>
+      </div>
+      <div class="formula">V<sub>pyramide</sub> = <span class="frac">⅓</span> × 𝓑 × h = <span class="frac">⅓</span> V<sub>prisme</sub></div>
+    </div>
+
+    <div class="card">
+      <details>
+        <summary>Options avancées</summary>
+        <p class="note">Changez les dimensions : les trois pyramides gardent toujours le même volume, égal au tiers du prisme — <b>vrai pour n'importe quel pavé droit</b>.</p>
+        <div class="slider-block"><div class="row"><label class="field" for="dw">Largeur</label><span class="val" id="dwVal">1.0</span></div><input type="range" id="dw" min="50" max="160" value="100"></div>
+        <div class="slider-block"><div class="row"><label class="field" for="dd">Profondeur</label><span class="val" id="ddVal">1.0</span></div><input type="range" id="dd" min="50" max="160" value="100"></div>
+        <div class="slider-block"><div class="row"><label class="field" for="dh">Hauteur</label><span class="val" id="dhVal">1.0</span></div><input type="range" id="dh" min="50" max="160" value="100"></div>
+      </details>
+    </div>
+
+    <div class="btns"><button id="reset">↺ Réinitialiser la vue</button></div>
+    <div class="credit">Les trois pyramides partagent le sommet C et la diagonale [CE].</div>
+  </aside>
+
+  <main class="stage">
+    <canvas id="c"></canvas>
+    <div class="hint">Glissez pour tourner · molette pour zoomer</div>
+  </main>
+</div>
+
+<script>
+"use strict";
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+/* ----------------------------------------------------------------------------
+   Géométrie
+   Cube centré à l'origine, arêtes de longueur 2 (demi-dimensions ax, ay, az).
+   Sommets : ABCD = face du bas (z=-az), EFGH = face du haut (z=+az).
+   Décomposition en 3 pyramides de sommet commun C, appuyées sur les 3 faces
+   qui contiennent le sommet opposé E (haut, avant, gauche).
+---------------------------------------------------------------------------- */
+function vertices(ax, ay, az){
+  return {
+    A:[-ax,-ay,-az], B:[ ax,-ay,-az], C:[ ax, ay,-az], D:[-ax, ay,-az],
+    E:[-ax,-ay, az], F:[ ax,-ay, az], G:[ ax, ay, az], H:[-ax, ay, az]
+  };
+}
+
+// t = triangle (labels), b = est-ce une face "base" (mise en valeur)
+const PYR = [
+  { key:'green', color:[124,181,66], edge:[70,105,35], dir:[0,0,1],
+    fills:[ {t:['E','F','G'],b:1},{t:['E','G','H'],b:1},
+            {t:['C','E','F'],b:0},{t:['C','F','G'],b:0},{t:['C','G','H'],b:0},{t:['C','H','E'],b:0} ],
+    edges:[['E','F'],['F','G'],['G','H'],['H','E'],['C','E'],['C','F'],['C','G'],['C','H']],
+    verts:['C','E','F','G','H'] },
+  { key:'red', color:[229,115,95], edge:[165,55,42], dir:[0,-1,0],
+    fills:[ {t:['A','B','F'],b:1},{t:['A','F','E'],b:1},
+            {t:['C','A','B'],b:0},{t:['C','B','F'],b:0},{t:['C','F','E'],b:0},{t:['C','E','A'],b:0} ],
+    edges:[['A','B'],['B','F'],['F','E'],['E','A'],['C','A'],['C','B'],['C','F'],['C','E']],
+    verts:['C','A','B','F','E'] },
+  { key:'blue', color:[79,140,209], edge:[38,82,150], dir:[-1,0,0],
+    fills:[ {t:['A','D','H'],b:1},{t:['A','H','E'],b:1},
+            {t:['C','A','D'],b:0},{t:['C','D','H'],b:0},{t:['C','H','E'],b:0},{t:['C','E','A'],b:0} ],
+    edges:[['A','D'],['D','H'],['H','E'],['E','A'],['C','A'],['C','D'],['C','H'],['C','E']],
+    verts:['C','A','D','H','E'] }
+];
+
+/* ----------------------------------------------------------------------------
+   État
+---------------------------------------------------------------------------- */
+const DEF = { yaw:0.62, pitch:0.5, zoom:1.15, sep:0, ax:1, ay:1, az:1 };
+const state = {
+  yaw:DEF.yaw, pitch:DEF.pitch, zoom:DEF.zoom,
+  sep:0, sepTarget:0, animating:false, oscillate:false, phase:0,
+  autoRot:false, labels:true, edges:true, iso:'all',
+  ax:1, ay:1, az:1,
+  viewDist:14, fitFactor:0.34, sepMax:2.4,
+  cx:0, cy:0, scale:1
+};
+let V = vertices(state.ax, state.ay, state.az);
+let cw=0, ch=0;
+
+/* ----------------------------------------------------------------------------
+   Maths 3D
+---------------------------------------------------------------------------- */
+const L = normalize([-0.4, 0.7, 0.75]);           // direction de la lumière (repère caméra)
+function normalize(a){const l=Math.hypot(a[0],a[1],a[2])||1;return [a[0]/l,a[1]/l,a[2]/l];}
+function sub(a,b){return [a[0]-b[0],a[1]-b[1],a[2]-b[2]];}
+function cross(a,b){return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];}
+
+function worldPos(label, pyr, off){
+  const v = V[label];
+  return [ v[0]+pyr.dir[0]*off, v[1]+pyr.dir[1]*off, v[2]+pyr.dir[2]*off ];
+}
+// rotation : on remappe (x, z, -y) puis lacet (autour du haut) + tangage
+function rot(p){
+  let x=p[0], y=p[2], z=-p[1];
+  const cy=Math.cos(state.yaw), sy=Math.sin(state.yaw);
+  let X = x*cy + z*sy;
+  let Z = -x*sy + z*cy;
+  let Y = y;
+  const cp=Math.cos(state.pitch), sp=Math.sin(state.pitch);
+  let Y2 = Y*cp - Z*sp;
+  let Z2 = Y*sp + Z*cp;
+  return [X, Y2, Z2];
+}
+function proj(T){
+  const s = state.scale * state.viewDist / (state.viewDist - T[2]);
+  return [state.cx + T[0]*s, state.cy - T[1]*s, T[2]];
+}
+
+/* ----------------------------------------------------------------------------
+   Rendu
+---------------------------------------------------------------------------- */
+function draw(){
+  state.cx = cw/2; state.cy = ch/2;
+  const off = state.sep * state.sepMax;
+
+  // échelle auto : la figure reste cadrée quel que soit l'écartement / les dimensions
+  let maxR = 0.001;
+  for(const pyr of PYR){
+    for(const lab of pyr.verts){
+      const w = worldPos(lab, pyr, off);
+      const r = Math.hypot(w[0],w[1],w[2]);
+      if(r>maxR) maxR=r;
+    }
+  }
+  state.scale = state.fitFactor * Math.min(cw,ch) / maxR * state.zoom;
+
+  // fond
+  const g = ctx.createLinearGradient(0,0,0,ch);
+  g.addColorStop(0,'#f1f5fb'); g.addColorStop(1,'#dfe6f1');
+  ctx.fillStyle=g; ctx.fillRect(0,0,cw,ch);
+
+  // construire les primitives triées par profondeur
+  const items=[];
+  const edgeW = Math.max(1.4, Math.min(cw,ch)*0.0035);
+  for(const pyr of PYR){
+    const alpha = (state.iso==='all' || state.iso===pyr.key) ? 1 : 0.10;
+    // faces
+    for(const f of pyr.fills){
+      const T0=rot(worldPos(f.t[0],pyr,off)), T1=rot(worldPos(f.t[1],pyr,off)), T2=rot(worldPos(f.t[2],pyr,off));
+      const n = normalize(cross(sub(T1,T0), sub(T2,T0)));
+      const d = Math.abs(n[0]*L[0]+n[1]*L[1]+n[2]*L[2]);
+      const lit = (0.46 + 0.54*d) * (f.b ? 1.09 : 1.0);
+      const c = pyr.color;
+      const col = `rgba(${Math.min(255,c[0]*lit)|0},${Math.min(255,c[1]*lit)|0},${Math.min(255,c[2]*lit)|0},${alpha})`;
+      const S0=proj(T0), S1=proj(T1), S2=proj(T2);
+      items.push({type:'f', pts:[S0,S1,S2], col, depth:(T0[2]+T1[2]+T2[2])/3});
+    }
+    // arêtes
+    if(state.edges){
+      for(const e of pyr.edges){
+        const Ta=rot(worldPos(e[0],pyr,off)), Tb=rot(worldPos(e[1],pyr,off));
+        const Sa=proj(Ta), Sb=proj(Tb);
+        const c=pyr.edge;
+        items.push({type:'e', a:Sa, b:Sb, col:`rgba(${c[0]},${c[1]},${c[2]},${alpha})`, w:edgeW, depth:(Ta[2]+Tb[2])/2 + 0.01});
+      }
+    }
+  }
+  items.sort((p,q)=>p.depth-q.depth);   // du plus loin au plus près
+
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  for(const it of items){
+    if(it.type==='f'){
+      ctx.beginPath();
+      ctx.moveTo(it.pts[0][0],it.pts[0][1]);
+      ctx.lineTo(it.pts[1][0],it.pts[1][1]);
+      ctx.lineTo(it.pts[2][0],it.pts[2][1]);
+      ctx.closePath();
+      ctx.fillStyle=it.col; ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(it.a[0],it.a[1]); ctx.lineTo(it.b[0],it.b[1]);
+      ctx.strokeStyle=it.col; ctx.lineWidth=it.w; ctx.stroke();
+    }
+  }
+
+  // étiquettes des sommets (au-dessus)
+  if(state.labels){
+    ctx.font='bold 15px -apple-system,Segoe UI,Roboto,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(const pyr of PYR){
+      const alpha = (state.iso==='all' || state.iso===pyr.key) ? 1 : 0.10;
+      if(alpha<0.3) continue;
+      // centre écran de la pyramide (pour décaler les étiquettes vers l'extérieur)
+      let cxs=0, cys=0;
+      const screens={};
+      for(const lab of pyr.verts){ const S=proj(rot(worldPos(lab,pyr,off))); screens[lab]=S; cxs+=S[0]; cys+=S[1]; }
+      cxs/=pyr.verts.length; cys/=pyr.verts.length;
+      for(const lab of pyr.verts){
+        const S=screens[lab];
+        let dx=S[0]-cxs, dy=S[1]-cys; const l=Math.hypot(dx,dy)||1; dx/=l; dy/=l;
+        const px=S[0]+dx*13, py=S[1]+dy*13;
+        ctx.beginPath(); ctx.arc(S[0],S[1],3.2,0,7); ctx.fillStyle=`rgba(${pyr.edge[0]},${pyr.edge[1]},${pyr.edge[2]},1)`; ctx.fill();
+        ctx.lineWidth=4; ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.strokeText(lab,px,py);
+        ctx.fillStyle='#1b2536'; ctx.fillText(lab,px,py);
+      }
+    }
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   Boucle
+---------------------------------------------------------------------------- */
+function loop(){
+  if(state.autoRot) state.yaw += 0.006;
+  if(state.oscillate){
+    state.phase += 0.014;
+    state.sep = 0.5 - 0.5*Math.cos(state.phase);
+    syncSep();
+  } else if(state.animating){
+    state.sep += (state.sepTarget - state.sep)*0.16;
+    if(Math.abs(state.sepTarget-state.sep)<0.002){ state.sep=state.sepTarget; state.animating=false; }
+    syncSep();
+  }
+  draw();
+  requestAnimationFrame(loop);
+}
+
+/* ----------------------------------------------------------------------------
+   Contrôles
+---------------------------------------------------------------------------- */
+const $ = id=>document.getElementById(id);
+const sepSlider=$('sep'), sepVal=$('sepVal');
+const zoomSlider=$('zoom'), zoomVal=$('zoomVal');
+const oscBox=$('osc');
+
+function setRangeFill(el){ const min=+el.min,max=+el.max; el.style.setProperty('--p', ((el.value-min)/(max-min)*100)+'%'); }
+function syncSep(){ sepSlider.value=Math.round(state.sep*100); sepVal.textContent=Math.round(state.sep*100)+' %'; setRangeFill(sepSlider); }
+
+sepSlider.addEventListener('input', ()=>{
+  state.sep = state.sepTarget = +sepSlider.value/100;
+  state.animating=false; state.oscillate=false; oscBox.checked=false;
+  sepVal.textContent=sepSlider.value+' %'; setRangeFill(sepSlider);
+});
+function animateTo(t){ state.sepTarget=t; state.animating=true; state.oscillate=false; oscBox.checked=false; }
+$('assemble').addEventListener('click', ()=>animateTo(0));
+$('detach').addEventListener('click', ()=>animateTo(1));
+oscBox.addEventListener('change', ()=>{ state.oscillate=oscBox.checked; if(state.oscillate){ state.animating=false; state.phase=Math.acos(1-2*state.sep)||0; } });
+
+$('labels').addEventListener('change', e=>state.labels=e.target.checked);
+$('edges').addEventListener('change', e=>state.edges=e.target.checked);
+$('spin').addEventListener('change', e=>state.autoRot=e.target.checked);
+
+zoomSlider.addEventListener('input', ()=>{ state.zoom=+zoomSlider.value/100; zoomVal.textContent=zoomSlider.value+' %'; setRangeFill(zoomSlider); });
+
+// isolation
+document.querySelectorAll('#isoSeg button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('#isoSeg button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); state.iso=b.dataset.iso;
+  });
+});
+
+// dimensions
+function updateDims(){
+  V = vertices(state.ax, state.ay, state.az);
+  $('dwVal').textContent=state.ax.toFixed(1);
+  $('ddVal').textContent=state.ay.toFixed(1);
+  $('dhVal').textContent=state.az.toFixed(1);
+}
+$('dw').addEventListener('input', e=>{ state.ax=+e.target.value/100; setRangeFill(e.target); updateDims(); });
+$('dd').addEventListener('input', e=>{ state.ay=+e.target.value/100; setRangeFill(e.target); updateDims(); });
+$('dh').addEventListener('input', e=>{ state.az=+e.target.value/100; setRangeFill(e.target); updateDims(); });
+
+// reset
+$('reset').addEventListener('click', ()=>{
+  Object.assign(state,{yaw:DEF.yaw,pitch:DEF.pitch,zoom:DEF.zoom,sep:0,sepTarget:0,animating:false,oscillate:false,phase:0,
+    autoRot:false,labels:true,edges:true,iso:'all',ax:1,ay:1,az:1});
+  oscBox.checked=false; $('spin').checked=false; $('labels').checked=true; $('edges').checked=true;
+  $('dw').value=100; $('dd').value=100; $('dh').value=100;
+  zoomSlider.value=115; zoomVal.textContent='115 %';
+  document.querySelectorAll('#isoSeg button').forEach(x=>x.classList.toggle('active', x.dataset.iso==='all'));
+  updateDims(); syncSep();
+  [sepSlider,zoomSlider,$('dw'),$('dd'),$('dh')].forEach(setRangeFill);
+});
+
+/* ----------------------------------------------------------------------------
+   Interaction pointeur
+---------------------------------------------------------------------------- */
+let drag=false, last={x:0,y:0};
+canvas.addEventListener('pointerdown', e=>{ drag=true; last={x:e.clientX,y:e.clientY}; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove', e=>{
+  if(!drag) return;
+  const dx=e.clientX-last.x, dy=e.clientY-last.y; last={x:e.clientX,y:e.clientY};
+  state.yaw += dx*0.01;
+  state.pitch = Math.max(-1.45, Math.min(1.45, state.pitch + dy*0.01));
+});
+canvas.addEventListener('pointerup', ()=>drag=false);
+canvas.addEventListener('pointercancel', ()=>drag=false);
+canvas.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const f = e.deltaY<0 ? 1.08 : 0.925;
+  state.zoom = Math.max(0.4, Math.min(3, state.zoom*f));
+  zoomSlider.value=Math.round(state.zoom*100); zoomVal.textContent=zoomSlider.value+' %'; setRangeFill(zoomSlider);
+},{passive:false});
+
+/* ----------------------------------------------------------------------------
+   Dimensionnement / init
+---------------------------------------------------------------------------- */
+function resize(){
+  const r = canvas.getBoundingClientRect();
+  const dpr = Math.min(2, window.devicePixelRatio||1);
+  canvas.width = Math.max(1, r.width*dpr);
+  canvas.height = Math.max(1, r.height*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  cw=r.width; ch=r.height;
+}
+window.addEventListener('resize', resize);
+[sepSlider,zoomSlider,$('dw'),$('dd'),$('dh')].forEach(setRangeFill);
+updateDims(); resize(); requestAnimationFrame(loop);
+</script>
+</body>
+</html>

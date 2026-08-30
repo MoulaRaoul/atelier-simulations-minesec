@@ -1,0 +1,905 @@
+<!--
+================================================================================
+BANQUE DES OPERATIONS — FAMILLE « SEPARER »
+Banque de simulations MINESEC — version 1, soumise à validation
+
+TROISIEME BANQUE, APRES LES PROPS ET LE MOUVEMENT
+  Les props fixent ce que les objets SONT.
+  Le mouvement fixe comment ils se DEPLACENT.
+  Les opérations fixent ce qui leur ARRIVE : ce qui les sépare, les réunit,
+  les aplatit, les découpe en morceaux dénombrables.
+
+POURQUOI CETTE BANQUE NE POUVAIT PAS ETRE DANS CELLE DU MOUVEMENT
+  Un mouvement est une matrice affine, matrix(a,b,c,d,e,f). Une matrice
+  applique chaque point sur un autre point, et elle est inversible : ce qui
+  était d'un seul tenant le reste. AUCUNE valeur de a, b, c, d, e, f ne
+  sépare un objet en deux. Couper est d'une autre nature — ça ne déplace pas
+  l'objet, ça en fabrique deux.
+
+LE PRINCIPE QUI TIENT LA BANQUE
+  Chaque opération déclare ses PARAMETRES NECESSAIRES ET SUFFISANTS.
+  Ni un de moins — l'opération serait indéterminée. Ni un de plus — le
+  surplus serait du réglage, pas de la définition.
+  C'est ce qui rend une opération copiable, comme la matrice rend un
+  mouvement copiable.
+
+COMMENT LES DEUX BANQUES SE COMPOSENT
+  L'opération dit CE QUI ARRIVE à l'objet. Le mouvement dit COMMENT cela se
+  déroule dans le temps. Chaque entrée indique donc quel geste de la banque
+  de mouvement l'anime.
+
+CE QUE CETTE VERSION CONTIENT, ET CE QU'ELLE NE CONTIENT PAS
+  La famille « Séparer », quatre opérations. Les trois autres familles —
+  Réunir, Aplatir, Discrétiser — sont annoncées mais pas écrites : le
+  catalogue doit être éprouvé sur une famille avant que neuf entrées soient
+  bâties sur sa forme.
+
+UNE DIFFERENCE AVEC LA BANQUE DE MOUVEMENT, A CONNAITRE
+  Un mouvement s'applique à n'importe quel objet : translate(x,y) ne demande
+  pas ce qu'on déplace. UNE OPERATION DEPEND DE LA FORME sur laquelle elle
+  porte. Couper un cône et couper un cube ne sont pas le même calcul. Le code
+  de cette banque est donc en deux routines par opération quand il le faut :
+  une pour les solides de révolution, une pour les polyèdres. Elles sont
+  écrites de façon à couvrir tous les solides du programme, pas seulement
+  ceux des démonstrations.
+================================================================================
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Banque des opérations — famille Séparer</title>
+<style>
+:root{
+  --bg:#121416; --panel:#1a1d21; --panel2:#25282d; --line:#3f454d;
+  --txt:#e8ebee; --dim:#98a1ab; --accent:#3b82f6; --ok:#22c55e; --no:#ef4444;
+  --saisir:#f59e0b; --fs:16px;
+  --f-txt:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-fix:Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--f-txt);font-size:var(--fs);background:var(--bg);color:var(--txt);
+  display:flex;flex-direction:column;overflow:hidden}
+button{font-family:inherit;font-size:inherit;cursor:pointer;color:inherit}
+input{font-family:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+code{font-family:var(--f-fix);font-size:.9em;background:var(--panel2);padding:1px 5px;border-radius:3px}
+
+header.res{background:var(--panel);border-bottom:2px solid var(--line);padding:12px 16px;
+  display:flex;align-items:center;gap:16px;flex-shrink:0;flex-wrap:wrap}
+.ident{flex:1;min-width:240px}
+.ident .niveau{font-family:var(--f-fix);font-size:.84rem;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--dim);line-height:1.4}
+.ident h1{font-size:clamp(1.35rem,3vw,1.85rem);font-weight:700;line-height:1.2;margin:2px 0}
+.ident .lecons{font-family:var(--f-fix);font-size:.84rem;letter-spacing:.04em;color:var(--accent)}
+.ic{background:var(--panel2);border:2px solid var(--line);border-radius:5px;width:48px;height:48px;
+  padding:0;display:flex;align-items:center;justify-content:center}
+.ic:hover{border-color:var(--accent);color:var(--accent)}
+.ic svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+
+.fam{background:var(--panel2);border-bottom:2px solid var(--line);padding:8px 16px;
+  display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.fam .fl{font-size:.62rem;color:var(--dim);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.08em;margin-right:4px}
+.fam button{background:var(--panel);border:2px solid var(--line);border-radius:5px;
+  padding:5px 10px;font-size:.66rem;font-weight:700;font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.04em;color:var(--dim)}
+.fam button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.fam button[disabled]{opacity:.4;cursor:not-allowed}
+
+main{flex:1;overflow-y:auto;padding:18px}
+.wrap{max-width:112ch;margin:0 auto}
+.socle{background:var(--panel);border:2px solid var(--line);border-radius:5px;
+  padding:16px 18px;margin-bottom:24px}
+h2{font-size:.74rem;color:var(--accent);font-family:var(--f-fix);text-transform:uppercase;
+  letter-spacing:.09em;border-bottom:2px solid var(--line);padding-bottom:5px;margin-bottom:12px}
+h3{font-size:.96rem;margin:16px 0 6px}
+p,li{font-size:.85rem;line-height:1.62;margin-bottom:5px}
+ul{margin-left:22px}
+.dim{color:var(--dim)}
+
+.op{background:var(--panel);border:2px solid var(--line);border-radius:5px;
+  padding:15px 17px;margin-bottom:18px}
+.ot{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;margin-bottom:4px}
+.ot .n{font-family:var(--f-fix);font-size:.68rem;color:var(--accent);letter-spacing:.06em}
+.ot .nom{font-size:1.02rem;font-weight:700;flex:1;min-width:200px}
+.ot .ou{font-family:var(--f-fix);font-size:.6rem;color:var(--dim)}
+.od{font-size:.83rem;color:var(--dim);line-height:1.55;margin-bottom:10px}
+
+.corps{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.vue{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:6px;
+  flex-shrink:0}
+.vue svg{display:block;width:266px;height:auto}
+.cmd{flex:1;min-width:250px;display:flex;flex-direction:column;gap:6px}
+.pr{display:flex;align-items:center;gap:8px}
+.pr .et{font-family:var(--f-fix);font-size:.62rem;color:var(--dim);min-width:6.4rem;flex-shrink:0}
+.pr input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
+.pr .vv{font-family:var(--f-fix);font-size:.68rem;min-width:3.4rem;text-align:right;
+  font-variant-numeric:tabular-nums}
+.pr1 .et{color:#e879f9} .pr2 .et{color:#38bdf8} .pr3 .et{color:#fbbf24}
+.sel{display:flex;gap:4px;flex-wrap:wrap}
+.sel button{background:var(--panel2);border:2px solid var(--line);border-radius:4px;
+  padding:4px 9px;font-size:.62rem;font-weight:700;font-family:var(--f-fix);color:var(--dim)}
+.sel button[aria-pressed="true"]{background:var(--accent);color:#07131f;border-color:var(--accent)}
+
+.fiche{border:1px solid var(--line);border-radius:4px;padding:8px 10px;background:var(--panel2)}
+.fl2{display:flex;gap:8px;font-size:.75rem;line-height:1.5}
+.fl2 .k{font-family:var(--f-fix);font-size:.57rem;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--dim);min-width:9.5ch;flex-shrink:0;padding-top:2px}
+.fl2 .v{font-family:var(--f-fix);font-size:.71rem;word-break:break-word}
+.nes{border-left:3px solid var(--accent);padding-left:9px;margin-top:7px;font-size:.79rem;
+  line-height:1.5}
+.nes b{color:var(--accent);font-family:var(--f-fix);font-size:.66rem;
+  text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:2px}
+.verdict{display:block;padding:5px 8px;border-radius:4px;text-align:center;
+  font-family:var(--f-fix);font-size:.74rem;font-weight:700;letter-spacing:.06em;
+  border:2px solid var(--accent);color:var(--accent);background:rgba(59,130,246,.12)}
+.verdict.deg{border-color:var(--saisir);color:var(--saisir);background:rgba(245,158,11,.12)}
+.verdict.nul{border-color:var(--no);color:var(--no);background:rgba(239,68,68,.12)}
+
+.bloc{position:relative;margin-top:11px}
+.bloc pre{background:var(--panel2);border:2px solid var(--line);border-radius:5px;padding:12px;
+  padding-top:32px;overflow-x:auto;font-family:var(--f-fix);font-size:.69rem;line-height:1.55;
+  color:var(--txt);white-space:pre;max-height:400px}
+.bloc .cp{position:absolute;top:7px;right:8px;background:var(--accent);color:#07131f;border:none;
+  border-radius:999px;padding:3px 12px;font-size:.6rem;font-weight:700;font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.05em}
+.bloc .cp.ok{background:var(--ok)}
+.bloc .lb{position:absolute;top:11px;left:12px;font-family:var(--f-fix);font-size:.57rem;
+  text-transform:uppercase;letter-spacing:.07em;color:var(--dim)}
+
+table{width:100%;border-collapse:collapse;margin:8px 0 12px;background:var(--panel2)}
+th,td{border:1px solid var(--line);padding:6px 8px;font-size:.77rem;text-align:left;vertical-align:top}
+th{background:var(--panel);color:var(--dim);font-family:var(--f-fix);font-size:.61rem;
+  text-transform:uppercase;letter-spacing:.05em}
+td.f{font-family:var(--f-fix);font-size:.71rem}
+.avert{border:2px solid var(--saisir);border-radius:5px;background:rgba(245,158,11,.11);
+  padding:11px;margin:10px 0;font-size:.82rem;line-height:1.55}
+.avert b{color:var(--saisir)}
+
+/* --- scènes --- */
+.sol{fill:#1a1d21;stroke:#2a2f36;stroke-width:1.5}
+.gril{stroke:#232830;stroke-width:1;fill:none}
+.corpsA{fill:#46536390;stroke:#141a21;stroke-width:2;stroke-linejoin:round}
+.corpsB{fill:#2b3440;stroke:#141a21;stroke-width:2;stroke-linejoin:round}
+.faceD{fill:#4d5b6c;stroke:#141a21;stroke-width:2;stroke-linejoin:round}
+.faceG{fill:#333d49;stroke:#141a21;stroke-width:2;stroke-linejoin:round}
+.faceH{fill:#5c6a7b;stroke:#141a21;stroke-width:2;stroke-linejoin:round}
+.gen{stroke:#6b7a8c;stroke-width:1;fill:none;opacity:.45}
+.mat{stroke:#4a5568;stroke-width:4;stroke-linecap:round}
+.matH{stroke:#2f3742;stroke-width:4;stroke-linecap:round;stroke-dasharray:3 4}
+.perle{stroke:#0f141b;stroke-width:2}
+.lame{fill:rgba(59,130,246,.10);stroke:#3b82f6;stroke-width:2;stroke-linejoin:round}
+.sect{fill:rgba(34,197,94,.32);stroke:#22c55e;stroke-width:3;stroke-linejoin:round}
+.garde{fill:rgba(34,197,94,.22);stroke:#22c55e;stroke-width:2.5;stroke-linejoin:round}
+.jete{fill:rgba(148,163,184,.10);stroke:#5b6472;stroke-width:1.5;stroke-dasharray:5 4;
+  stroke-linejoin:round}
+.dte{stroke:#3b82f6;stroke-width:2}
+.pce{fill:#46536e;stroke:#141a21;stroke-width:2;stroke-linejoin:round}
+.pceH{fill:#5b6a86;stroke:#141a21;stroke-width:2;stroke-linejoin:round}
+.dedans{fill:#22c55e;stroke:#0f6b39;stroke-width:2;stroke-linejoin:round}
+.dedansH{fill:#34d97f;stroke:#0f6b39;stroke-width:2;stroke-linejoin:round}
+.et{font-family:Consolas,monospace;font-size:10px;fill:#98a1ab}
+
+.pied{background:var(--panel);border-top:2px solid var(--line);padding:6px;text-align:center;
+  flex-shrink:0;font-family:var(--f-fix);font-size:.70rem;letter-spacing:.16em;color:var(--dim)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="res">
+  <div class="ident">
+    <div class="niveau">MINESEC · BANQUE DE SIMULATIONS · BANQUE DES OPERATIONS</div>
+    <h1>Famille Séparer</h1>
+    <div class="lecons">Version 1 — quatre opérations · à valider</div>
+  </div>
+  <button class="ic" onclick="B.tout()" aria-label="Tout réinitialiser" title="Tout réinitialiser">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 11-2.6-5.9"/><path d="M20 4v5h-5"/></svg></button>
+</header>
+
+<div class="fam" role="group" aria-label="Familles">
+  <span class="fl">Familles</span>
+  <button aria-pressed="true">Séparer — 4</button>
+  <button disabled aria-pressed="false">Réunir — à venir</button>
+  <button disabled aria-pressed="false">Aplatir — à venir</button>
+  <button disabled aria-pressed="false">Discrétiser — à venir</button>
+</div>
+
+<main><div class="wrap">
+
+<div class="socle">
+  <h2>Le principe</h2>
+  <p><b>Chaque opération déclare ses paramètres nécessaires et suffisants.</b> Ni un de moins — l'opération serait indéterminée. Ni un de plus — le surplus serait du réglage, pas de la définition. C'est ce qui rend une opération copiable, comme la matrice rend un mouvement copiable.</p>
+
+  <div class="avert">
+    <p><b>Une matrice ne peut pas séparer.</b> <code>matrix(a,b,c,d,e,f)</code> applique chaque point sur un autre point, et elle est inversible : ce qui était d'un seul tenant le reste. Aucune valeur des six coefficients ne coupe quoi que ce soit. C'est pour cela que ces opérations ne pouvaient pas entrer dans la banque de mouvement, et qu'il en fallait une autre.</p>
+  </div>
+
+  <h3>Comment les deux banques se composent</h3>
+  <p>L'opération dit <b>ce qui arrive</b> à l'objet. Le mouvement dit <b>comment cela se déroule</b> dans le temps. Chaque entrée ci-dessous indique donc quel geste de la banque de mouvement l'anime.</p>
+
+  <h3>Une différence avec la banque de mouvement</h3>
+  <p>Un mouvement s'applique à n'importe quel objet : <code>translate(x,y)</code> ne demande pas ce qu'on déplace. <b>Une opération dépend de la forme sur laquelle elle porte.</b> Couper un cône et couper un cube ne sont pas le même calcul. Certaines entrées donnent donc deux routines — une pour les solides de révolution, une pour les polyèdres — écrites pour couvrir tous les solides du programme, pas seulement ceux des démonstrations.</p>
+
+  <h3>Le repère commun</h3>
+  <p>Toutes les scènes emploient l'isométrie de la banque de props : <code>X = 0,866 (x − y)</code> et <code>Y = 0,5 (x + y) − z</code>. Les hauteurs ne sont jamais raccourcies.</p>
+  <div class="bloc"><span class="lb">à coller une fois par ressource</span>
+    <button class="cp" data-c="c-socle">Copier</button><pre id="c-socle"></pre></div>
+</div>
+
+<div id="cat"></div>
+
+<div class="socle">
+  <h2>Ce que cette version ne fait pas encore</h2>
+  <ul>
+    <li><b>Les trois autres familles.</b> Réunir — emboîter, verrouiller. Aplatir — déplier, projeter. Discrétiser — échantillonner, partager en parts. Elles sont annoncées, pas écrites : le catalogue doit être éprouvé sur une famille avant que neuf entrées soient bâties sur sa forme.</li>
+    <li><b>Les solides non convexes.</b> La coupe d'un polyèdre ordonne les points de section par leur angle autour du centre. C'est juste pour un solide convexe — cube, prisme, pyramide — et faux pour une pièce en L. Il faudrait suivre les faces au lieu de trier par angle.</li>
+    <li><b>La coupe d'un objet déjà coupé.</b> Chaque routine part de l'objet entier. Enchaîner deux coupes demande que la première rende un solide, pas seulement une section.</li>
+    <li><b>L'écorché des solides de révolution.</b> L'entrée SEP-04 traite le boîtier, qui est le cas dont vos ressources ont besoin. Écorcher un cylindre est un autre calcul.</li>
+  </ul>
+
+  <h2>Ce dont je ne suis pas certain</h2>
+  <p>Le rattachement de ces opérations au programme. Le manuel de cinquième, Module IV, demande de « déterminer, pour chacun des objets représentés en 3D, celui qui correspond à sa représentation en 2D » — la coupe et la projection y servent. Mais <b>aucun manuel ne parle de section, de plan de coupe ni d'écorché.</b> Ces opérations sont des outils de fabrication de vos scènes ; elles ne deviennent une leçon que si le programme le demande, et il faut le vérifier au cas par cas.</p>
+</div>
+
+</div></main>
+
+<div class="pied">MINESEC-LAB</div>
+
+<script>
+"use strict";
+
+/* ═══════════════ Le socle géométrique, tel qu'il est distribué ═══════════════ */
+const SOCLE = `/* ── SOCLE DES OPERATIONS ────────────────────────────────────
+   Isométrie de la banque de props : les hauteurs ne sont jamais
+   raccourcies, une cote se relève sur les trois axes.
+       X = 0,866 (x - y)        Y = 0,5 (x + y) - z          */
+
+const C30 = 0.8660254;
+const iso = (x,y,z) => [ (x-y)*C30, (x+y)*0.5 - z ];
+const pt  = (x,y,z) => { const p = iso(x,y,z); return p[0].toFixed(1)+","+p[1].toFixed(1); };
+
+/* Le plan par trois points. Renvoie sa normale n, sa constante d, et la
+   norme de n : si celle-ci est nulle, les trois points sont ALIGNES et il
+   n'existe aucun plan. C'est le seul cas d'echec de l'operation. */
+function plan(P){
+  const u = [P[1][0]-P[0][0], P[1][1]-P[0][1], P[1][2]-P[0][2]];
+  const v = [P[2][0]-P[0][0], P[2][1]-P[0][1], P[2][2]-P[0][2]];
+  const n = [ u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0] ];
+  return { n,
+           d: n[0]*P[0][0] + n[1]*P[0][1] + n[2]*P[0][2],
+           norme: Math.hypot(n[0],n[1],n[2]) };
+}
+
+/* De quel cote du plan se trouve un point : positif, negatif, ou nul.
+   C'est ce signe qui decide quel morceau on garde. */
+function cote(pl, P){ return pl.n[0]*P[0] + pl.n[1]*P[1] + pl.n[2]*P[2] - pl.d; }`;
+
+/* ═══════════════ Géométrie ═══════════════ */
+const C30 = 0.8660254;
+const iso = (x,y,z)=>[ (x-y)*C30, (x+y)*0.5 - z ];
+const pt  = (x,y,z)=>{ const p=iso(x,y,z); return p[0].toFixed(1)+","+p[1].toFixed(1); };
+const poly = (l,c)=> `<polygon class="${c}" points="${l.join(" ")}"/>`;
+
+function plan(P){
+  const u=[P[1][0]-P[0][0],P[1][1]-P[0][1],P[1][2]-P[0][2]];
+  const v=[P[2][0]-P[0][0],P[2][1]-P[0][1],P[2][2]-P[0][2]];
+  const n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+  return {n, d:n[0]*P[0][0]+n[1]*P[0][1]+n[2]*P[0][2], norme:Math.hypot(n[0],n[1],n[2])};
+}
+
+/* SEP-01a — coupe d'un solide de révolution.
+   La racine est cherchée numériquement : une seule routine sert donc le
+   cône, le cylindre, la sphère, et tout solide dont on sait donner r(z). */
+function couperRevolution(sol, pl, pasT, pasZ){
+  pasT = pasT||300; pasZ = pasZ||50;
+  const arcs=[]; let cur=[];
+  for(let i=0;i<=pasT;i++){
+    const th=2*Math.PI*i/pasT;
+    const c=pl.n[0]*Math.cos(th)+pl.n[1]*Math.sin(th);
+    const g=z=> sol.r(z)*c + pl.n[2]*z - pl.d;
+    let zt=null, zp=sol.z0, gp=g(zp);
+    for(let k=1;k<=pasZ;k++){
+      const z=sol.z0+(sol.z1-sol.z0)*k/pasZ, gv=g(z);
+      if((gp<0)!==(gv<0)){
+        let a=zp,b=z,ga=gp;
+        for(let j=0;j<32;j++){ const m=(a+b)/2, gm=g(m);
+          if((ga<0)!==(gm<0)) b=m; else { a=m; ga=gm; } }
+        zt=(a+b)/2; break;
+      }
+      zp=z; gp=gv;
+    }
+    if(zt!==null){ const r=sol.r(zt); cur.push([r*Math.cos(th), r*Math.sin(th), zt]); }
+    else if(cur.length){ arcs.push(cur); cur=[]; }
+  }
+  if(cur.length) arcs.push(cur);
+  if(arcs.length>1){
+    const a=arcs[0], b=arcs[arcs.length-1];
+    if(Math.hypot(a[0][0]-b[b.length-1][0],a[0][1]-b[b.length-1][1],a[0][2]-b[b.length-1][2])<6){
+      arcs[arcs.length-1]=b.concat(a); arcs.shift();
+    }
+  }
+  return arcs;
+}
+
+/* SEP-01b — coupe d'un polyèdre. Chaque arête traversée donne un point ;
+   les points sont ordonnés par leur angle dans le repère du plan. */
+function couperPolyedre(S, A, pl){
+  const f=P=> pl.n[0]*P[0]+pl.n[1]*P[1]+pl.n[2]*P[2]-pl.d;
+  const pts=[];
+  A.forEach(([i,j])=>{
+    const a=f(S[i]), b=f(S[j]);
+    if((a<0)!==(b<0) && Math.abs(a-b)>1e-9){
+      const t=a/(a-b);
+      pts.push([S[i][0]+t*(S[j][0]-S[i][0]), S[i][1]+t*(S[j][1]-S[i][1]), S[i][2]+t*(S[j][2]-S[i][2])]);
+    }
+  });
+  if(pts.length<3) return [];
+  const n=pl.n.map(v=>v/pl.norme);
+  let a0=Math.abs(n[2])<0.9?[0,0,1]:[1,0,0];
+  let u=[a0[1]*n[2]-a0[2]*n[1],a0[2]*n[0]-a0[0]*n[2],a0[0]*n[1]-a0[1]*n[0]];
+  const lu=Math.hypot(u[0],u[1],u[2]); u=u.map(v=>v/lu);
+  const v=[n[1]*u[2]-n[2]*u[1],n[2]*u[0]-n[0]*u[2],n[0]*u[1]-n[1]*u[0]];
+  const c=[0,1,2].map(k=> pts.reduce((s,p)=>s+p[k],0)/pts.length);
+  return pts.map(p=>{
+    const w=[p[0]-c[0],p[1]-c[1],p[2]-c[2]];
+    return {p, a:Math.atan2(w[0]*v[0]+w[1]*v[1]+w[2]*v[2], w[0]*u[0]+w[1]*u[1]+w[2]*u[2])};
+  }).sort((x,y)=>x.a-y.a).map(x=>x.p);
+}
+
+/* SEP-02 — coupe d'un polygone par une droite (Sutherland-Hodgman). */
+function couperPolygone(pg, A, Bp, sens){
+  const f=P=> (Bp[0]-A[0])*(P[1]-A[1]) - (Bp[1]-A[1])*(P[0]-A[0]);
+  const garde=v=> sens>0 ? v>=-1e-9 : v<=1e-9;
+  const out=[];
+  for(let i=0;i<pg.length;i++){
+    const P=pg[i], Q=pg[(i+1)%pg.length], fp=f(P), fq=f(Q);
+    if(garde(fp)) out.push(P);
+    if((fp>0)!==(fq>0) && Math.abs(fp-fq)>1e-9){
+      const t=fp/(fp-fq);
+      out.push([P[0]+t*(Q[0]-P[0]), P[1]+t*(Q[1]-P[1])]);
+    }
+  }
+  return out;
+}
+
+/* ═══════════════ Les solides des démonstrations ═══════════════ */
+const RM=150, ANG=[90,210,330].map(d=>d*Math.PI/180);
+const SOLIDES={
+  cone:     {nom:"Cône",     r:z=>130*(1-z/120), z0:0, z1:120, R:130, H:120},
+  cylindre: {nom:"Cylindre", r:z=>95,            z0:0, z1:150, R:95,  H:150},
+  sphere:   {nom:"Sphère",   r:z=>{const t=95*95-(z-95)*(z-95); return t>0?Math.sqrt(t):0;},
+             z0:0, z1:190, R:95, H:190}
+};
+const L=88;
+const CUBE={ S:[[-L,-L,0],[L,-L,0],[L,L,0],[-L,L,0],[-L,-L,2*L],[L,-L,2*L],[L,L,2*L],[-L,L,2*L]],
+             A:[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]],
+             R:L*1.42, H:2*L };
+const trois=zs=> ANG.map((t,i)=>[RM*Math.cos(t), RM*Math.sin(t), zs[i]]);
+
+/* ═══════════════ Le catalogue ═══════════════ */
+const OPS=[
+{
+ id:"plan", num:"SEP-01", nom:"Couper par un plan",
+ ou:"cône, cylindre, sphère, cube · toute la famille des solides",
+ desc:"L'opération de base. Un plan traverse un solide et en fait deux morceaux. La courbe qu'il trace sur la surface est la section : elle n'est jamais dessinée à la main, elle sort de l'équation du plan et de celle du solide.",
+ nec:"Trois points, plus le côté gardé.",
+ pourquoi:"Trois points : par une droite il passe une infinité de plans, deux points ne suffisent donc pas ; trois points non alignés n'en laissent passer qu'un. Le côté gardé : trois points donnent le plan, pas la coupe. Sans lui, l'opération est indéterminée.",
+ anime:"TR-01 « la pièce s'engage » joué à l'envers, pour écarter les deux morceaux.",
+ code:`/* Couper un solide par un plan.
+   Deux routines, parce qu'un solide de révolution et un polyèdre ne se
+   coupent pas de la même façon. Elles rendent toutes deux la SECTION,
+   c'est-à-dire la frontière entre les deux morceaux. */
+
+/* --- a. solides de révolution : cône, cylindre, sphère, tout r(z) ---
+   Pour chaque angle, on cherche la hauteur ou la génératrice perce le
+   plan. La racine est numérique : la routine ne suppose rien de r(z). */
+function couperRevolution(sol, pl, pasT, pasZ){
+  pasT = pasT||300; pasZ = pasZ||50;
+  const arcs = []; let cur = [];
+  for(let i=0;i<=pasT;i++){
+    const th = 2*Math.PI*i/pasT;
+    const c  = pl.n[0]*Math.cos(th) + pl.n[1]*Math.sin(th);
+    const g  = z => sol.r(z)*c + pl.n[2]*z - pl.d;
+    let zt = null, zp = sol.z0, gp = g(zp);
+    for(let k=1;k<=pasZ;k++){
+      const z = sol.z0 + (sol.z1-sol.z0)*k/pasZ, gv = g(z);
+      if((gp<0) !== (gv<0)){                 /* changement de signe */
+        let a=zp, b=z, ga=gp;
+        for(let j=0;j<32;j++){ const m=(a+b)/2, gm=g(m);
+          if((ga<0)!==(gm<0)) b=m; else { a=m; ga=gm; } }
+        zt = (a+b)/2; break;
+      }
+      zp = z; gp = gv;
+    }
+    if(zt !== null){ const r = sol.r(zt);
+      cur.push([ r*Math.cos(th), r*Math.sin(th), zt ]); }
+    else if(cur.length){ arcs.push(cur); cur = []; }
+  }
+  if(cur.length) arcs.push(cur);
+  return arcs;
+}
+/* sol s'écrit ainsi :
+     cône     { r: z => R*(1 - z/H), z0:0, z1:H }
+     cylindre { r: z => R,           z0:0, z1:H }
+     sphère   { r: z => Math.sqrt(Math.max(0, R*R-(z-R)*(z-R))), z0:0, z1:2*R } */
+
+/* --- b. polyèdres : cube, prisme, pyramide ---
+   S : les sommets. A : les arêtes, par couples d'indices. */
+function couperPolyedre(S, A, pl){
+  const f = P => pl.n[0]*P[0] + pl.n[1]*P[1] + pl.n[2]*P[2] - pl.d;
+  const pts = [];
+  A.forEach(([i,j]) => {
+    const a = f(S[i]), b = f(S[j]);
+    if((a<0) !== (b<0) && Math.abs(a-b) > 1e-9){
+      const t = a/(a-b);
+      pts.push([ S[i][0]+t*(S[j][0]-S[i][0]),
+                 S[i][1]+t*(S[j][1]-S[i][1]),
+                 S[i][2]+t*(S[j][2]-S[i][2]) ]);
+    }
+  });
+  if(pts.length < 3) return [];
+  /* on ordonne les points par leur angle dans le repère du plan.
+     ATTENTION : juste pour un solide CONVEXE, faux pour une pièce en L. */
+  const n = pl.n.map(v => v/pl.norme);
+  let a0 = Math.abs(n[2]) < 0.9 ? [0,0,1] : [1,0,0];
+  let u = [ a0[1]*n[2]-a0[2]*n[1], a0[2]*n[0]-a0[0]*n[2], a0[0]*n[1]-a0[1]*n[0] ];
+  const lu = Math.hypot(u[0],u[1],u[2]); u = u.map(v => v/lu);
+  const v = [ n[1]*u[2]-n[2]*u[1], n[2]*u[0]-n[0]*u[2], n[0]*u[1]-n[1]*u[0] ];
+  const c = [0,1,2].map(k => pts.reduce((s,p) => s+p[k], 0)/pts.length);
+  return pts.map(p => {
+    const w = [p[0]-c[0], p[1]-c[1], p[2]-c[2]];
+    return { p, a: Math.atan2(w[0]*v[0]+w[1]*v[1]+w[2]*v[2],
+                              w[0]*u[0]+w[1]*u[1]+w[2]*u[2]) };
+  }).sort((x,y) => x.a - y.a).map(x => x.p);
+}`
+},
+{
+ id:"droite", num:"SEP-02", nom:"Couper par une droite",
+ ou:"figures planes · partage d'une surface",
+ desc:"La même opération, d'une dimension en moins. Une droite traverse une figure plane et en fait deux. C'est l'algorithme de Sutherland-Hodgman : on parcourt le contour, on garde les sommets du bon côté, et on ajoute un point à chaque traversée.",
+ nec:"Deux points, plus le côté gardé.",
+ pourquoi:"Deux points suffisent à définir une droite dans le plan — c'est là que l'analogie avec le plan s'arrête. Le côté gardé reste nécessaire, pour la même raison qu'en trois dimensions.",
+ anime:"TR-01 « la pièce s'engage », pour écarter les deux morceaux.",
+ code:`/* Couper un polygone par une droite : Sutherland-Hodgman.
+   On parcourt le contour. Un sommet du bon côté est gardé ; à chaque
+   traversée de la droite, on ajoute le point d'intersection.
+   La routine rend UN morceau. On l'appelle deux fois, avec sens = +1
+   puis sens = -1, pour avoir les deux.
+
+   pg   : le polygone, liste de [x,y], dans l'ordre du contour
+   A, B : les deux points de la droite
+   sens : +1 ou -1, le côté gardé */
+function couperPolygone(pg, A, B, sens){
+  /* f est positif d'un côté de la droite, négatif de l'autre :
+     c'est le produit vectoriel de AB par AP. */
+  const f = P => (B[0]-A[0])*(P[1]-A[1]) - (B[1]-A[1])*(P[0]-A[0]);
+  const garde = v => sens > 0 ? v >= -1e-9 : v <= 1e-9;
+  const out = [];
+  for(let i=0;i<pg.length;i++){
+    const P = pg[i], Q = pg[(i+1) % pg.length];
+    const fp = f(P), fq = f(Q);
+    if(garde(fp)) out.push(P);
+    if((fp>0) !== (fq>0) && Math.abs(fp-fq) > 1e-9){
+      const t = fp/(fp-fq);
+      out.push([ P[0] + t*(Q[0]-P[0]), P[1] + t*(Q[1]-P[1]) ]);
+    }
+  }
+  return out;
+}
+/* Le polygone rendu peut avoir plus de sommets que celui de départ :
+   une coupe ajoute deux points et peut en retirer un seul. */`
+},
+{
+ id:"eclat", num:"SEP-03", nom:"Éclater",
+ ou:"ressource 35, intérieur de l'unité centrale · tout assemblage",
+ desc:"Les morceaux ne sont pas détruits : ils s'écartent d'un centre pour qu'on voie entre eux. C'est le dessin d'assemblage des manuels techniques. L'opération ne coupe rien — elle sépare ce qui était déjà distinct.",
+ nec:"Un centre, plus un facteur.",
+ pourquoi:"Le centre : c'est de lui que tout s'écarte, et il décide de la direction de chaque pièce. Le facteur : zéro rend l'objet assemblé, un l'écarte pleinement. Deux paramètres, et l'éclaté est déterminé pour n'importe quel nombre de pièces.",
+ anime:"TR-01 « la pièce s'engage », joué à l'envers, 360 ms, courbe poser.",
+ code:`/* Éclater un assemblage.
+   Chaque pièce s'écarte du centre le long de la droite qui joint le
+   centre à sa propre position d'origine. Le facteur k va de 0 —
+   l'objet est assemblé — à 1 — il est pleinement écarté.
+
+   C'est la seule opération de cette famille qui soit une pure
+   translation : elle POURRAIT s'écrire avec une matrice par pièce.
+   Elle est ici parce qu'elle sépare, ce qui est son intention.
+
+   pieces : liste de { pos:[x,y,z], ... }
+   centre : [x,y,z]
+   ampleur: de combien on écarte, en unités de dessin */
+function eclater(pieces, centre, k, ampleur){
+  return pieces.map(p => {
+    const d = [ p.pos[0]-centre[0], p.pos[1]-centre[1], p.pos[2]-centre[2] ];
+    const l = Math.hypot(d[0], d[1], d[2]) || 1;
+    return Object.assign({}, p, { pos: [
+      p.pos[0] + d[0]/l * k * ampleur,
+      p.pos[1] + d[1]/l * k * ampleur,
+      p.pos[2] + d[2]/l * k * ampleur
+    ]});
+  });
+}
+
+/* Pour l'animer, on emploie le socle de la banque de mouvement : */
+function ouvrirEclate(pieces, centre, ampleur, dessiner){
+  anime(360, "poser", k => dessiner(eclater(pieces, centre, k, ampleur)));
+}`
+},
+{
+ id:"ecorche", num:"SEP-04", nom:"Écorcher",
+ ou:"boîtier d'unité centrale · voir dedans sans démonter",
+ desc:"On retire un coin du boîtier pour voir l'intérieur, sans écarter les pièces ni les détruire. L'objet reste reconnaissable comme un seul objet. C'est la convention des manuels techniques, et c'est ce dont la ressource 35 a besoin.",
+ nec:"Un coin, plus deux profondeurs.",
+ pourquoi:"Le coin : lequel des quatre coins verticaux on ouvre. Il décide de ce qu'on verra. Les deux profondeurs : de combien on entame selon x et selon y. L'entaille traverse toute la hauteur — c'est la seule qui découvre l'intérieur, et c'est pourquoi il n'y a pas de troisième profondeur.",
+ anime:"PA-01 « l'élément apparaît » pour ce que l'écorché découvre.",
+ code:`/* Écorcher un boîtier : retirer un coin parallélépipédique.
+   Le solide obtenu a la forme d'un L. On le dessine par ses six faces
+   visibles : les trois faces extérieures entamées, et les trois faces
+   neuves de l'entaille.
+
+   L, W, H : les dimensions du boîtier, coin en (0,0,0)
+   l, w, h : les profondeurs de l'entaille, prise au coin (L,W,H) */
+function facesEntaille(b, X, Y){
+  /* b : la boite, { x0,y0,z0, x1,y1,z1 }
+     X, Y : les deux plans de l'entaille, en coordonnees absolues.
+     L'entaille traverse TOUTE la hauteur : c'est la seule qui decouvre
+     l'interieur. Une entaille qui s'arrete en hauteur ne revele que ses
+     propres faces neuves, et l'ecorche ne sert alors a rien. */
+  const xc = Math.max(b.x0, Math.min(b.x1, X));
+  const yc = Math.max(b.y0, Math.min(b.y1, Y));
+
+  /* la boite n'est pas atteinte : trois faces, entiere */
+  if(xc >= b.x1-0.01 || yc >= b.y1-0.01) return [
+    ["H", [[b.x0,b.y0,b.z1],[b.x1,b.y0,b.z1],[b.x1,b.y1,b.z1],[b.x0,b.y1,b.z1]]],
+    ["D", [[b.x1,b.y0,b.z0],[b.x1,b.y1,b.z0],[b.x1,b.y1,b.z1],[b.x1,b.y0,b.z1]]],
+    ["G", [[b.x0,b.y1,b.z0],[b.x1,b.y1,b.z0],[b.x1,b.y1,b.z1],[b.x0,b.y1,b.z1]]]
+  ];
+
+  /* la boite est entaillee : le dessus devient un L, les deux faces
+     exterieures sont raccourcies, et deux faces neuves apparaissent */
+  return [
+    ["H", [[b.x0,b.y0,b.z1],[b.x1,b.y0,b.z1],[b.x1,yc,b.z1],
+           [xc,yc,b.z1],[xc,b.y1,b.z1],[b.x0,b.y1,b.z1]]],
+    ["D", [[b.x1,b.y0,b.z0],[b.x1,yc,b.z0],[b.x1,yc,b.z1],[b.x1,b.y0,b.z1]]],
+    ["G", [[b.x0,b.y1,b.z0],[xc,b.y1,b.z0],[xc,b.y1,b.z1],[b.x0,b.y1,b.z1]]],
+    ["D", [[xc,yc,b.z0],[xc,b.y1,b.z0],[xc,b.y1,b.z1],[xc,yc,b.z1]]],
+    ["G", [[xc,yc,b.z0],[b.x1,yc,b.z0],[b.x1,yc,b.z1],[xc,yc,b.z1]]]
+  ];
+}
+
+/* La MEME routine sert le boitier et ce qu'il contient : ce qui entre dans
+   la zone entaillee est retire, quel que soit l'objet. On rassemble toutes
+   les faces, on les trie par profondeur, et on peint du fond vers l'avant.
+   Sans ce tri, l'ecorche ne decouvre rien : les faces de devant recouvrent
+   le contenu. */
+function peindreEcorche(objets, X, Y){
+  const F = [];
+  objets.forEach(o => facesEntaille(o.boite, X, Y)
+    .forEach(([c,q]) => F.push([o.classes[c], q])));
+  F.sort((a,b) => {                       /* profondeur = x + y + z */
+    const pa = a[1].reduce((s,v) => s+v[0]+v[1]+v[2], 0)/a[1].length;
+    const pb = b[1].reduce((s,v) => s+v[0]+v[1]+v[2], 0)/b[1].length;
+    return pa - pb;
+  });
+  return F;
+}`
+}
+];
+
+/* ═══════════════ L'application ═══════════════ */
+const B={
+  st:{ plan:{zs:[60,60,60], sol:"cone", cote:"deux"},
+       droite:{ax:-110, bx:110, cote:"deux"},
+       eclat:{k:0.55},
+       ecorche:{p:45} },
+
+  init(){
+    document.getElementById("c-socle").textContent = SOCLE;
+    document.getElementById("cat").innerHTML = OPS.map(o=>`
+      <div class="op">
+        <div class="ot"><span class="n">${o.num}</span><span class="nom">${o.nom}</span>
+          <span class="ou">${o.ou}</span></div>
+        <p class="od">${o.desc}</p>
+        <div class="corps">
+          <div class="vue"><svg id="v-${o.id}" viewBox="0 0 400 340" role="img"
+            aria-labelledby="t-${o.id}"><title id="t-${o.id}">${o.nom}</title></svg></div>
+          <div class="cmd">
+            <div id="c-${o.id}"></div>
+            <div class="fiche">
+              <div id="f-${o.id}"></div>
+              <div class="nes"><b>Nécessaire et suffisant</b>${o.nec}</div>
+              <p class="dim" style="font-size:.75rem;margin-top:6px">${o.pourquoi}</p>
+              <p class="dim" style="font-size:.75rem;margin-top:6px">
+                <b style="color:var(--dim)">Animé par —</b> ${o.anime}</p>
+            </div>
+          </div>
+        </div>
+        <div class="bloc"><span class="lb">code à copier</span>
+          <button class="cp" data-c="code-${o.id}">Copier</button>
+          <pre id="code-${o.id}">${o.code.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</pre></div>
+      </div>`).join("");
+    OPS.forEach(o=>{ document.getElementById("code-"+o.id).textContent = o.code; });
+    document.querySelectorAll(".cp").forEach(b=> b.addEventListener("click",()=>B.copier(b)));
+    this.cmdPlan(); this.cmdDroite(); this.cmdEclat(); this.cmdEcorche();
+    this.tout();
+  },
+  tout(){ this.dPlan(); this.dDroite(); this.dEclat(); this.dEcorche(); },
+
+  sl(id,et,min,max,val,cls){
+    return `<div class="pr ${cls||""}"><span class="et">${et}</span>
+      <input type="range" id="${id}" min="${min}" max="${max}" step="1" value="${val}"
+             oninput="B.maj('${id}')" aria-label="${et}">
+      <span class="vv" id="vv-${id}">${val}</span></div>`;
+  },
+  bt(g,l,v,cur){ return `<button id="b-${g}-${v}" aria-pressed="${v===cur}"
+      onclick="B.choix('${g}','${v}')">${l}</button>`; },
+
+  /* ---------- SEP-01 ---------- */
+  cmdPlan(){
+    const s=this.st.plan;
+    document.getElementById("c-plan").innerHTML =
+      `<div class="sel" style="margin-bottom:6px">
+         ${["cone","cylindre","sphere","cube"].map(k=>
+           this.bt("sol", k==="cube"?"Cube":SOLIDES[k].nom, k, s.sol)).join("")}</div>`
+      + this.sl("z1","Point 1",-140,260,s.zs[0],"pr1")
+      + this.sl("z2","Point 2",-140,260,s.zs[1],"pr2")
+      + this.sl("z3","Point 3",-140,260,s.zs[2],"pr3")
+      + `<div class="sel" style="margin-top:4px">
+         ${["haut","bas","deux"].map(k=>
+           this.bt("cotep", {haut:"Le dessus",bas:"Le dessous",deux:"Les deux"}[k], k, s.cote)).join("")}</div>`;
+  },
+  dPlan(){
+    const s=this.st.plan, P=trois(s.zs), pl=plan(P);
+    const cube=(s.sol==="cube");
+    const sol = cube ? CUBE : SOLIDES[s.sol];
+    let g=`<g transform="translate(200,250)">`;
+    /* sol */
+    const T=190;
+    g+=poly([pt(-T,-T,0),pt(T,-T,0),pt(T,T,0),pt(-T,T,0)],"sol");
+    /* lame, derrière */
+    if(pl.norme>1e-6 && Math.abs(pl.n[2])>1e-6){
+      const Q=[[-T,-T],[T,-T],[T,T],[-T,T]].map(c=>{
+        const z=(pl.d-pl.n[0]*c[0]-pl.n[1]*c[1])/pl.n[2];
+        return pt(c[0],c[1],z);
+      });
+      g+=poly(Q,"lame");
+    }
+    /* solide */
+    let sect=[];
+    if(cube){
+      const S=CUBE.S;
+      /* faces visibles d'un cube en isométrie : dessus, x max, y max */
+      g+=poly([pt(...S[4]),pt(...S[5]),pt(...S[6]),pt(...S[7])],"faceH");
+      g+=poly([pt(...S[1]),pt(...S[2]),pt(...S[6]),pt(...S[5])],"faceD");
+      g+=poly([pt(...S[3]),pt(...S[2]),pt(...S[6]),pt(...S[7])],"faceG");
+      if(pl.norme>1e-6) sect=[couperPolyedre(S,CUBE.A,pl)].filter(a=>a.length>2);
+    }else{
+      const N=72, base=[];
+      for(let i=0;i<=N;i++){ const t=2*Math.PI*i/N; base.push(iso(sol.r(sol.z0)*Math.cos(t),sol.r(sol.z0)*Math.sin(t),sol.z0)); }
+      /* silhouette : l'enveloppe des cercles empilés */
+      const G=[], D=[];
+      for(let k=0;k<=40;k++){
+        const z=sol.z0+(sol.z1-sol.z0)*k/40, r=sol.r(z);
+        let mn=null,mx=null;
+        for(let i=0;i<N;i++){ const t=2*Math.PI*i/N, p=iso(r*Math.cos(t),r*Math.sin(t),z);
+          if(!mn||p[0]<mn[0]) mn=p; if(!mx||p[0]>mx[0]) mx=p; }
+        G.push(mn); D.push(mx);
+      }
+      const ligne=[].concat(G, D.slice().reverse()).map(p=>p[0].toFixed(1)+","+p[1].toFixed(1));
+      g+=poly(ligne,"corpsA");
+      if(sol.r(sol.z0)>1) g+=poly(base.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)),"corpsB");
+      for(let i=0;i<10;i++){ const t=2*Math.PI*i/10;
+        const a=iso(sol.r(sol.z0)*Math.cos(t),sol.r(sol.z0)*Math.sin(t),sol.z0);
+        const b=iso(sol.r(sol.z1)*Math.cos(t),sol.r(sol.z1)*Math.sin(t),sol.z1);
+        g+=`<path class="gen" d="M${a[0].toFixed(1)},${a[1].toFixed(1)} L${b[0].toFixed(1)},${b[1].toFixed(1)}"/>`; }
+      if(pl.norme>1e-6) sect=couperRevolution(sol,pl,180,40);
+    }
+    /* section */
+    sect.forEach(arc=>{
+      if(arc.length<3) return;
+      const A=arc[0],Z=arc[arc.length-1];
+      const f = Math.hypot(A[0]-Z[0],A[1]-Z[1],A[2]-Z[2])<6 || (A[2]<3&&Z[2]<3) || cube;
+      const d=arc.map((p,i)=>(i?"L":"M")+pt(p[0],p[1],p[2])).join(" ");
+      g+=`<path class="sect" d="${d}${f?" Z":""}" ${f?"":'fill="none"'}/>`;
+    });
+    /* mâts */
+    const coul=["#e879f9","#38bdf8","#fbbf24"];
+    P.forEach((p,i)=>{
+      const bas=iso(p[0],p[1],-140),h=iso(p[0],p[1],260),b=iso(p[0],p[1],p[2]);
+      g+=`<path class="matH" d="M${bas[0].toFixed(1)},${bas[1].toFixed(1)} L${h[0].toFixed(1)},${h[1].toFixed(1)}"/>`;
+      g+=`<path class="mat" d="M${bas[0].toFixed(1)},${bas[1].toFixed(1)} L${b[0].toFixed(1)},${b[1].toFixed(1)}"/>`;
+      g+=`<circle class="perle" cx="${b[0].toFixed(1)}" cy="${b[1].toFixed(1)}" r="8" fill="${coul[i]}"/>`;
+    });
+    document.getElementById("v-plan").innerHTML=g+"</g>";
+
+    /* fiche */
+    const n=pl.norme>1e-6?pl.n.map(v=>v/pl.norme):[0,0,0];
+    const nb=sect.reduce((a,b2)=>a+b2.length,0);
+    let verdict, cls="";
+    if(pl.norme<1e-6){ verdict="AUCUN PLAN — POINTS ALIGNES"; cls="nul"; }
+    else if(!nb){ verdict="LE PLAN NE TOUCHE PAS LE SOLIDE"; cls="deg"; }
+    else verdict="SECTION EN "+nb+" POINT"+(nb>1?"S":"");
+    document.getElementById("f-plan").innerHTML =
+      `<div class="fl2"><span class="k">solide</span><span class="v">${cube?"cube":SOLIDES[s.sol].nom.toLowerCase()}</span></div>`
+     +`<div class="fl2"><span class="k">3 points</span><span class="v">${P.map(p=>p[2].toFixed(0)).join(" ; ")}</span></div>`
+     +`<div class="fl2"><span class="k">normale</span><span class="v">${n.map(v=>v.toFixed(2)).join(" ; ")}</span></div>`
+     +`<div class="fl2"><span class="k">côté gardé</span><span class="v">${{haut:"le dessus",bas:"le dessous",deux:"les deux"}[s.cote]}</span></div>`
+     +`<span class="verdict ${cls}" style="margin-top:6px">${verdict}</span>`;
+  },
+
+  /* ---------- SEP-02 ---------- */
+  cmdDroite(){
+    const s=this.st.droite;
+    document.getElementById("c-droite").innerHTML =
+      this.sl("ax","Point A (y)",-120,120,s.ax,"pr1")
+    + this.sl("bx","Point B (y)",-120,120,s.bx,"pr2")
+    + `<div class="sel" style="margin-top:4px">
+       ${["haut","bas","deux"].map(k=>
+         this.bt("coted",{haut:"Au-dessus",bas:"En dessous",deux:"Les deux"}[k],k,s.cote)).join("")}</div>`;
+  },
+  dDroite(){
+    const s=this.st.droite;
+    const PG=[[-120,-80],[120,-80],[120,10],[20,10],[20,95],[-120,95]];
+    const A=[-150,s.ax], Bp=[150,s.bx];
+    const h=couperPolygone(PG,A,Bp,1), b=couperPolygone(PG,A,Bp,-1);
+    /* Les deux morceaux s'écartent PERPENDICULAIREMENT à la coupe : c'est le
+       seul écartement qui laisse voir la coupe elle-même. Le vecteur
+       (-ABy, ABx) pointe vers le côté positif de la droite. */
+    const AB=[Bp[0]-A[0], Bp[1]-A[1]], lab=Math.hypot(AB[0],AB[1])||1;
+    const per=[-AB[1]/lab, AB[0]/lab];
+    const dec=(p,k)=>p.map(q=>(q[0]+per[0]*k).toFixed(1)+","+(q[1]+per[1]*k).toFixed(1));
+    const e = s.cote==="deux" ? 15 : 0;
+    let g=`<g transform="translate(200,170)">`;
+    for(let i=-3;i<=3;i++){
+      g+=`<path class="gril" d="M-160,${i*40} L160,${i*40}"/><path class="gril" d="M${i*45},-130 L${i*45},130"/>`;
+    }
+    if(s.cote!=="bas" && h.length>2) g+=poly(dec(h,e),"garde");
+    else if(h.length>2) g+=poly(dec(h,0),"jete");
+    if(s.cote!=="haut" && b.length>2) g+=poly(dec(b,-e),"garde");
+    else if(b.length>2) g+=poly(dec(b,0),"jete");
+    g+=`<path class="dte" d="M${A[0]},${A[1]} L${Bp[0]},${Bp[1]}"/>`;
+    g+=`<circle class="perle" cx="${A[0]}" cy="${A[1]}" r="8" fill="#e879f9"/>`;
+    g+=`<circle class="perle" cx="${Bp[0]}" cy="${Bp[1]}" r="8" fill="#38bdf8"/>`;
+    document.getElementById("v-droite").innerHTML=g+"</g>";
+    document.getElementById("f-droite").innerHTML =
+      `<div class="fl2"><span class="k">point A</span><span class="v">-150 ; ${s.ax}</span></div>`
+     +`<div class="fl2"><span class="k">point B</span><span class="v">150 ; ${s.bx}</span></div>`
+     +`<div class="fl2"><span class="k">départ</span><span class="v">${PG.length} sommets</span></div>`
+     +`<div class="fl2"><span class="k">morceaux</span><span class="v">${h.length} et ${b.length} sommets</span></div>`
+     +`<span class="verdict" style="margin-top:6px">${
+        (h.length>2&&b.length>2) ? "DEUX MORCEAUX" : "LA DROITE NE COUPE PAS"}</span>`;
+  },
+
+  /* ---------- SEP-03 ---------- */
+  cmdEclat(){
+    document.getElementById("c-eclat").innerHTML =
+      this.sl("ek","Facteur",0,100,Math.round(this.st.eclat.k*100),"pr1")
+      + `<p class="dim" style="font-size:.74rem">0 : l'objet est assemblé. 100 : il est pleinement écarté.</p>`;
+  },
+  dEclat(){
+    const k=this.st.eclat.k;
+    const PL=[{z:0,c:"pce",n:"socle"},{z:26,c:"pce",n:"carte"},
+              {z:52,c:"pce",n:"module"},{z:78,c:"pceH",n:"capot"}];
+    const centre=[0,0,39], amp=95;
+    let g=`<g transform="translate(200,215)">`;
+    const T=170;
+    g+=poly([pt(-T,-T,0),pt(T,-T,0),pt(T,T,0),pt(-T,T,0)],"sol");
+    const W=95,ep=11;
+    PL.slice().sort((a,b)=>a.z-b.z).forEach(p=>{
+      const d=p.z-centre[2], l=Math.abs(d)||1;
+      const z=p.z + (d/l)*k*amp;
+      const c=[[-W,-W],[W,-W],[W,W],[-W,W]];
+      g+=poly(c.map(q=>pt(q[0],q[1],z)),p.c==="pceH"?"pceH":"pce");
+      g+=poly([pt(W,-W,z),pt(W,W,z),pt(W,W,z-ep),pt(W,-W,z-ep)],"faceD");
+      g+=poly([pt(-W,W,z),pt(W,W,z),pt(W,W,z-ep),pt(-W,W,z-ep)],"faceG");
+    });
+    document.getElementById("v-eclat").innerHTML=g+"</g>";
+    document.getElementById("f-eclat").innerHTML =
+      `<div class="fl2"><span class="k">centre</span><span class="v">0 ; 0 ; 39</span></div>`
+     +`<div class="fl2"><span class="k">facteur</span><span class="v">${k.toFixed(2)}</span></div>`
+     +`<div class="fl2"><span class="k">ampleur</span><span class="v">${amp} unités</span></div>`
+     +`<div class="fl2"><span class="k">pièces</span><span class="v">${PL.length}</span></div>`
+     +`<span class="verdict" style="margin-top:6px">${k<0.02?"ASSEMBLE":(k>0.98?"PLEINEMENT ECARTE":"ECARTE A "+Math.round(k*100)+" %")}</span>`;
+  },
+
+  /* ---------- SEP-04 ---------- */
+  cmdEcorche(){
+    document.getElementById("c-ecorche").innerHTML =
+      this.sl("ep","Profondeur",0,80,this.st.ecorche.p,"pr1")
+      + `<p class="dim" style="font-size:.74rem">0 : le boîtier est fermé. L'entaille s'ouvre au coin le plus proche.</p>`;
+  },
+  dEcorche(){
+    const p=this.st.ecorche.p;
+    const B1={x0:0,y0:0,z0:0,x1:110,y1:110,z1:140};      /* le boîtier */
+    const B2={x0:26,y0:26,z0:16,x1:84,y1:84,z1:112};     /* ce qu'il contient */
+    const X=110-p, Y=110-p;
+
+    /* Une entaille de coin, mais sur TOUTE la hauteur : c'est la seule qui
+       découvre l'intérieur. Un coin retiré d'un solide plein ne révèle que
+       ses propres faces neuves — j'ai fait l'erreur, la voici corrigée.
+       La même routine sert le boîtier et son contenu : ce qui entre dans
+       la zone entaillée est retiré, quel que soit l'objet. */
+    const faces=(b,cH,cD,cG)=>{
+      const xc=Math.max(b.x0,Math.min(b.x1,X)), yc=Math.max(b.y0,Math.min(b.y1,Y));
+      if(xc>=b.x1-0.01 || yc>=b.y1-0.01) return [
+        [cH,[[b.x0,b.y0,b.z1],[b.x1,b.y0,b.z1],[b.x1,b.y1,b.z1],[b.x0,b.y1,b.z1]]],
+        [cD,[[b.x1,b.y0,b.z0],[b.x1,b.y1,b.z0],[b.x1,b.y1,b.z1],[b.x1,b.y0,b.z1]]],
+        [cG,[[b.x0,b.y1,b.z0],[b.x1,b.y1,b.z0],[b.x1,b.y1,b.z1],[b.x0,b.y1,b.z1]]]];
+      return [
+        [cH,[[b.x0,b.y0,b.z1],[b.x1,b.y0,b.z1],[b.x1,yc,b.z1],[xc,yc,b.z1],[xc,b.y1,b.z1],[b.x0,b.y1,b.z1]]],
+        [cD,[[b.x1,b.y0,b.z0],[b.x1,yc,b.z0],[b.x1,yc,b.z1],[b.x1,b.y0,b.z1]]],
+        [cG,[[b.x0,b.y1,b.z0],[xc,b.y1,b.z0],[xc,b.y1,b.z1],[b.x0,b.y1,b.z1]]],
+        [cD,[[xc,yc,b.z0],[xc,b.y1,b.z0],[xc,b.y1,b.z1],[xc,yc,b.z1]]],
+        [cG,[[xc,yc,b.z0],[b.x1,yc,b.z0],[b.x1,yc,b.z1],[xc,yc,b.z1]]]];
+    };
+    const dedans = (X<B2.x1 && Y<B2.y1);
+    const F = faces(B1,"faceH","faceD","faceG")
+      .concat(dedans ? faces(B2,"dedansH","dedans","dedans") : []);
+    /* On peint du fond vers l'avant : la profondeur est x+y+z. */
+    F.sort((a,b2)=>{
+      const p1=a[1].reduce((s2,v)=>s2+v[0]+v[1]+v[2],0)/a[1].length;
+      const p2=b2[1].reduce((s2,v)=>s2+v[0]+v[1]+v[2],0)/b2[1].length;
+      return p1-p2;
+    });
+
+    let g=`<g transform="translate(200,250)">`;
+    const T=175;
+    g+=poly([pt(-T,-T,0),pt(T,-T,0),pt(T,T,0),pt(-T,T,0)],"sol");
+    F.forEach(([c,q])=> g+=poly(q.map(v=>pt(v[0]-55,v[1]-55,v[2])),c));
+    document.getElementById("v-ecorche").innerHTML=g+"</g>";
+
+    document.getElementById("f-ecorche").innerHTML =
+      `<div class="fl2"><span class="k">boîtier</span><span class="v">110 × 110 × 140</span></div>`
+     +`<div class="fl2"><span class="k">coin</span><span class="v">x max ; y max</span></div>`
+     +`<div class="fl2"><span class="k">entaille</span><span class="v">${p} ; ${p} ; toute la hauteur</span></div>`
+     +`<div class="fl2"><span class="k">faces</span><span class="v">${F.length} dessinées</span></div>`
+     +`<span class="verdict ${p<1?"deg":""}" style="margin-top:6px">${
+        p<1 ? "BOITIER FERME" : (dedans ? "ON VOIT DEDANS" : "ENTAILLE TROP PEU PROFONDE")}</span>`;
+  },
+
+  /* ---------- réglages ---------- */
+  maj(id){
+    const v=+document.getElementById(id).value;
+    document.getElementById("vv-"+id).textContent=v;
+    if(id==="z1"||id==="z2"||id==="z3"){ this.st.plan.zs[+id[1]-1]=v; this.dPlan(); }
+    else if(id==="ax"){ this.st.droite.ax=v; this.dDroite(); }
+    else if(id==="bx"){ this.st.droite.bx=v; this.dDroite(); }
+    else if(id==="ek"){ this.st.eclat.k=v/100; this.dEclat(); }
+    else if(id==="ep"){ this.st.ecorche.p=v; this.dEcorche(); }
+  },
+  choix(g,v){
+    if(g==="sol"){ this.st.plan.sol=v;
+      ["cone","cylindre","sphere","cube"].forEach(k=>
+        document.getElementById("b-sol-"+k).setAttribute("aria-pressed",String(k===v)));
+      this.dPlan(); }
+    if(g==="cotep"){ this.st.plan.cote=v;
+      ["haut","bas","deux"].forEach(k=>
+        document.getElementById("b-cotep-"+k).setAttribute("aria-pressed",String(k===v)));
+      this.dPlan(); }
+    if(g==="coted"){ this.st.droite.cote=v;
+      ["haut","bas","deux"].forEach(k=>
+        document.getElementById("b-coted-"+k).setAttribute("aria-pressed",String(k===v)));
+      this.dDroite(); }
+  },
+
+  copier(b){
+    const txt=document.getElementById(b.dataset.c).textContent;
+    const t=document.createElement("textarea");
+    t.value=txt; t.style.position="fixed"; t.style.opacity="0";
+    document.body.appendChild(t); t.select();
+    let f=false; try{ f=document.execCommand("copy"); }catch(e){}
+    document.body.removeChild(t);
+    if(!f && navigator.clipboard) navigator.clipboard.writeText(txt).catch(()=>{});
+    b.textContent="Copié"; b.classList.add("ok");
+    setTimeout(()=>{ b.textContent="Copier"; b.classList.remove("ok"); },1400);
+  }
+};
+window.addEventListener("load",()=>B.init());
+</script>
+</body>
+</html>

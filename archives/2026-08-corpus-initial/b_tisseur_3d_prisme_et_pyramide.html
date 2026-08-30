@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bâtisseur 3D : Prisme et Pyramide</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root {
+    --fond: #05171F;
+    --halo: #0C3242;
+    --point: #86D9EA;
+    --eau: #2FBBDD;
+    --ecume: #BDEEF9;
+    --trait: #F0E7D6;
+    --or: #F2C14E;
+  }
+  body {
+    margin: 0;
+    overflow: hidden;
+    background-color: var(--fond);
+    color: var(--trait);
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  
+  #canvas-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+
+  /* Ligne de séparation centrale */
+  .split-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background: linear-gradient(to bottom, transparent, rgba(240, 231, 214, 0.2), transparent);
+    transform: translateX(-50%);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* Interface Utilisateur */
+  .ui-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none; /* Laisse passer les clics vers le canvas 3D si besoin */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px;
+  }
+  
+  .ui-panel {
+    pointer-events: auto; /* Réactive les clics pour les contrôles */
+  }
+
+  .btn-base {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--trait);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-base:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .btn-base.active {
+    background: var(--eau);
+    color: var(--fond);
+    border-color: var(--eau);
+    box-shadow: 0 0 12px rgba(47, 187, 221, 0.4);
+  }
+
+  /* Slider personnalisé */
+  .slider-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    background: rgba(12, 50, 66, 0.8);
+    backdrop-filter: blur(8px);
+    padding: 16px 24px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+  }
+  .slider-container.visible {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 250px;
+    background: transparent;
+  }
+  input[type=range]:focus {
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 8px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    height: 24px;
+    width: 24px;
+    border-radius: 50%;
+    background: var(--or);
+    cursor: pointer;
+    -webkit-appearance: none;
+    margin-top: -8px;
+    box-shadow: 0 0 10px rgba(242, 193, 78, 0.6);
+    transition: transform 0.1s;
+  }
+  input[type=range]:active::-webkit-slider-thumb {
+    transform: scale(1.2);
+  }
+
+  .floating-label {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+<div class="split-line" id="split-line"></div>
+
+<div class="floating-label" id="label-pyramid" style="left: 25%; transform: translate(-50%, -50%);">Pyramide</div>
+<div class="floating-label" id="label-prism" style="left: 75%; transform: translate(-50%, -50%);">Prisme</div>
+
+<div class="ui-layer" id="main-ui">
+  <!-- En-tête -->
+  <div class="text-center w-full mt-4">
+    <p class="font-mono text-xs tracking-[0.2em] uppercase opacity-50 mb-1" id="step-eyebrow">Étape par étape</p>
+    <h1 id="instructions" class="text-xl font-semibold opacity-90 transition-opacity duration-300">1. Choisissez la forme de la base</h1>
+  </div>
+
+  <!-- Écran de l'expérience -->
+  <div id="experiment-ui" class="absolute inset-0 flex flex-col items-center justify-start pt-20 opacity-0 pointer-events-none transition-opacity duration-500 z-50">
+    <div class="bg-[rgba(5,23,31,0.8)] backdrop-blur-md px-8 py-4 rounded-2xl border border-white/10 text-center shadow-2xl">
+      <p class="font-mono text-xs tracking-[0.2em] uppercase text-or mb-2">Expérience en cours</p>
+      <h2 id="experiment-title" class="text-3xl font-bold text-white mb-2">Versement 1 / 3</h2>
+      <p id="experiment-desc" class="text-sm opacity-70">La pyramide se remplit d'eau...</p>
+    </div>
+    <button id="btn-reset" class="btn-base mt-8 hidden pointer-events-auto bg-white/10 hover:bg-white/20">Recommencer la construction</button>
+  </div>
+
+  <!-- Contrôles du bas -->
+  <div class="flex flex-col items-center gap-6 mb-4" id="bottom-controls">
+    
+    <!-- Choix de la hauteur (Étape 2) -->
+    <div id="step-height" class="slider-container ui-panel">
+      <div class="flex items-center gap-3 w-full justify-between">
+        <span class="text-xs opacity-60 uppercase tracking-widest font-mono">Hauteur</span>
+        <span id="height-val" class="font-mono text-or font-bold">5.0</span>
+      </div>
+      <input type="range" id="height-slider" min="2" max="12" step="0.1" value="5">
+      <p class="text-xs opacity-50 italic text-center">Maintenez pour voir l'alignement orthogonal<br>Relâchez pour voir le volume isométrique</p>
+      
+      <!-- Bouton pour lancer l'expérience (Étape 3) -->
+      <button id="btn-experiment" class="w-full mt-4 bg-eau text-[var(--fond)] font-bold py-3 px-4 rounded-lg shadow-[0_0_15px_rgba(47,187,221,0.4)] hover:bg-[#4dd0f0] transition-colors flex items-center justify-center gap-2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Lancer l'expérience de versement
+      </button>
+    </div>
+
+    <!-- Choix de la base (Étape 1) -->
+    <div class="flex flex-wrap justify-center gap-3 ui-panel">
+      <button class="btn-base" data-sides="3">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 20 2 20"></polygon></svg>
+        Triangle
+      </button>
+      <button class="btn-base" data-sides="4">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+        Carré
+      </button>
+      <button class="btn-base" data-sides="5">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8.5 18.2 22 5.8 22 2 8.5"></polygon></svg>
+        Pentagone
+      </button>
+      <button class="btn-base" data-sides="0">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z"></path></svg>
+        Libre
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const container = document.getElementById('canvas-container');
+let scene, camera, renderer;
+let pyramidGroup, prismGroup, tapGroup;
+let pyramidMesh, prismMesh, pyramidEdges, prismEdges;
+
+// Éléments pour l'eau et les flux
+let pyramidWaterPivot, pyramidWaterMesh, prismWaterMesh;
+let tapStream, pourStream, pourPointObj;
+
+// État de l'application
+let currentHeight = 5.0;
+let currentSides = null; 
+let isDraggingHeight = false;
+let mode = 'BUILD'; // 'BUILD' ou 'EXPERIMENT'
+
+// Variables d'animation
+let animPhase = 'IDLE'; 
+let animProgress = 0;
+let pourCount = 0;
+let lastTime = 0;
+
+// Variables pour la caméra (interpolation fluide)
+const camTargetPos = new THREE.Vector3(0, 25, 0);
+const camTargetLook = new THREE.Vector3(0, 0, 0);
+const currentLookAt = new THREE.Vector3(0, 0, 0);
+
+// Constantes de couleur
+const C = { fond: 0x05171F, eau: 0x2FBBDD, trait: 0xF0E7D6, or: 0xF2C14E, ecume: 0xBDEEF9 };
+
+init();
+requestAnimationFrame(animate);
+
+function init() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(C.fond);
+  scene.fog = new THREE.Fog(C.fond, 30, 80);
+
+  camera = new THREE.PerspectiveCamera(15, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.copy(camTargetPos);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(ambientLight);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(10, 20, 15);
+  scene.add(dirLight);
+  const dirLight2 = new THREE.DirectionalLight(C.eau, 0.4);
+  dirLight2.position.set(-10, -10, -10);
+  scene.add(dirLight2);
+
+  pyramidGroup = new THREE.Group();
+  prismGroup = new THREE.Group();
+  scene.add(pyramidGroup);
+  scene.add(prismGroup);
+
+  const grid1 = new THREE.GridHelper(40, 40, 0xffffff, 0xffffff);
+  grid1.material.transparent = true; grid1.material.opacity = 0.05;
+  grid1.position.y = -0.01;
+  pyramidGroup.add(grid1);
+  const grid2 = grid1.clone();
+  prismGroup.add(grid2);
+
+  createTapAndStreams();
+
+  window.addEventListener('resize', onWindowResize);
+  setupUI();
+}
+
+function createTapAndStreams() {
+  tapGroup = new THREE.Group();
+  tapGroup.position.set(-16, 12, 0);
+  
+  const pipeMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.8, roughness: 0.2 });
+  
+  const pipeV = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 12), pipeMat);
+  pipeV.position.set(-2, -2, 0);
+  tapGroup.add(pipeV);
+  
+  const pipeH = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 4), pipeMat);
+  pipeH.rotation.z = Math.PI / 2;
+  pipeH.position.set(0, 3.7, 0);
+  tapGroup.add(pipeH);
+  
+  const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.3, 1.5), pipeMat);
+  spout.position.set(1.7, 3, 0);
+  tapGroup.add(spout);
+  
+  scene.add(tapGroup);
+  tapGroup.visible = false; // Caché pendant la construction
+
+  // Géométrie de flux d'eau (Cylindre pivotant à son sommet)
+  const streamGeo = new THREE.CylinderGeometry(0.15, 0.15, 1);
+  streamGeo.translate(0, -0.5, 0); // Origine en haut
+  streamGeo.rotateX(Math.PI / 2); // Aligné sur Z pour le lookAt
+  const streamMat = new THREE.MeshBasicMaterial({ color: C.ecume, transparent: true, opacity: 0.8 });
+  
+  tapStream = new THREE.Mesh(streamGeo, streamMat);
+  tapStream.visible = false;
+  scene.add(tapStream);
+  
+  pourStream = new THREE.Mesh(streamGeo, streamMat);
+  pourStream.visible = false;
+  scene.add(pourStream);
+}
+
+function getPolygonPoints(sides, radius) {
+  const points = [];
+  if (sides === 0) {
+    for (let i = 0; i < 7; i++) {
+      const angle = (i / 7) * Math.PI * 2;
+      const r = radius * (i % 2 === 0 ? 1.0 : 0.4 + Math.random() * 0.3);
+      points.push(new THREE.Vector2(Math.cos(angle) * r, Math.sin(angle) * r));
+    }
+  } else {
+    const angleOffset = sides === 4 ? Math.PI/4 : (sides===3 ? -Math.PI/2 : 0);
+    for (let i = 0; i < sides; i++) {
+      const angle = angleOffset + (i / sides) * Math.PI * 2;
+      points.push(new THREE.Vector2(Math.cos(angle) * radius, Math.sin(angle) * radius));
+    }
+  }
+  return points;
+}
+
+function updateGeometries(sides, height) {
+  if (pyramidMesh) {
+    pyramidGroup.remove(pyramidMesh); pyramidGroup.remove(pyramidEdges);
+    pyramidGroup.remove(pyramidWaterPivot); pyramidGroup.remove(pourPointObj);
+    prismGroup.remove(prismMesh); prismGroup.remove(prismEdges); prismGroup.remove(prismWaterMesh);
+  }
+
+  const radius = 3.5;
+  const points = getPolygonPoints(sides, radius);
+
+  // --- PRISME ---
+  const shape = new THREE.Shape(points);
+  const prismGeo = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false });
+  prismGeo.rotateX(-Math.PI / 2); 
+  prismGeo.computeVertexNormals();
+
+  // --- PYRAMIDE ---
+  const pyVerts = []; const pyIndices = []; const apexIndex = points.length;
+  for(let i=0; i<points.length; i++) pyVerts.push(points[i].x, 0, -points[i].y);
+  pyVerts.push(0, height, 0); // Apex
+  for(let i=0; i<points.length; i++) pyIndices.push(i, (i+1)%points.length, apexIndex); 
+  for(let i=1; i<points.length-1; i++) pyIndices.push(0, i+1, i);
+
+  const pyramidGeo = new THREE.BufferGeometry();
+  pyramidGeo.setAttribute('position', new THREE.Float32BufferAttribute(pyVerts, 3));
+  pyramidGeo.setIndex(pyIndices);
+  pyramidGeo.computeVertexNormals();
+
+  // Matériaux
+  const pyMat = new THREE.MeshStandardMaterial({ color: C.eau, transparent: true, opacity: 0.25, roughness: 0.2, metalness: 0.1, side: THREE.DoubleSide, depthWrite: false });
+  const prMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.15, roughness: 0.1, metalness: 0.3, side: THREE.DoubleSide, depthWrite: false });
+  const lineMat = new THREE.LineBasicMaterial({ color: C.trait, opacity: 0.6, transparent: true });
+  const lineMatPy = new THREE.LineBasicMaterial({ color: C.eau, opacity: 0.9, transparent: true });
+  const waterMat = new THREE.MeshStandardMaterial({ color: C.eau, transparent: true, opacity: 0.85, roughness: 0.1, metalness: 0.2, side: THREE.DoubleSide });
+
+  // Meshes & Edges
+  pyramidMesh = new THREE.Mesh(pyramidGeo, pyMat);
+  pyramidEdges = new THREE.LineSegments(new THREE.EdgesGeometry(pyramidGeo), lineMatPy);
+  prismMesh = new THREE.Mesh(prismGeo, prMat);
+  prismEdges = new THREE.LineSegments(new THREE.EdgesGeometry(prismGeo), lineMat);
+
+  pyramidGroup.add(pyramidMesh); pyramidGroup.add(pyramidEdges);
+  prismGroup.add(prismMesh); prismGroup.add(prismEdges);
+
+  // --- EAU (GÉOMÉTRIES INTERNES) ---
+  
+  // Prisme: Simple échelle sur Y
+  prismWaterMesh = new THREE.Mesh(prismGeo.clone(), waterMat);
+  prismWaterMesh.scale.set(0.99, 0.001, 0.99); // Évite le z-fighting
+  prismGroup.add(prismWaterMesh);
+
+  // Pyramide: Échelle uniforme depuis la pointe (Apex) pour simuler le remplissage inversé
+  pyramidWaterMesh = new THREE.Mesh(pyramidGeo.clone(), waterMat);
+  pyramidWaterMesh.scale.set(0.98, 0.98, 0.98); 
+  
+  pyramidWaterPivot = new THREE.Group();
+  pyramidWaterPivot.position.set(0, height, 0); // Positionne le pivot au sommet
+  pyramidWaterMesh.position.set(0, -height, 0); // Redescend le mesh pour que la pointe soit sur le pivot
+  
+  pyramidWaterPivot.add(pyramidWaterMesh);
+  pyramidWaterPivot.scale.set(0, 0, 0); // Vide par défaut
+  pyramidGroup.add(pyramidWaterPivot);
+
+  // Point de versement (Coin de la base)
+  pourPointObj = new THREE.Object3D();
+  pourPointObj.position.set(points[0].x, 0, -points[0].y);
+  pyramidGroup.add(pourPointObj);
+}
+
+function setupUI() {
+  const baseButtons = document.querySelectorAll('.btn-base[data-sides]');
+  const heightSlider = document.getElementById('height-slider');
+  const stepHeightPanel = document.getElementById('step-height');
+  const btnExperiment = document.getElementById('btn-experiment');
+  const btnReset = document.getElementById('btn-reset');
+  
+  baseButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      baseButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentSides = parseInt(btn.getAttribute('data-sides'));
+      updateGeometries(currentSides, currentHeight);
+      
+      stepHeightPanel.classList.add('visible');
+      document.getElementById('instructions').textContent = "2. Ajustez la hauteur";
+      camTargetPos.set(22, currentHeight + 10, 28);
+      camTargetLook.set(0, currentHeight / 2, 0);
+    });
+  });
+
+  heightSlider.addEventListener('pointerdown', () => {
+    if (currentSides === null) return;
+    isDraggingHeight = true;
+    camTargetPos.set(40, currentHeight / 2, 0); 
+  });
+
+  heightSlider.addEventListener('pointerup', () => {
+    if (currentSides === null) return;
+    isDraggingHeight = false;
+    camTargetPos.set(22, currentHeight + 10, 28);
+  });
+
+  heightSlider.addEventListener('input', (e) => {
+    currentHeight = parseFloat(e.target.value);
+    document.getElementById('height-val').textContent = currentHeight.toFixed(1);
+    if (currentSides !== null) {
+      updateGeometries(currentSides, currentHeight);
+      if (isDraggingHeight) camTargetPos.set(40, currentHeight / 2, 0);
+      else camTargetPos.set(22, currentHeight + 10, 28);
+      camTargetLook.set(0, currentHeight / 2, 0);
+    }
+  });
+
+  btnExperiment.addEventListener('click', launchExperiment);
+  btnReset.addEventListener('click', resetBuildMode);
+}
+
+function launchExperiment() {
+  mode = 'EXPERIMENT';
+  document.getElementById('split-line').style.display = 'none';
+  document.getElementById('label-pyramid').style.display = 'none';
+  document.getElementById('label-prism').style.display = 'none';
+  document.getElementById('bottom-controls').style.display = 'none';
+  document.getElementById('instructions').style.display = 'none';
+  document.getElementById('step-eyebrow').style.display = 'none';
+  
+  const expUI = document.getElementById('experiment-ui');
+  expUI.style.opacity = '1';
+  expUI.classList.remove('pointer-events-none');
+  
+  tapGroup.visible = true;
+  prismGroup.position.set(10, 0, 0);
+  pyramidGroup.position.set(-10, 0, 0); // Position initiale avant animation
+  
+  pourCount = 0;
+  prismWaterMesh.scale.y = 0.001; // Vide
+  
+  startPhase('GOTO_TAP');
+}
+
+function resetBuildMode() {
+  mode = 'BUILD';
+  document.getElementById('split-line').style.display = 'block';
+  document.getElementById('label-pyramid').style.display = 'block';
+  document.getElementById('label-prism').style.display = 'block';
+  document.getElementById('bottom-controls').style.display = 'flex';
+  document.getElementById('instructions').style.display = 'block';
+  document.getElementById('step-eyebrow').style.display = 'block';
+  
+  const expUI = document.getElementById('experiment-ui');
+  expUI.style.opacity = '0';
+  expUI.classList.add('pointer-events-none');
+  document.getElementById('btn-reset').classList.add('hidden');
+  
+  tapGroup.visible = false;
+  pyramidGroup.position.set(0, 0, 0);
+  pyramidGroup.rotation.set(0, 0, 0);
+  prismGroup.position.set(0, 0, 0);
+  pyramidWaterPivot.scale.set(0, 0, 0);
+  
+  camTargetPos.set(22, currentHeight + 10, 28);
+  camTargetLook.set(0, currentHeight / 2, 0);
+}
+
+// Utilitaires mathématiques
+function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+function lerp(start, end, t) { return start * (1 - t) + end * t; }
+
+function startPhase(phase) {
+  animPhase = phase;
+  animProgress = 0;
+  
+  const title = document.getElementById('experiment-title');
+  const desc = document.getElementById('experiment-desc');
+  
+  if(phase === 'GOTO_TAP') {
+    title.textContent = `Versement ${pourCount + 1} / 3`;
+    desc.textContent = "La pyramide se place sous le robinet et se retourne...";
+  } else if (phase === 'FILL') {
+    desc.textContent = "L'eau remplit tout le volume de la pyramide.";
+  } else if (phase === 'GOTO_PRISM') {
+    desc.textContent = "Déplacement vers le prisme...";
+  } else if (phase === 'POUR') {
+    desc.textContent = "Versement en cours...";
+  } else if (phase === 'DONE') {
+    title.textContent = "Expérience terminée !";
+    desc.textContent = "3 pyramides = 1 prisme de même base et même hauteur.";
+    document.getElementById('btn-reset').classList.remove('hidden');
+  }
+}
+
+function updateAnimation(dt) {
+  if (mode !== 'EXPERIMENT' || animPhase === 'IDLE' || animPhase === 'DONE') return;
+  
+  animProgress += dt;
+  
+  // Caméra globale pour voir toute l'action
+  camTargetPos.set(-4, currentHeight + 18, 48);
+  camTargetLook.set(-2, currentHeight / 2, 0);
+
+  const tTap = Math.min(animProgress / 1.5, 1);
+  const tFill = Math.min(animProgress / 1.8, 1);
+  const tPrism = Math.min(animProgress / 1.5, 1);
+  const tPour = Math.min(animProgress / 2.2, 1);
+
+  switch(animPhase) {
+    case 'GOTO_TAP':
+      pyramidGroup.position.x = lerp(-10, -14.3, easeInOutCubic(tTap));
+      pyramidGroup.position.y = lerp(0, 3, easeInOutCubic(tTap));
+      // Rotation fluide pour se retourner complètement (180° sur Z)
+      pyramidGroup.rotation.z = lerp(0, Math.PI, easeInOutCubic(tTap));
+      
+      if (tTap === 1) startPhase('FILL');
+      break;
+
+    case 'FILL':
+      tapStream.visible = true;
+      tapStream.position.set(-14.3, 14, 0);
+      tapStream.scale.z = 11; // La longueur du cylindre grâce au translate
+      tapStream.lookAt(new THREE.Vector3(-14.3, 3 + currentHeight, 0)); // Vise le haut de la pyramide inversée
+      
+      // Croissance du volume d'eau. Pour que ça paraisse linéaire en volume, on utilise la racine cubique
+      const s = Math.cbrt(tFill);
+      pyramidWaterPivot.scale.set(s, s, s);
+      
+      if (tFill === 1) {
+        tapStream.visible = false;
+        startPhase('GOTO_PRISM');
+      }
+      break;
+
+    case 'GOTO_PRISM':
+      pyramidGroup.position.x = lerp(-14.3, 6, easeInOutCubic(tPrism));
+      pyramidGroup.position.y = lerp(3, currentHeight + 4, easeInOutCubic(tPrism));
+      // On incline la pyramide pour préparer le versement (Tilted)
+      pyramidGroup.rotation.z = lerp(Math.PI, Math.PI * 0.75, easeInOutCubic(tPrism));
+      
+      if (tPrism === 1) startPhase('POUR');
+      break;
+
+    case 'POUR':
+      // Inclinaison continue pendant la coulée
+      pyramidGroup.rotation.z = lerp(Math.PI * 0.75, Math.PI * 0.45, easeInOutCubic(tPour));
+      
+      // Mise à jour de l'eau dans la pyramide (se vide)
+      const emptyScale = Math.cbrt(1 - tPour);
+      pyramidWaterPivot.scale.set(emptyScale, emptyScale, emptyScale);
+      
+      // Mise à jour de l'eau dans le prisme (se remplit)
+      const startFillY = pourCount / 3;
+      const endFillY = (pourCount + 1) / 3;
+      prismWaterMesh.scale.y = Math.max(0.001, lerp(startFillY, endFillY, tPour));
+
+      // Calcul dynamique de l'origine du flux d'eau (le coin de la pyramide)
+      const originPos = new THREE.Vector3();
+      pourPointObj.getWorldPosition(originPos);
+      
+      // Cible du flux : Surface de l'eau dans le prisme
+      const targetPos = new THREE.Vector3(10, currentHeight * prismWaterMesh.scale.y, 0);
+      
+      pourStream.visible = true;
+      pourStream.position.copy(originPos);
+      pourStream.lookAt(targetPos);
+      pourStream.scale.z = originPos.distanceTo(targetPos);
+      
+      if (tPour === 1) {
+        pourStream.visible = false;
+        pourCount++;
+        if (pourCount < 3) {
+          startPhase('GOTO_TAP');
+        } else {
+          startPhase('DONE');
+        }
+      }
+      break;
+  }
+}
+
+function renderScene() {
+  if (mode === 'BUILD') {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    camera.position.lerp(camTargetPos, 0.08);
+    currentLookAt.lerp(camTargetLook, 0.08);
+    camera.lookAt(currentLookAt);
+
+    renderer.setViewport(0, 0, width / 2, height);
+    renderer.setScissor(0, 0, width / 2, height);
+    renderer.setScissorTest(true);
+    
+    pyramidGroup.visible = true;
+    prismGroup.visible = false;
+    
+    if(currentSides !== null && !isDraggingHeight) {
+       pyramidGroup.rotation.y += 0.002;
+       prismGroup.rotation.y = pyramidGroup.rotation.y;
+    } else if (isDraggingHeight) {
+       pyramidGroup.rotation.y = 0;
+       prismGroup.rotation.y = 0;
+    }
+    renderer.render(scene, camera);
+
+    renderer.setViewport(width / 2, 0, width / 2, height);
+    renderer.setScissor(width / 2, 0, width / 2, height);
+    
+    pyramidGroup.visible = false;
+    prismGroup.visible = true;
+    
+    renderer.render(scene, camera);
+  } else {
+    // Mode Expérience : Plein écran
+    renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+    renderer.setScissorTest(false);
+    
+    camera.position.lerp(camTargetPos, 0.05);
+    currentLookAt.lerp(camTargetLook, 0.05);
+    camera.lookAt(currentLookAt);
+
+    pyramidGroup.visible = true;
+    prismGroup.visible = true;
+    
+    renderer.render(scene, camera);
+  }
+}
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function animate(time) {
+  requestAnimationFrame(animate);
+  const dt = (time - lastTime) / 1000;
+  lastTime = time;
+  
+  if (dt < 0.1) updateAnimation(dt); // Évite les sauts si l'onglet est inactif
+  
+  renderScene();
+}
+</script>
+</body>
+</html>

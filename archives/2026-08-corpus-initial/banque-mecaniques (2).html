@@ -1,0 +1,1037 @@
+<!--
+================================================================================
+BANQUE DE MECANIQUES — SIMULATIONS MINESEC
+Troisième et dernière banque. Les props disent ce que la scène contient,
+les mouvements comment cela se déplace ; celle-ci dit ce que l'élève fait
+et comment la scène lui répond.
+
+POURQUOI ELLE COMPTE PLUS QUE LES DEUX AUTRES
+  Tous les défauts relevés jusqu'ici dans les fichiers produits par
+  assistance générative étaient des défauts de mécanique, non de dessin
+  ni d'animation : une évaluation où la scène ne réagissait pas, un
+  glisser-déposer qui ne prenait pas, un mélange rebattu au changement de
+  langue, une démonstration qui repartait et effaçait le travail, un
+  identifiant manquant qui figeait toute la ressource.
+
+  A chaque nouvelle ressource, cette mécanique est réécrite de zéro. Les
+  mêmes défauts reviennent donc. Chaque entrée de cette banque porte, sous
+  le titre PIEGE, le défaut réel qu'elle empêche.
+
+LE CODE AFFICHE EST CELUI QUI TOURNE
+  Chaque mécanique est écrite une seule fois, sous forme d'une fonction.
+  Cette fonction alimente la démonstration en direct, et c'est elle qui
+  est affichée dans le panneau de code, extraite d'elle-même. Il ne peut
+  donc pas y avoir d'écart entre ce qui est montré et ce qui est copié.
+
+AUTONOMIE
+  Page unique, sans dépendance, hors connexion. Rien n'est écrit sur le
+  poste hormis les exports demandés.
+================================================================================
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Banque de mécaniques — MINESEC</title>
+<style>
+:root{
+  --bg:#121416; --panel:#1a1d21; --panel2:#25282d; --line:#3f454d;
+  --txt:#e8ebee; --dim:#98a1ab; --accent:#3b82f6; --ok:#22c55e; --no:#ef4444;
+  --saisir:#f59e0b; --boitier:#2d3748; --metal:#8a929c; --fs:16px;
+  --f-txt:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-fix:Consolas,"Courier New",monospace;
+}
+body.light{--bg:#f4f5f7;--panel:#fff;--panel2:#eceef1;--line:#b9bec6;--txt:#16181d;
+  --dim:#5b6270;--accent:#1d4ed8;--ok:#15803d;--no:#b91c1c;--saisir:#b45309;
+  --boitier:#cfd4da;--metal:#6b7280}
+body.hc{--bg:#000;--panel:#000;--panel2:#000;--line:#fff;--txt:#fff;--dim:#fff;
+  --accent:#ff0;--ok:#0f0;--no:#f55;--saisir:#ff0;--boitier:#000;--metal:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--f-txt);font-size:var(--fs);background:var(--bg);color:var(--txt);
+  display:flex;flex-direction:column;overflow:hidden}
+button{font-family:inherit;font-size:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-fix);text-transform:uppercase;letter-spacing:.06em}
+
+header{background:var(--panel);border-bottom:2px solid var(--line);
+  padding:.5rem .9rem;display:flex;align-items:center;gap:.5rem;flex-shrink:0;flex-wrap:wrap}
+.brand{flex:1;min-width:210px}
+.brand .lvl{font-size:.72rem;color:var(--dim);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.06em}
+.brand h1{font-size:clamp(1.05rem,2.8vw,1.35rem);font-weight:700;line-height:1.2}
+.tools{display:flex;gap:.3rem;align-items:center;flex-wrap:wrap}
+.bt{background:var(--panel2);border:2px solid var(--line);border-radius:5px;
+  padding:.42rem .75rem;font-size:.74rem;font-weight:700;font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.04em}
+.bt:hover{border-color:var(--accent);color:var(--accent)}
+.bt.primary{background:var(--accent);color:#07131f;border-color:var(--accent)}
+.bt.ok{border-color:var(--ok);color:var(--ok)}
+.ic{background:var(--panel2);border:2px solid var(--line);border-radius:5px;
+  width:40px;height:40px;display:flex;align-items:center;justify-content:center;padding:0}
+.ic svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+
+main{flex:1;display:flex;min-height:0}
+
+/* ─── liste ─── */
+.liste{width:262px;flex-shrink:0;background:var(--panel);border-right:2px solid var(--line);
+  overflow-y:auto;padding:.55rem}
+.fam{margin-bottom:.8rem}
+.fam h2{font-size:.62rem;color:var(--accent);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:.28rem;
+  border-bottom:1px solid var(--line);padding-bottom:.18rem}
+.fam .def{font-size:.67rem;color:var(--dim);line-height:1.4;margin-bottom:.3rem}
+.mk{display:block;width:100%;text-align:left;background:var(--panel2);
+  border:2px solid var(--line);padding:.3rem .45rem;margin-bottom:.2rem;font-size:.77rem}
+.mk:hover{border-color:var(--accent)}
+.mk[aria-pressed="true"]{border-color:var(--accent);background:rgba(59,130,246,.14)}
+.plus{width:100%;background:var(--accent);color:#07131f;border:2px solid var(--accent);
+  padding:.3rem;font-size:.68rem;font-weight:700;font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.04em;margin-top:.3rem}
+
+/* ─── centre : la démonstration vivante ─── */
+.centre{flex:1;min-width:0;display:flex;flex-direction:column}
+.entete{background:var(--panel2);border-bottom:2px solid var(--line);
+  padding:.45rem .9rem;flex-shrink:0}
+.entete h3{font-size:1rem;font-weight:700}
+.entete .q{font-size:.8rem;color:var(--dim);line-height:1.5;margin-top:.2rem}
+.banc{flex:1;overflow:auto;padding:.8rem;min-height:0}
+.banc .aire{background:var(--panel);border:2px solid var(--line);padding:.8rem;
+  min-height:230px;position:relative}
+.essai{background:var(--panel2);border-top:2px solid var(--line);padding:.45rem .9rem;
+  font-size:.78rem;color:var(--dim);flex-shrink:0;display:flex;gap:.6rem;align-items:center}
+.essai b{color:var(--txt)}
+.essai .bt{margin-left:auto}
+
+/* pièces de démonstration */
+.objs{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.7rem}
+.obj{background:var(--panel2);border:2px solid var(--line);padding:.45rem .6rem;
+  display:flex;flex-direction:column;align-items:center;gap:.25rem;min-width:92px;
+  transition:border-color .18s,transform .18s;cursor:pointer;touch-action:none}
+.obj:hover{border-color:var(--accent);transform:translateY(-2px)}
+.obj[aria-pressed="true"]{border:3px solid var(--accent);background:rgba(59,130,246,.12)}
+.obj svg{width:34px;height:34px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.obj .n{font-size:.7rem}
+.obj.refus{animation:secousse .24s}
+.obj.juste{border-color:var(--ok);animation:pulseok .5s ease-out}
+@keyframes secousse{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes pulseok{0%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}100%{box-shadow:0 0 0 14px rgba(34,197,94,0)}}
+
+.fiche{background:var(--panel2);border:2px solid var(--line);padding:.55rem .7rem;
+  font-size:.8rem;line-height:1.55;min-height:76px}
+.fiche .t{font-weight:700;margin-bottom:.2rem}
+.fiche .v{color:var(--dim)}
+
+.bacs{display:flex;gap:.5rem;flex-wrap:wrap}
+.bac{flex:1;min-width:130px;min-height:96px;border:2px dashed var(--line);
+  padding:.4rem;display:flex;flex-direction:column;gap:.25rem;transition:all .18s}
+.bac .t{font-size:.62rem;color:var(--dim);font-family:var(--f-fix);text-transform:uppercase}
+.bac.accueil{border-color:var(--accent);background:rgba(59,130,246,.14)}
+.bac .jet{background:var(--panel2);border:2px solid var(--ok);padding:.15rem .35rem;
+  font-size:.7rem;animation:atterrir .34s cubic-bezier(.34,1.5,.64,1)}
+@keyframes atterrir{0%{transform:scale(1.4) translateY(-12px);opacity:0}100%{transform:scale(1);opacity:1}}
+
+.ports{display:flex;gap:1.1rem;flex-wrap:wrap;background:var(--metal);
+  border:3px solid var(--line);padding:.9rem;justify-content:center}
+.pw{display:flex;flex-direction:column;align-items:center;gap:.25rem}
+.pw .pl{font-size:.6rem;font-family:var(--f-fix);color:#2d3748;font-weight:700}
+.port{background:#111;position:relative;transition:box-shadow .18s}
+.port.accueil{box-shadow:0 0 0 4px var(--accent)}
+.port.pris{box-shadow:0 0 0 4px var(--ok)}
+.p-usb{width:40px;height:14px;border:2px solid #cbd5e0}
+.p-vga{width:52px;height:22px;background:#3182ce;border:2px solid silver;
+  border-radius:3px 3px 10px 10px}
+.p-ps2{width:26px;height:26px;border-radius:50%;border:4px solid #9f7aea}
+.fiches{display:flex;gap:.5rem;margin-bottom:.7rem;flex-wrap:wrap}
+.fi{padding:.35rem .55rem;border:2px solid var(--line);font-size:.72rem;
+  font-family:var(--f-fix);cursor:grab;touch-action:none;background:var(--panel2)}
+.fi:hover{border-color:var(--accent)}
+.fi.pose{opacity:.35;cursor:default}
+#fantome{position:fixed;pointer-events:none;z-index:900;opacity:.92;
+  transform:translate(-50%,-50%) scale(1.08);filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
+
+.suite{display:flex;flex-direction:column;gap:.25rem;margin-bottom:.7rem}
+.et{display:flex;gap:.5rem;align-items:center;background:var(--panel2);
+  border:2px solid var(--line);padding:.28rem .5rem;font-size:.78rem}
+.et .r{width:20px;height:20px;border:2px solid var(--line);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:.62rem;
+  font-family:var(--f-fix);flex-shrink:0}
+.et.faite{opacity:.5}.et.faite .r{background:var(--ok);border-color:var(--ok);color:#07131f}
+.et.encours{border-color:var(--accent)}
+
+.reglage{display:flex;gap:.6rem;align-items:center;margin-bottom:.7rem;flex-wrap:wrap}
+.reglage input[type=range]{width:180px;accent-color:var(--accent)}
+.jauge{height:26px;background:var(--panel2);border:2px solid var(--line);position:relative;overflow:hidden}
+.jauge .f{height:100%;background:var(--accent);transition:width .3s cubic-bezier(.4,0,.2,1)}
+.deux{display:flex;gap:.6rem;flex-wrap:wrap}
+.deux>div{flex:1;min-width:150px;background:var(--panel2);border:2px solid var(--line);padding:.5rem}
+.deux .lb{font-size:.6rem;color:var(--accent);font-family:var(--f-fix);text-transform:uppercase}
+.deux .vv{font-size:1.15rem;font-weight:700;font-family:var(--f-fix)}
+
+.trace{font-family:var(--f-fix);font-size:.7rem;line-height:1.6;color:var(--dim);
+  background:var(--panel2);border:2px solid var(--line);padding:.5rem;
+  max-height:120px;overflow-y:auto;margin-top:.6rem}
+.trace .ok{color:var(--ok)} .trace .no{color:var(--no)}
+
+/* ─── droite ─── */
+aside{width:396px;flex-shrink:0;background:var(--panel);border-left:2px solid var(--line);
+  overflow-y:auto;padding:.6rem;display:flex;flex-direction:column;gap:.55rem}
+.card{background:var(--panel2);border:2px solid var(--line);padding:.6rem}
+.card h2{font-size:.62rem;color:var(--accent);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem}
+.card.piege{border-color:var(--no)}
+.card.piege h2{color:var(--no)}
+.card p{font-size:.77rem;line-height:1.55;color:var(--dim)}
+pre{background:var(--panel);border:2px solid var(--line);padding:.55rem .6rem;
+  overflow-x:auto;font-family:var(--f-fix);font-size:.69rem;line-height:1.5;color:var(--txt);
+  max-height:340px;overflow-y:auto;white-space:pre}
+.actions{display:flex;gap:.4rem;margin-top:.45rem}
+.actions .bt{flex:1}
+.vrai{font-size:.68rem;color:var(--ok);font-family:var(--f-fix);margin-top:.35rem;
+  display:flex;gap:.3rem;align-items:center}
+
+.dlg{position:fixed;inset:0;background:rgba(0,0,0,.86);display:none;align-items:center;
+  justify-content:center;padding:14px;z-index:200}
+.dlg.on{display:flex}
+.dlg .boite{background:var(--panel);border:2px solid var(--line);max-width:640px;width:100%;
+  max-height:90vh;overflow-y:auto;padding:1.2rem}
+.dlg h2{font-size:1rem;color:var(--accent);margin-bottom:.4rem}
+.dlg .expl{font-size:.8rem;color:var(--dim);line-height:1.55;margin-bottom:.8rem}
+.dlg label{display:block;font-size:.66rem;color:var(--dim);margin:.5rem 0 .16rem;
+  font-family:var(--f-fix);text-transform:uppercase;letter-spacing:.04em}
+.dlg input,.dlg textarea,.dlg select{width:100%;background:var(--panel2);
+  border:2px solid var(--line);color:var(--txt);padding:.38rem .5rem;font-size:.82rem;
+  font-family:var(--f-txt)}
+.dlg textarea{font-family:var(--f-fix);font-size:.73rem;min-height:130px;resize:vertical}
+.dlg .pied{display:flex;gap:.5rem;margin-top:1rem}
+.dlg .pied .bt{flex:1}
+
+.pied-page{background:var(--panel);border-top:2px solid var(--line);padding:.3rem;
+  text-align:center;font-size:.62rem;font-family:var(--f-fix);color:var(--dim);
+  letter-spacing:.14em;flex-shrink:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+@media (max-width:1100px){
+  main{flex-direction:column}
+  .liste{width:100%;border-right:none;border-bottom:2px solid var(--line);max-height:170px}
+  aside{width:100%;border-left:none;border-top:2px solid var(--line);max-height:48vh}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="lvl">MINESEC · BANQUE DE SIMULATIONS · REFERENTIEL</div>
+    <h1>Banque de mécaniques</h1>
+  </div>
+  <div class="tools">
+    <button class="bt" onclick="K.rejouer()">Réinitialiser l'essai</button>
+    <button class="bt primary" onclick="K.exporterTout()">Exporter le socle</button>
+    <button class="ic" onclick="K.theme()" title="Contraste" aria-label="Contraste">
+      <svg id="icTh" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="liste" id="liste"></div>
+
+  <div class="centre">
+    <div class="entete">
+      <h3 id="nom">—</h3>
+      <div class="q" id="quoi"></div>
+    </div>
+    <div class="banc"><div class="aire" id="aire"></div></div>
+    <div class="essai" id="essai"></div>
+  </div>
+
+  <aside>
+    <div class="card piege">
+      <h2>PIÈGE QUE CETTE MÉCANIQUE ÉVITE</h2>
+      <p id="piege"></p>
+    </div>
+    <div class="card">
+      <h2>CE QU'IL FAUT ESSAYER</h2>
+      <p id="obs"></p>
+    </div>
+    <div class="card">
+      <h2>LE MOTEUR</h2>
+      <pre id="code"></pre>
+      <div class="vrai">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
+             stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 12l6 6L20 6"/></svg>
+        Ce code est celui qui tourne dans la démonstration ci-contre.
+      </div>
+      <div class="actions">
+        <button class="bt primary" id="btCp" onclick="K.copier()">Copier</button>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<div class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="tDlg">
+  <div class="boite">
+    <h2 id="tDlg">Ajouter une mécanique</h2>
+    <p class="expl">Collez le corps d'une fonction. Elle sera conservée dans le catalogue et son code s'affichera dans le panneau de droite. La démonstration en direct ne peut pas être ajoutée depuis l'interface : elle demande une scène propre, à écrire dans le fichier.</p>
+    <label for="nNom">Nom</label><input type="text" id="nNom" placeholder="ex. Verrouiller un réglage">
+    <label for="nFam">Famille</label><select id="nFam"></select>
+    <label for="nQuoi">À quoi elle sert</label>
+    <input type="text" id="nQuoi" placeholder="ex. Empêche de modifier un réglage pendant une animation.">
+    <label for="nPiege">Le piège qu'elle évite</label>
+    <input type="text" id="nPiege" placeholder="ex. Deux animations concurrentes qui laissent la scène dans un état incohérent.">
+    <label for="nCode">Le code</label>
+    <textarea id="nCode" spellcheck="false">function maMecanique(a, b){
+  // …
+}</textarea>
+    <div class="pied">
+      <button class="bt" onclick="K.fermer()">Annuler</button>
+      <button class="bt primary" onclick="K.creer()">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<div class="pied-page">MINESEC — LAB</div>
+<div class="sr" id="live" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════
+   LES FAMILLES — les cinq gestes du cadre, plus le socle commun
+   ═══════════════════════════════════════════════════════════════ */
+const FAMILLES = [
+  { id:"choisir", nom:"Choisir",
+    def:"L'élève désigne un objet et la scène lui dit ce qu'il est." },
+  { id:"relier", nom:"Relier",
+    def:"L'élève rapproche deux objets. La forme accepte ou refuse — c'est le détrompeur." },
+  { id:"ordonner", nom:"Ordonner",
+    def:"L'élève construit une suite d'actions. Une étape hors rang ne fait pas avancer." },
+  { id:"regler", nom:"Régler",
+    def:"L'élève modifie une valeur et la scène suit immédiatement, sans validation." },
+  { id:"classer", nom:"Classer",
+    def:"L'élève range des éléments dans des zones nommées. Le bac accepte ou refuse visiblement." },
+  { id:"socle", nom:"Socle commun",
+    def:"Ce qu'il faut réécrire dans chaque ressource, et qu'il vaut mieux copier que réinventer." }
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   LES MOTEURS
+   Chaque fonction est écrite une seule fois. Elle alimente la
+   démonstration ET s'affiche dans le panneau de code, extraite
+   d'elle-même par toString(). L'écart est donc impossible.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ---------- CHOISIR ---------- */
+function choisirObjet(id, objets, surChoix){
+  /* Un seul objet choisi à la fois, marqué par aria-pressed ET par
+     un contour : jamais par la couleur seule. Cliquer l'objet déjà
+     choisi le désélectionne, et la fiche se vide — sans quoi elle
+     resterait à décrire un objet qui n'est plus désigné. */
+  const dejaChoisi = objets.etat === id;
+  objets.etat = dejaChoisi ? null : id;
+  objets.liste.forEach(o=>{
+    const el = document.getElementById("obj-"+o.id);
+    if(el) el.setAttribute("aria-pressed", String(o.id === objets.etat));
+  });
+  surChoix(objets.etat ? objets.liste.find(o=>o.id===objets.etat) : null);
+  return objets.etat;
+}
+
+/* ---------- RELIER ---------- */
+function relierFiche(fiche, port, poses){
+  /* Le détrompeur : la fiche n'entre que dans un port qu'elle accepte,
+     et seulement si ce port est libre. Aucun message n'est affiché
+     AVANT le geste : c'est la forme qui refuse, pas la machine qui
+     corrige d'avance. La fonction rend ce qui s'est produit, à charge
+     de la scène de le montrer. */
+  if(!port) return { etat:"hors", fiche:fiche.id };
+  const occupe = Object.values(poses).indexOf(port.id) >= 0;
+  if(occupe) return { etat:"occupe", fiche:fiche.id, port:port.id };
+  if(fiche.accepte.indexOf(port.id) < 0)
+    return { etat:"refus", fiche:fiche.id, port:port.id };
+  poses[fiche.id] = port.id;
+  return { etat:"pris", fiche:fiche.id, port:port.id };
+}
+
+/* ---------- ORDONNER ---------- */
+function ordonnerEtape(action, suite, etat){
+  /* Une étape hors rang ne fait PAS avancer le compteur, et elle
+     produit une conséquence dans la scène — jamais un simple message.
+     La fonction distingue trois cas, et le troisième est celui qu'on
+     oublie : une étape déjà accomplie n'est pas une erreur, c'est un
+     doublon, et il ne doit rien casser. */
+  const attendue = suite[etat.rang];
+  if(action === attendue){
+    etat.rang++;
+    etat.faites.push(action);
+    return { etat: etat.rang >= suite.length ? "acheve" : "avance", action };
+  }
+  if(etat.faites.indexOf(action) >= 0) return { etat:"deja", action };
+  return { etat:"horsRang", action, attendue };
+}
+
+/* ---------- REGLER ---------- */
+function reglerValeur(brut, unite, table){
+  /* La scène suit le réglage SANS validation : pas de bouton « appliquer ».
+     Et les deux représentations sont recalculées à partir de la même
+     source, jamais l'une à partir de l'autre — c'est ce qui les empêche
+     de diverger. L'arrondi n'intervient qu'à l'affichage, jamais dans
+     le calcul, sans quoi les erreurs s'accumuleraient. */
+  const bits = brut * table[unite];
+  const ecrire = (u)=>{
+    const n = bits / table[u];
+    const arrondi = Number.isInteger(n) ? n : Math.round(n*1000)/1000;
+    return String(arrondi).replace(/\B(?=(\d{3})+(?!\d))/g, "\u202F") + " " + u;
+  };
+  return { bits, ecrire };
+}
+
+/* ---------- CLASSER ---------- */
+function classerElement(element, bac, contenu, strict){
+  /* Deux modes, et il faut choisir en connaissance de cause.
+       strict  : le bac REFUSE tout élément étranger. L'élève ne peut pas
+                 se tromper, mais il n'apprend rien de son erreur.
+       libre   : le bac ACCEPTE, et l'élément mal rangé reste visible à
+                 la mauvaise place. C'est la loi de la conséquence, et
+                 c'est ce que demande le cadre pour la plupart des leçons.
+     Dans les deux cas, le retrait de l'ancien bac est indispensable :
+     sans lui, un élément déplacé se retrouverait dans deux bacs à la
+     fois. En mode strict cette ligne ne sert jamais — ce qui est
+     précisément la raison pour laquelle elle avait été écrite sans
+     être éprouvée. */
+  if(contenu[bac.id] && contenu[bac.id].indexOf(element.id) >= 0)
+    return { etat:"deja" };
+  if(strict && element.bac !== bac.id)
+    return { etat:"refus", attendu:element.bac };
+  Object.keys(contenu).forEach(k=>{
+    contenu[k] = contenu[k].filter(x => x !== element.id);
+  });
+  (contenu[bac.id] = contenu[bac.id] || []).push(element.id);
+  return { etat: element.bac === bac.id ? "pris" : "place", attendu:element.bac };
+}
+
+/* ---------- SOCLE ---------- */
+function pointScene(evenement, svg){
+  /* Convertit un point de l'écran en coordonnées de la scène.
+     Indispensable dès qu'un SVG est redimensionné : sans cette
+     conversion, le glisser-déposer se décale dès que la fenêtre
+     change de taille, et le décalage grandit avec l'écart.
+     preserveAspectRatio="xMidYMid meet" est supposé. */
+  const r = svg.getBoundingClientRect();
+  const vb = svg.viewBox.baseVal;
+  const s = Math.min(r.width / vb.width, r.height / vb.height);
+  const ox = (r.width  - vb.width  * s) / 2;
+  const oy = (r.height - vb.height * s) / 2;
+  return { x: (evenement.clientX - r.left - ox) / s,
+           y: (evenement.clientY - r.top  - oy) / s };
+}
+
+function zoneAccueil(evenement, element, marge){
+  /* Une zone d'accueil doit viser large : la leçon porte sur le
+     branchement, non sur l'adresse au pointeur. Une marge de 20 à
+     30 pixels rend le dépôt confortable au doigt comme à la souris. */
+  const r = element.getBoundingClientRect();
+  const m = marge === undefined ? 26 : marge;
+  return evenement.clientX > r.left - m && evenement.clientX < r.right  + m
+      && evenement.clientY > r.top  - m && evenement.clientY < r.bottom + m;
+}
+
+function ecrireTexte(id, texte){
+  /* Ecriture défensive. Un identifiant appelé et absent du document
+     lève une exception, interrompt l'initialisation, et la ressource
+     s'ouvre figée : aucun texte, aucun clic. Ce défaut a été constaté.
+     Trois lignes l'empêchent définitivement. */
+  const el = document.getElementById(id);
+  if(el && texte !== undefined && texte !== null) el.innerText = texte;
+  return !!el;
+}
+
+function socleDemo(etat, gestes, arret){
+  /* La démonstration se joue en boucle à l'ouverture et s'arrête au
+     PREMIER GESTE de l'élève. Deux garde-fous, tous deux payés cher :
+       - le survol de la souris n'interrompt pas ; sans quoi la
+         démonstration ne serait jamais vue ;
+       - elle ne repart JAMAIS d'elle-même après un temps d'inactivité ;
+         un élève qui réfléchit perdrait son travail.
+     Le verrou « finie » est ce qui garantit la seconde règle. */
+  const neutres = ["Tab","Shift","Control","Alt","Meta"];
+  gestes.forEach(type=>{
+    document.addEventListener(type, e=>{
+      if(e.type === "keydown" && neutres.indexOf(e.key) >= 0) return;
+      if(!etat.active) return;
+      etat.active = false;
+      etat.finie  = true;          /* verrou : plus aucune reprise */
+      arret();
+    }, { passive:true });
+  });
+}
+
+function basculeLangue(etat, rendre, ouverts){
+  /* La bascule conserve l'intégralité de l'état. Deux pièges réels :
+       - ce qui est aléatoire ne doit pas être retiré au sort ; un
+         mélange rebattu à chaque changement de langue fait perdre ses
+         repères à l'élève ;
+       - les fenêtres ouvertes doivent être RETRADUITES SUR PLACE, non
+         fermées : leur contenu resterait sinon dans l'ancienne langue. */
+  etat.L = (etat.L === "fr") ? "en" : "fr";
+  if("speechSynthesis" in window) window.speechSynthesis.cancel();
+  rendre();                                  /* ne rebat aucun tirage */
+  ouverts.filter(o=>o.estOuverte()).forEach(o=>o.retraduire());
+  return etat.L;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LE CATALOGUE
+   ═══════════════════════════════════════════════════════════════ */
+const ICO = {
+  ecran:'<rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M9 21h6M12 17v4"/>',
+  clavier:'<rect x="2" y="7" width="20" height="10" rx="1.5"/><path d="M6 11h1M10 11h1M14 11h1M18 11h1M8 14h8"/>',
+  imprimante:'<path d="M7 8V3h10v5"/><rect x="3" y="8" width="18" height="8" rx="1.5"/><path d="M7 16h10v5H7z"/>',
+  cle:'<rect x="8" y="7" width="8" height="14" rx="1.5"/><rect x="10" y="3" width="4" height="4"/>',
+  micro:'<rect x="10" y="3" width="4" height="9" rx="2"/><path d="M7 11a5 5 0 0010 0M12 16v4"/>'
+};
+
+const MECANIQUES = [
+{ id:"choisir-objet", fam:"choisir", nom:"Choisir un objet et lire sa fiche",
+  quoi:"L'élève clique un objet de la scène. Sa fiche s'affiche : ce qu'il est, ce qu'il exige, ce qui arrive si on le néglige. Un second clic sur le même objet le désélectionne.",
+  piege:"La fiche qui reste affichée après la désélection, et décrit donc un objet que plus rien ne désigne. Et le marquage par la couleur seule, illisible pour un élève qui distingue mal les teintes : ici le contour s'épaissit ET le fond se teinte.",
+  obs:"Cliquez un objet, puis le même à nouveau : la fiche se vide. Cliquez-en un autre : un seul reste choisi. Le marquage emploie aria-pressed, ce qui le rend audible par un lecteur d'écran.",
+  moteur: choisirObjet, essai:"Un seul objet à la fois. Le second clic annule.",
+  demo(z){
+    const objets = { etat:null, liste:[
+      {id:"ecr", nom:"Écran", ic:"ecran", d:"Composant de sortie. Il affiche ce que l'unité centrale produit."},
+      {id:"cla", nom:"Clavier", ic:"clavier", d:"Composant d'entrée. Il transmet les caractères frappés."},
+      {id:"imp", nom:"Imprimante", ic:"imprimante", d:"Composant de sortie. Elle porte l'information sur papier."},
+      {id:"cle", nom:"Clé USB", ic:"cle", d:"Unité de stockage. Elle conserve les données hors du poste."}
+    ]};
+    z.innerHTML = `<div class="objs">${objets.liste.map(o=>
+      `<button class="obj" id="obj-${o.id}" aria-pressed="false">
+        <svg viewBox="0 0 24 24">${ICO[o.ic]}</svg><span class="n">${o.nom}</span></button>`).join("")}</div>
+      <div class="fiche" id="fiche"><span class="v">Aucun objet n'est choisi.</span></div>`;
+    objets.liste.forEach(o=>{
+      document.getElementById("obj-"+o.id).onclick = ()=>
+        choisirObjet(o.id, objets, choisi=>{
+          document.getElementById("fiche").innerHTML = choisi
+            ? `<div class="t">${choisi.nom}</div><div class="v">${choisi.d}</div>`
+            : `<span class="v">Aucun objet n'est choisi.</span>`;
+          K.dire(choisi ? choisi.nom : "Aucun objet choisi.");
+        });
+    });
+  }},
+
+{ id:"relier-detrompeur", fam:"relier", nom:"Relier une fiche à son port",
+  quoi:"L'élève fait glisser une fiche vers un port. Elle n'entre que dans celui qui lui convient. Le refus est physique : la fiche revient à sa place, sans message préalable.",
+  piege:"Le message affiché AVANT le geste — « attention, ce port ne convient pas » — qui résout l'exercice à la place de l'élève. Et la zone d'accueil réduite au pixel près, qui transforme une leçon de branchement en épreuve d'adresse.",
+  obs:"Essayez la fiche VGA sur un port USB : rien ne se passe, la fiche revient. Puis sur le port bleu : elle entre. Relâchez à vingt pixels du port : le dépôt est quand même accepté, la marge est généreuse à dessein.",
+  moteur: relierFiche, essai:"Glissez une fiche vers un port. Reprenez-la en la glissant hors du port.",
+  demo(z){
+    const fiches=[
+      {id:"f-vga", nom:"VGA", accepte:["p-vga"]},
+      {id:"f-usb", nom:"USB", accepte:["p-usb1","p-usb2"]},
+      {id:"f-ps2", nom:"PS/2", accepte:["p-ps2"]}
+    ];
+    const ports=[
+      {id:"p-ps2", nom:"PS/2 Clavier", cl:"p-ps2"},
+      {id:"p-usb1", nom:"USB", cl:"p-usb"},
+      {id:"p-usb2", nom:"USB", cl:"p-usb"},
+      {id:"p-vga", nom:"VGA", cl:"p-vga"}
+    ];
+    const poses={};
+    z.innerHTML=`<div class="fiches">${fiches.map(f=>
+        `<div class="fi" id="${f.id}">${f.nom}</div>`).join("")}</div>
+      <div class="ports">${ports.map(p=>
+        `<div class="pw"><div class="port ${p.cl}" id="${p.id}"></div>
+         <span class="pl">${p.nom}</span></div>`).join("")}</div>
+      <div class="trace" id="tr">En attente d'un geste.</div>`;
+    const tr=(t,c)=>{const e=document.getElementById("tr");
+      e.innerHTML=`<span class="${c||''}">${t}</span><br>`+e.innerHTML; };
+    let drag=null;
+    fiches.forEach(f=>{
+      const el=document.getElementById(f.id);
+      el.addEventListener("pointerdown", e=>{
+        e.preventDefault();
+        if(poses[f.id]){ delete poses[f.id];
+          document.getElementById(el.dataset.port).classList.remove("pris");
+          el.classList.remove("pose"); tr(f.nom+" débranchée."); }
+        drag=f;
+        const g=document.createElement("div"); g.id="fantome"; g.className="fi";
+        g.textContent=f.nom; document.body.appendChild(g);
+        const mv=ev=>{ g.style.left=ev.clientX+"px"; g.style.top=ev.clientY+"px";
+          ports.forEach(p=>document.getElementById(p.id)
+            .classList.toggle("accueil", zoneAccueil(ev, document.getElementById(p.id)))); };
+        const up=ev=>{
+          window.removeEventListener("pointermove",mv);
+          window.removeEventListener("pointerup",up);
+          g.remove();
+          ports.forEach(p=>document.getElementById(p.id).classList.remove("accueil"));
+          const cible=ports.find(p=>zoneAccueil(ev, document.getElementById(p.id)));
+          const r=relierFiche(f, cible, poses);
+          if(r.etat==="pris"){
+            el.classList.add("pose"); el.dataset.port=cible.id;
+            document.getElementById(cible.id).classList.add("pris");
+            tr(f.nom+" branchée sur "+cible.nom+".","ok");
+          } else if(r.etat==="refus"){
+            el.classList.add("obj"); el.classList.add("refus");
+            setTimeout(()=>el.classList.remove("refus","obj"),260);
+            tr(f.nom+" n'entre pas dans "+cible.nom+".","no");
+          } else if(r.etat==="occupe"){ tr(cible.nom+" est déjà occupé.","no"); }
+          drag=null;
+        };
+        mv(e);
+        window.addEventListener("pointermove",mv);
+        window.addEventListener("pointerup",up);
+      });
+    });
+  }},
+
+{ id:"ordonner-suite", fam:"ordonner", nom:"Accomplir une suite dans l'ordre",
+  quoi:"L'élève accomplit des étapes. Une étape hors rang ne fait pas avancer, et produit une conséquence visible. Une étape déjà faite est signalée comme doublon, non comme erreur.",
+  piege:"Le refus réduit à un message pendant que la scène reste immobile — le cadre l'interdit expressément. Et l'étape hors rang qui fait quand même avancer le compteur, laissant la suite dans un état incohérent.",
+  obs:"Cliquez la troisième étape en premier : elle tremble, le rang ne bouge pas. Faites la première, puis refaites-la : le message change, c'est un doublon et non une faute. La distinction compte pour l'élève.",
+  moteur: ordonnerEtape, essai:"Les étapes se font dans l'ordre. Essayez de tricher.",
+  demo(z){
+    const suite=["besoins","source","executer","suivant","terminer"];
+    const noms={besoins:"Déterminer les besoins",source:"Vérifier la provenance",
+      executer:"Exécuter le fichier",suivant:"Suivre l'assistant",terminer:"Terminer"};
+    const etat={rang:0,faites:[]};
+    const peindre=()=>{
+      z.querySelector(".suite").innerHTML = suite.map((a,i)=>
+        `<div class="et ${i<etat.rang?"faite":i===etat.rang?"encours":""}" id="et-${a}">
+          <span class="r">${i+1}</span>${noms[a]}</div>`).join("");
+      suite.forEach(a=>{ document.getElementById("et-"+a).onclick=()=>agir(a); });
+    };
+    const tr=(t,c)=>{const e=document.getElementById("tr2");
+      e.innerHTML=`<span class="${c||''}">${t}</span><br>`+e.innerHTML; };
+    const agir=a=>{
+      const r=ordonnerEtape(a, suite, etat);
+      if(r.etat==="horsRang"){
+        const el=document.getElementById("et-"+a);
+        el.classList.add("obj","refus"); setTimeout(()=>el.classList.remove("obj","refus"),260);
+        tr(noms[a]+" ne peut pas être accomplie maintenant : "+noms[r.attendue].toLowerCase()+" n'a pas été fait.","no");
+      } else if(r.etat==="deja"){ tr(noms[a]+" a déjà été accomplie.","");
+      } else { tr(noms[a]+" accomplie.","ok");
+        if(r.etat==="acheve") tr("La procédure est complète.","ok"); }
+      peindre();
+    };
+    z.innerHTML=`<div class="suite"></div><div class="trace" id="tr2">En attente d'un geste.</div>`;
+    peindre();
+  }},
+
+{ id:"regler-representations", fam:"regler", nom:"Régler une valeur, deux représentations",
+  quoi:"L'élève déplace un réglage. Deux représentations de la même quantité se recalculent immédiatement, à partir de la même source. Aucune validation n'est demandée.",
+  piege:"Les deux représentations calculées l'une à partir de l'autre, qui finissent par diverger sous l'effet des arrondis. Et le bouton « appliquer », qui rompt le lien entre le geste et sa conséquence : l'élève ne voit plus ce qu'il a fait.",
+  obs:"Déplacez lentement le curseur : les deux valeurs changent ensemble, jamais l'une avant l'autre. Elles descendent toutes deux d'une même quantité en bits, calculée une seule fois. L'arrondi n'intervient qu'au moment d'écrire.",
+  moteur: reglerValeur, essai:"Le réglage agit tout de suite. Aucun bouton à valider.",
+  demo(z){
+    const table={ "bit":1, "o":8, "Ko":8*1024, "Mo":8*1024*1024, "Go":8*1024*1024*1024 };
+    z.innerHTML=`
+      <div class="reglage">
+        <label class="mono" style="font-size:.66rem;color:var(--dim)">Quantité</label>
+        <input type="range" id="rg" min="1" max="2048" value="1024">
+        <select id="un">${Object.keys(table).map(u=>
+          `<option ${u==="Ko"?"selected":""}>${u}</option>`).join("")}</select>
+      </div>
+      <div class="deux">
+        <div><div class="lb">Représentation choisie</div><div class="vv" id="v1">—</div></div>
+        <div><div class="lb">La même quantité en octets</div><div class="vv" id="v2">—</div></div>
+      </div>
+      <div class="jauge" style="margin-top:.6rem"><div class="f" id="jf" style="width:0"></div></div>`;
+    const maj=()=>{
+      const brut=+document.getElementById("rg").value;
+      const u=document.getElementById("un").value;
+      const r=reglerValeur(brut, u, table);
+      document.getElementById("v1").textContent=r.ecrire(u);
+      document.getElementById("v2").textContent=r.ecrire("o");
+      const p=Math.min(100, r.bits/table["Mo"]*100);
+      document.getElementById("jf").style.width=p.toFixed(1)+"%";
+    };
+    document.getElementById("rg").oninput=maj;
+    document.getElementById("un").onchange=maj;
+    maj();
+  }},
+
+{ id:"classer-bacs", fam:"classer", nom:"Ranger dans des bacs nommés",
+  quoi:"L'élève fait glisser un élément vers un bac. Deux modes : strict, où le bac refuse tout élément étranger ; libre, où il accepte et laisse l'erreur visible. Un élément déjà rangé ailleurs est déplacé, jamais dupliqué.",
+  piege:"L'élément dupliqué, présent dans deux bacs à la fois parce que le retrait de l'ancien bac a été oublié. Et un piège plus subtil, découvert en éprouvant ce moteur même : avec un bac strict, la ligne de retrait n'est jamais atteinte. Elle paraissait juste et n'avait jamais tourné. Un code que l'on n'exécute pas n'est pas un code vérifié.",
+  obs:"Essayez d'abord en mode strict : le bac refuse un élément étranger, et l'élève ne peut pas se tromper. Passez ensuite en mode libre : le bac accepte, et l'élément mal rangé reste visible à la mauvaise place. Déplacez-le alors vers un autre bac : il quitte le premier au lieu de s'y dupliquer. Ce déplacement est impossible en mode strict.",
+  moteur: classerElement, essai:"Changez de mode et comparez. En mode libre, l'élément mal rangé reste visible.",
+  demo(z){
+    const elems=[
+      {id:"cla",nom:"Clavier",bac:"entree"},{id:"mic",nom:"Microphone",bac:"entree"},
+      {id:"ecr",nom:"Écran",bac:"sortie"},{id:"imp",nom:"Imprimante",bac:"sortie"},
+      {id:"cle",nom:"Clé USB",bac:"stock"}
+    ];
+    const bacs=[{id:"entree",nom:"Entrée"},{id:"sortie",nom:"Sortie"},{id:"stock",nom:"Stockage"}];
+    const contenu={entree:[],sortie:[],stock:[]};
+    z.innerHTML=`<div class="reglage">
+        <label class="mono" style="font-size:.66rem;color:var(--dim)">Mode du bac</label>
+        <select id="mode">
+          <option value="strict">Strict — le bac refuse un élément étranger</option>
+          <option value="libre" selected>Libre — le bac accepte, l'erreur reste visible</option>
+        </select></div>
+      <div class="fiches" id="src"></div>
+      <div class="bacs">${bacs.map(b=>
+        `<div class="bac" id="bac-${b.id}"><div class="t">${b.nom}</div>
+         <div id="in-${b.id}"></div></div>`).join("")}</div>
+      <div class="trace" id="tr3">En attente d'un geste.</div>`;
+    const tr=(t,c)=>{const e=document.getElementById("tr3");
+      e.innerHTML=`<span class="${c||''}">${t}</span><br>`+e.innerHTML; };
+    const peindre=()=>{
+      const places=[].concat(...Object.values(contenu));
+      document.getElementById("src").innerHTML = elems.filter(x=>places.indexOf(x.id)<0)
+        .map(x=>`<div class="fi" id="el-${x.id}">${x.nom}</div>`).join("")
+        || `<span style="font-size:.74rem;color:var(--dim)">Tous les éléments sont rangés.</span>`;
+      bacs.forEach(b=>{
+        document.getElementById("in-"+b.id).innerHTML = contenu[b.id].map(i=>{
+          const x = elems.find(e=>e.id===i);
+          const juste = x.bac === b.id;
+          return `<div class="jet" id="el-${i}" style="border-color:${juste?"var(--ok)":"var(--no)"}">${x.nom}</div>`;
+        }).join("");
+      });
+      elems.forEach(x=>{ const el=document.getElementById("el-"+x.id); if(el) cabler(el,x); });
+    };
+    const cabler=(el,x)=>{
+      el.style.cursor="grab"; el.style.touchAction="none";
+      el.addEventListener("pointerdown", e=>{
+        e.preventDefault();
+        const g=document.createElement("div"); g.id="fantome"; g.className="fi";
+        g.textContent=x.nom; document.body.appendChild(g);
+        const mv=ev=>{ g.style.left=ev.clientX+"px"; g.style.top=ev.clientY+"px";
+          bacs.forEach(b=>document.getElementById("bac-"+b.id)
+            .classList.toggle("accueil", zoneAccueil(ev, document.getElementById("bac-"+b.id), 12))); };
+        const up=ev=>{
+          window.removeEventListener("pointermove",mv); window.removeEventListener("pointerup",up);
+          g.remove();
+          bacs.forEach(b=>document.getElementById("bac-"+b.id).classList.remove("accueil"));
+          const b=bacs.find(b=>zoneAccueil(ev, document.getElementById("bac-"+b.id), 12));
+          if(b){
+            const strict = document.getElementById("mode").value === "strict";
+            const r = classerElement(x, b, contenu, strict);
+            if(r.etat==="pris")       tr(x.nom+" rangé dans "+b.nom+".","ok");
+            else if(r.etat==="place") tr(x.nom+" posé dans "+b.nom+" — sa place est ailleurs.","no");
+            else if(r.etat==="refus") tr(b.nom+" n'accepte pas "+x.nom+".","no");
+            peindre();
+          }
+        };
+        mv(e); window.addEventListener("pointermove",mv); window.addEventListener("pointerup",up);
+      });
+    };
+    peindre();
+  }},
+
+{ id:"point-scene", fam:"socle", nom:"Convertir un point vers la scène",
+  quoi:"Traduit la position du pointeur en coordonnées de la scène SVG. Indispensable dès que la scène est redimensionnable.",
+  piege:"Le glisser-déposer qui se décale dès que la fenêtre change de taille. Sans cette conversion, les coordonnées de l'écran sont employées telles quelles, et l'écart grandit avec le redimensionnement — un défaut invisible sur l'écran du développeur, systématique en salle de classe.",
+  obs:"Déplacez le pointeur dans le cadre : les deux relevés diffèrent. Réduisez la fenêtre de votre navigateur, puis recommencez : les coordonnées de l'écran changent, celles de la scène restent les mêmes aux mêmes endroits du dessin.",
+  moteur: pointScene, essai:"Promenez le pointeur dans le cadre et comparez les deux relevés.",
+  demo(z){
+    z.innerHTML=`<svg id="sc" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid meet"
+        style="width:100%;height:200px;background:var(--panel2);border:2px solid var(--line);display:block">
+        <line x1="200" y1="0" x2="200" y2="200" stroke="var(--accent)" stroke-width="1" opacity=".4"/>
+        <line x1="0" y1="100" x2="400" y2="100" stroke="var(--accent)" stroke-width="1" opacity=".4"/>
+        <circle id="pt" cx="200" cy="100" r="7" fill="var(--accent)"/>
+        <text x="200" y="24" text-anchor="middle" fill="var(--dim)" font-size="11"
+          font-family="Consolas, monospace">repère de la scène : 400 sur 200</text>
+      </svg>
+      <div class="deux" style="margin-top:.6rem">
+        <div><div class="lb">Coordonnées de l'écran</div><div class="vv" id="ce">—</div></div>
+        <div><div class="lb">Coordonnées de la scène</div><div class="vv" id="cs">—</div></div>
+      </div>`;
+    const svg=document.getElementById("sc");
+    svg.addEventListener("pointermove", e=>{
+      const p=pointScene(e, svg);
+      document.getElementById("ce").textContent=Math.round(e.clientX)+" ; "+Math.round(e.clientY);
+      document.getElementById("cs").textContent=Math.round(p.x)+" ; "+Math.round(p.y);
+      const c=document.getElementById("pt");
+      c.setAttribute("cx", Math.max(0,Math.min(400,p.x)));
+      c.setAttribute("cy", Math.max(0,Math.min(200,p.y)));
+    });
+  }},
+
+{ id:"zone-accueil", fam:"socle", nom:"Zone d'accueil généreuse",
+  quoi:"Dit si un point tombe dans la zone d'un élément, en ajoutant une marge. La leçon porte sur le geste, non sur l'adresse au pointeur.",
+  piege:"La zone d'accueil réduite au pixel près, qui transforme une leçon de branchement en épreuve de dextérité — et devient impraticable au doigt sur une tablette.",
+  obs:"Approchez le pointeur du carré : la zone s'allume avant que vous ne l'ayez atteint. Réglez la marge à zéro et recommencez : il faut viser exactement.",
+  moteur: zoneAccueil, essai:"Réglez la marge et approchez le pointeur du carré.",
+  demo(z){
+    z.innerHTML=`<div class="reglage">
+        <label class="mono" style="font-size:.66rem;color:var(--dim)">Marge</label>
+        <input type="range" id="mg" min="0" max="60" value="26">
+        <span class="mono" id="vm" style="font-size:.8rem">26 px</span></div>
+      <div style="height:170px;display:flex;align-items:center;justify-content:center;
+        background:var(--panel2);border:2px solid var(--line)" id="cadre">
+        <div class="bac" id="cible" style="width:130px;min-height:74px;align-items:center;
+          justify-content:center"><div class="t">Zone</div></div></div>`;
+    const maj=()=>document.getElementById("vm").textContent=
+      document.getElementById("mg").value+" px";
+    document.getElementById("mg").oninput=maj;
+    document.getElementById("cadre").addEventListener("pointermove", e=>{
+      const m=+document.getElementById("mg").value;
+      document.getElementById("cible").classList
+        .toggle("accueil", zoneAccueil(e, document.getElementById("cible"), m));
+    });
+    maj();
+  }},
+
+{ id:"ecriture-defensive", fam:"socle", nom:"Écriture défensive d'un libellé",
+  quoi:"Écrit un texte dans un élément, sans lever d'exception si l'identifiant n'existe pas. Rend un booléen indiquant si l'élément a été trouvé.",
+  piege:"Le défaut le plus grave rencontré : un seul identifiant appelé et absent du document lève une exception, interrompt l'initialisation, et la ressource s'ouvre entièrement figée. Aucun texte, aucun clic, rien ne répond — et rien à l'écran n'indique la cause.",
+  obs:"Le bouton de droite écrit dans un identifiant qui n'existe pas. Avec l'écriture directe, tout s'arrête et la suite n'est jamais exécutée. Avec l'écriture défensive, la ligne suivante s'exécute quand même.",
+  moteur: ecrireTexte, essai:"Comparez les deux façons d'écrire dans un identifiant absent.",
+  demo(z){
+    z.innerHTML=`<div class="deux">
+        <div><div class="lb">Écriture directe</div>
+          <div id="r-dir" style="font-size:.8rem;color:var(--dim);margin-top:.3rem">—</div>
+          <button class="bt" style="margin-top:.5rem;width:100%" id="b-dir">Essayer</button></div>
+        <div><div class="lb">Écriture défensive</div>
+          <div id="r-def" style="font-size:.8rem;color:var(--dim);margin-top:.3rem">—</div>
+          <button class="bt" style="margin-top:.5rem;width:100%" id="b-def">Essayer</button></div>
+      </div>
+      <div class="trace" id="tr4">En attente d'un essai.</div>`;
+    const tr=(t,c)=>{const e=document.getElementById("tr4");
+      e.innerHTML=`<span class="${c||''}">${t}</span><br>`+e.innerHTML; };
+    document.getElementById("b-dir").onclick=()=>{
+      document.getElementById("r-dir").textContent="…";
+      try{
+        document.getElementById("libelle-absent").innerText="valeur";
+        tr("La suite s'est exécutée.","ok");
+      }catch(err){
+        tr("Exception levée : "+err.message,"no");
+        tr("La ligne suivante n'a jamais été atteinte.","no");
+        document.getElementById("r-dir").textContent="interrompu";
+      }
+    };
+    document.getElementById("b-def").onclick=()=>{
+      const trouve=ecrireTexte("libelle-absent","valeur");
+      document.getElementById("r-def").textContent = trouve ? "écrit" : "ignoré sans dommage";
+      tr("Identifiant absent, aucune exception. La suite s'exécute.","ok");
+    };
+  }},
+
+{ id:"socle-demo", fam:"socle", nom:"Démonstration au lancement",
+  quoi:"Joue une démonstration en boucle à l'ouverture, la déclare par un bandeau, et l'arrête net au premier geste de l'élève.",
+  piege:"Deux défauts constatés sur un même fichier. L'interruption au simple mouvement de souris : la démonstration n'aurait jamais été vue. Et la reprise automatique après un temps d'inactivité, qui vidait la scène : un élève qui réfléchit perdait son travail et voyait la machine agir à sa place.",
+  obs:"Lancez, puis promenez la souris sans cliquer : la démonstration continue. Cliquez : elle s'arrête. Attendez ensuite sans rien faire : elle ne revient jamais. Le verrou est ce qui garantit cette seconde règle.",
+  moteur: socleDemo, essai:"Le survol n'interrompt pas. Le clic arrête définitivement.",
+  demo(z){
+    z.innerHTML=`<div id="band" style="display:none;align-items:center;gap:.5rem;
+        background:var(--accent);color:#07131f;padding:.3rem .8rem;font-size:.74rem;
+        font-weight:700;font-family:var(--f-fix);text-transform:uppercase;letter-spacing:.04em">
+        <span style="width:9px;height:9px;border-radius:50%;background:#07131f"></span>
+        Démonstration — cliquez n'importe où pour prendre la main</div>
+      <div style="height:120px;display:flex;align-items:center;justify-content:center;
+        background:var(--panel2);border:2px solid var(--line);margin-top:.5rem">
+        <div class="fi" id="pion" style="transition:transform .6s cubic-bezier(.34,1.1,.64,1)">objet</div></div>
+      <button class="bt primary" style="margin-top:.6rem" id="b-lance">Lancer la démonstration</button>
+      <div class="trace" id="tr5">En attente.</div>`;
+    const tr=(t,c)=>{const e=document.getElementById("tr5");
+      e.innerHTML=`<span class="${c||''}">${t}</span><br>`+e.innerHTML; };
+    const etat={active:false, finie:false};
+    let pas=0, tm=null;
+    const arret=()=>{ clearInterval(tm);
+      document.getElementById("band").style.display="none";
+      document.getElementById("pion").style.transform="translateX(0)";
+      tr("Arrêtée au premier geste. Elle ne reviendra pas d'elle-même.","ok"); };
+    document.getElementById("b-lance").onclick=()=>{
+      if(etat.active) return;
+      etat.active=true; etat.finie=false; pas=0;
+      document.getElementById("band").style.display="flex";
+      tr("Démonstration en cours. Le survol ne l'interrompt pas.");
+      tm=setInterval(()=>{ if(!etat.active) return;
+        pas=(pas+1)%4;
+        document.getElementById("pion").style.transform="translateX("+(pas*54-81)+"px)";
+      },700);
+    };
+    socleDemo(etat, ["pointerdown","keydown","touchstart"], arret);
+    document.getElementById("aire").addEventListener("pointermove", ()=>{
+      if(etat.active && !window.__survolDit){ window.__survolDit=1;
+        tr("Survol détecté : la démonstration continue, c'est voulu."); }
+    });
+  }},
+
+{ id:"bascule-langue", fam:"socle", nom:"Bascule de langue conservant l'état",
+  quoi:"Change la langue sans rien perdre : ni les saisies, ni la position, ni le contenu des fenêtres ouvertes, ni l'ordre d'un tirage aléatoire.",
+  piege:"Deux défauts réels. Le mélange rebattu à chaque changement de langue, qui fait perdre ses repères à l'élève au moment où il cherchait une pièce. Et les fenêtres ouvertes non retraduites, dont le contenu reste dans l'ancienne langue jusqu'à l'action suivante.",
+  obs:"Notez l'ordre des pièces et le contenu de la fenêtre, puis basculez : l'ordre est conservé et la fenêtre est retraduite sur place, sans être fermée.",
+  moteur: basculeLangue, essai:"L'ordre du tirage et les fenêtres ouvertes survivent à la bascule.",
+  demo(z){
+    const mots={fr:["Écran","Clavier","Souris","Imprimante","Scanner"],
+                en:["Monitor","Keyboard","Mouse","Printer","Scanner"]};
+    const etat={L:"fr"};
+    let ordre=[0,1,2,3,4].sort(()=>Math.random()-0.5);
+    let ouverte=false;
+    const rendre=()=>{
+      document.getElementById("lst").innerHTML =
+        ordre.map(i=>`<div class="fi">${mots[etat.L][i]}</div>`).join("");
+      document.getElementById("lg").textContent = etat.L.toUpperCase();
+    };
+    const fenetre={ estOuverte:()=>ouverte,
+      retraduire:()=>{ document.getElementById("fen").textContent =
+        etat.L==="fr" ? "Cette fenêtre est ouverte. Son contenu est retraduit sur place."
+                      : "This window is open. Its content is retranslated in place."; } };
+    z.innerHTML=`<div class="fiches" id="lst"></div>
+      <div style="display:flex;gap:.5rem;align-items:center;margin:.6rem 0">
+        <button class="bt primary" id="b-lg">Basculer la langue</button>
+        <span class="mono" id="lg" style="font-size:.9rem">FR</span>
+        <button class="bt" id="b-fen">Ouvrir une fenêtre</button></div>
+      <div id="fen" style="display:none;background:var(--panel2);border:2px solid var(--line);
+        padding:.6rem;font-size:.8rem"></div>`;
+    document.getElementById("b-lg").onclick=()=>{
+      basculeLangue(etat, rendre, [fenetre]);
+      K.dire("Langue : "+etat.L);
+    };
+    document.getElementById("b-fen").onclick=()=>{
+      ouverte=!ouverte;
+      document.getElementById("fen").style.display = ouverte?"block":"none";
+      if(ouverte) fenetre.retraduire();
+    };
+    rendre();
+  }}
+];
+
+/* ═══════════════════════════════════════════════════════════════ */
+const K = {
+  sel:null,
+
+  init(){ this.batir(); this.choisir(MECANIQUES[0].id);
+    document.addEventListener("keydown", e=>{ if(e.key==="Escape") this.fermer(); }); },
+
+  m(){ return MECANIQUES.find(x=>x.id===this.sel); },
+
+  batir(){
+    const z=document.getElementById("liste"); z.innerHTML="";
+    FAMILLES.forEach(f=>{
+      const l=MECANIQUES.filter(m=>m.fam===f.id);
+      if(!l.length) return;
+      const s=document.createElement("section"); s.className="fam";
+      s.innerHTML=`<h2>${f.nom}</h2><div class="def">${f.def}</div>`;
+      l.forEach(m=>{
+        const b=document.createElement("button");
+        b.className="mk"; b.id="mk-"+m.id; b.textContent=m.nom;
+        b.setAttribute("aria-pressed", String(m.id===this.sel));
+        b.onclick=()=>this.choisir(m.id);
+        s.appendChild(b);
+      });
+      z.appendChild(s);
+    });
+    const p=document.createElement("button");
+    p.className="plus"; p.textContent="+ Ajouter une mécanique";
+    p.onclick=()=>this.ouvrir(); z.appendChild(p);
+  },
+
+  choisir(id){
+    this.sel=id;
+    document.querySelectorAll(".mk").forEach(b=>
+      b.setAttribute("aria-pressed", String(b.id==="mk-"+id)));
+    const m=this.m();
+    document.getElementById("nom").textContent=m.nom;
+    document.getElementById("quoi").textContent=m.quoi;
+    document.getElementById("piege").textContent=m.piege;
+    document.getElementById("obs").textContent=m.obs;
+    document.getElementById("essai").innerHTML=
+      `<span><b>Essai —</b> ${m.essai||""}</span>
+       <button class="bt" onclick="K.rejouer()">Réinitialiser</button>`;
+    /* Le code affiché est extrait de la fonction elle-même. */
+    document.getElementById("code").textContent =
+      m.moteur ? m.moteur.toString() : (m.code||"");
+    this.rejouer();
+  },
+
+  rejouer(){
+    const z=document.getElementById("aire"); z.innerHTML="";
+    window.__survolDit=0;
+    const m=this.m();
+    if(m && typeof m.demo==="function"){
+      try{ m.demo(z); }
+      catch(e){ z.innerHTML=`<p style="color:var(--no);font-size:.8rem">
+        La démonstration n'a pas pu être montée : ${e.message}</p>`; }
+    } else {
+      z.innerHTML=`<p style="font-size:.8rem;color:var(--dim)">
+        Cette mécanique a été ajoutée depuis l'interface : son code figure à droite,
+        mais elle n'a pas de démonstration en direct.</p>`;
+    }
+  },
+
+  copier(){
+    const t=document.getElementById("code").textContent;
+    const z=document.createElement("textarea");
+    z.value=t; z.style.position="fixed"; z.style.opacity="0";
+    document.body.appendChild(z); z.select();
+    let ok=false; try{ ok=document.execCommand("copy"); }catch(e){}
+    document.body.removeChild(z);
+    if(!ok && navigator.clipboard) navigator.clipboard.writeText(t).catch(()=>{});
+    const b=document.getElementById("btCp");
+    b.textContent="Copié"; b.classList.add("ok");
+    setTimeout(()=>{ b.textContent="Copier"; b.classList.remove("ok"); },1500);
+  },
+
+  exporterTout(){
+    let t="/* ══════════════════════════════════════════════════════════\n";
+    t+="   SOCLE DE MECANIQUES — BANQUE DE SIMULATIONS MINESEC\n\n";
+    t+="   Chaque fonction porte, en commentaire, le defaut reel qu'elle\n";
+    t+="   empeche. Ces defauts ont tous ete constates sur des fichiers\n";
+    t+="   produits par assistance generative.\n";
+    t+="   ══════════════════════════════════════════════════════════ */\n\n";
+    FAMILLES.forEach(f=>{
+      const l=MECANIQUES.filter(m=>m.fam===f.id);
+      if(!l.length) return;
+      t+="/* ─── "+f.nom.toUpperCase()+" — "+f.def+" ─── */\n\n";
+      l.forEach(m=>{
+        t+="/* "+m.nom+"\n   PIEGE : "+m.piege+" */\n";
+        t+=(m.moteur?m.moteur.toString():m.code||"")+"\n\n";
+      });
+    });
+    const b=new Blob([t],{type:"text/plain;charset=utf-8"});
+    const u=URL.createObjectURL(b), a=document.createElement("a");
+    a.href=u; a.download="mecaniques-minesec.js";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(u),1500);
+    this.dire("Socle exporté.");
+  },
+
+  ouvrir(){
+    document.getElementById("nFam").innerHTML =
+      FAMILLES.map(f=>`<option value="${f.id}">${f.nom}</option>`).join("");
+    document.getElementById("dlg").classList.add("on");
+    document.getElementById("nNom").focus();
+  },
+  fermer(){ document.getElementById("dlg").classList.remove("on"); },
+  creer(){
+    const nom=document.getElementById("nNom").value.trim();
+    const code=document.getElementById("nCode").value.trim();
+    if(!nom||!code){ this.dire("Le nom et le code sont requis."); return; }
+    const base=nom.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+                  .replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+    let id=base,k=2; while(MECANIQUES.some(m=>m.id===id)) id=base+"-"+(k++);
+    MECANIQUES.push({ id, fam:document.getElementById("nFam").value, nom, code,
+      quoi:document.getElementById("nQuoi").value.trim()||"Mécanique ajoutée depuis l'interface.",
+      piege:document.getElementById("nPiege").value.trim()||"À renseigner.",
+      obs:"Cette mécanique n'a pas de démonstration en direct : elle a été ajoutée depuis l'interface.",
+      essai:"" });
+    this.fermer(); this.batir(); this.choisir(id);
+    this.dire("Mécanique « "+nom+" » ajoutée.");
+  },
+
+  theme(){
+    const b=document.body;
+    if(b.classList.contains("light")){b.classList.remove("light");b.classList.add("hc");}
+    else if(b.classList.contains("hc")){b.classList.remove("hc");}
+    else {b.classList.add("light");}
+    document.getElementById("icTh").innerHTML=b.classList.contains("light")
+      ? '<path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/>'
+      : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  },
+  dire(m){ const r=document.getElementById("live"); if(r) r.textContent=m; }
+};
+
+window.addEventListener("load", ()=> K.init());
+</script>
+</body>
+</html>

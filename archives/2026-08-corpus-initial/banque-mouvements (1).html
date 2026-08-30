@@ -1,0 +1,804 @@
+<!--
+================================================================================
+BANQUE DE MOUVEMENTS — SIMULATIONS MINESEC
+Jumelle de la banque de props. Là où celle-ci fixe ce que les objets sont,
+celle-ci fixe la façon dont ils se déplacent.
+
+LE PRINCIPE, ENONCE AVEC PRECISION
+  Un mouvement est une trajectoire matricielle assortie d'une loi temporelle.
+    - La matrice donne la GEOMETRIE. Translation, rotation, mise à l'échelle
+      et cisaillement sont des transformations affines : elles se composent
+      en une seule matrice de six coefficients, notée matrix(a,b,c,d,e,f).
+    - La courbe de Bézier donne le RYTHME : à quel instant le mouvement se
+      trouve à quelle fraction de son parcours.
+    - Ce qui n'est ni l'une ni l'autre — l'opacité, la couleur, l'ombre —
+      reste une interpolation numérique, tout aussi exacte, mais qui ne
+      passe pas par la matrice.
+
+  Dans les trois cas, LE CODE EST LE MOUVEMENT, exactement comme le code
+  EST l'image dans une figure vectorielle. Le même code produit toujours
+  la même trajectoire, sur n'importe quelle machine.
+
+  Ce fichier ne l'affirme pas : il le MESURE. Pendant qu'un mouvement se
+  joue, la matrice est relevée image par image auprès du navigateur, et
+  ses six coefficients s'affichent en direct. On y lit aussi la
+  décomposition en translation, échelle et rotation.
+
+  L'opacité est affichée A PART, et c'est délibéré : elle ne figure pas
+  dans la matrice. Le montrer vaut mieux que le taire.
+
+AUTONOMIE
+  Page unique, sans dépendance, hors connexion. Rien n'est écrit sur le
+  poste hormis les exports demandés.
+================================================================================
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Banque de mouvements — MINESEC</title>
+<style>
+:root{
+  --bg:#121416; --panel:#1a1d21; --panel2:#25282d; --line:#3f454d;
+  --txt:#e8ebee; --dim:#98a1ab; --accent:#3b82f6; --ok:#22c55e; --no:#ef4444;
+  --saisir:#f59e0b; --boitier:#2d3748; --boitier-clair:#4a5568; --metal:#8a929c;
+  --fs:16px;
+  --f-txt:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-fix:Consolas,"Courier New",monospace;
+}
+body.light{--bg:#f4f5f7;--panel:#fff;--panel2:#eceef1;--line:#b9bec6;--txt:#16181d;
+  --dim:#5b6270;--accent:#1d4ed8;--ok:#15803d;--no:#b91c1c;--saisir:#b45309;
+  --boitier:#cfd4da;--boitier-clair:#e4e8ec;--metal:#6b7280}
+body.hc{--bg:#000;--panel:#000;--panel2:#000;--line:#fff;--txt:#fff;--dim:#fff;
+  --accent:#ff0;--ok:#0f0;--no:#f55;--saisir:#ff0;--boitier:#000;--metal:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--f-txt);font-size:var(--fs);background:var(--bg);color:var(--txt);
+  display:flex;flex-direction:column;overflow:hidden}
+button{font-family:inherit;font-size:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-fix);text-transform:uppercase;letter-spacing:.06em}
+
+/* ─── bandeau ─── */
+header{background:var(--panel);border-bottom:2px solid var(--line);
+  padding:.5rem .9rem;display:flex;align-items:center;gap:.5rem;flex-shrink:0;flex-wrap:wrap}
+.brand{flex:1;min-width:210px}
+.brand .lvl{font-size:.72rem;color:var(--dim);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.06em}
+.brand h1{font-size:clamp(1.05rem,2.8vw,1.35rem);font-weight:700;line-height:1.2}
+.tools{display:flex;gap:.3rem;align-items:center;flex-wrap:wrap}
+.bt{background:var(--panel2);border:2px solid var(--line);border-radius:5px;
+  padding:.42rem .75rem;font-size:.74rem;font-weight:700;font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.04em}
+.bt:hover{border-color:var(--accent);color:var(--accent)}
+.bt.primary{background:var(--accent);color:#07131f;border-color:var(--accent)}
+.bt.ok{border-color:var(--ok);color:var(--ok)}
+.ic{background:var(--panel2);border:2px solid var(--line);border-radius:5px;
+  width:40px;height:40px;display:flex;align-items:center;justify-content:center;padding:0}
+.ic svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+
+main{flex:1;display:flex;min-height:0}
+
+/* ─── colonne des mouvements ─── */
+.liste{width:280px;flex-shrink:0;background:var(--panel);border-right:2px solid var(--line);
+  overflow-y:auto;padding:.55rem}
+.fam{margin-bottom:.85rem}
+.fam h2{font-size:.62rem;color:var(--accent);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem;
+  border-bottom:1px solid var(--line);padding-bottom:.2rem}
+.fam .def{font-size:.68rem;color:var(--dim);line-height:1.4;margin-bottom:.35rem}
+.mv{display:block;width:100%;text-align:left;background:var(--panel2);
+  border:2px solid var(--line);padding:.32rem .5rem;margin-bottom:.22rem;font-size:.78rem}
+.mv:hover{border-color:var(--accent)}
+.mv[aria-pressed="true"]{border-color:var(--accent);background:rgba(59,130,246,.14)}
+.mv .d{font-size:.62rem;color:var(--dim);font-family:var(--f-fix)}
+.plus{width:100%;background:var(--accent);color:#07131f;border:2px solid var(--accent);
+  padding:.32rem;font-size:.7rem;font-weight:700;font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.04em;margin-top:.3rem}
+
+/* ─── la scène d'essai ─── */
+.centre{flex:1;min-width:0;display:flex;flex-direction:column}
+.entete{background:var(--panel2);border-bottom:2px solid var(--line);padding:.45rem .9rem;flex-shrink:0}
+.entete h3{font-size:1rem;font-weight:700}
+.entete .q{font-size:.8rem;color:var(--dim);line-height:1.5;margin-top:.2rem}
+.piste{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;
+  justify-content:center;min-height:0;background:var(--bg)}
+.grille{position:absolute;inset:0;opacity:.5;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:40px 40px;background-position:center center}
+.repere{position:absolute;left:50%;top:50%;width:1px;height:100%;background:var(--accent);opacity:.28}
+.repere.h{width:100%;height:1px}
+#objet{position:relative;z-index:3;transform-origin:50% 50%;will-change:transform,opacity}
+#objet svg{display:block}
+.cmd{background:var(--panel);border-top:2px solid var(--line);padding:.45rem .9rem;
+  display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;flex-shrink:0}
+.cmd label{font-size:.68rem;color:var(--dim);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.04em}
+.cmd input[type=range]{width:120px;accent-color:var(--accent)}
+.cmd .val{font-family:var(--f-fix);font-size:.76rem;min-width:52px}
+select{background:var(--panel2);border:2px solid var(--line);color:var(--txt);
+  padding:.3rem .4rem;font-size:.76rem;font-family:var(--f-txt)}
+select:focus{outline:none;border-color:var(--accent)}
+
+/* ─── le relevé ─── */
+aside{width:376px;flex-shrink:0;background:var(--panel);border-left:2px solid var(--line);
+  overflow-y:auto;padding:.6rem;display:flex;flex-direction:column;gap:.55rem}
+.card{background:var(--panel2);border:2px solid var(--line);padding:.6rem}
+.card h2{font-size:.62rem;color:var(--accent);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.05em;margin-bottom:.45rem}
+.card p{font-size:.76rem;line-height:1.5;color:var(--dim)}
+
+/* la matrice, relevée en direct */
+.mat{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem;margin-bottom:.45rem}
+.mat .c{background:var(--panel);border:2px solid var(--line);padding:.3rem;text-align:center}
+.mat .c .n{font-size:.58rem;color:var(--accent);font-family:var(--f-fix)}
+.mat .c .v{font-size:.95rem;font-weight:700;font-family:var(--f-fix);
+  font-variant-numeric:tabular-nums}
+.mat.fige .c{border-color:var(--ok)}
+.decomp{font-family:var(--f-fix);font-size:.72rem;line-height:1.65}
+.decomp .k{color:var(--dim)}
+.decomp .v{color:var(--txt);font-weight:700}
+.hors{margin-top:.5rem;padding-top:.45rem;border-top:1px dashed var(--line)}
+.hors .t{font-size:.6rem;color:var(--saisir);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.04em;margin-bottom:.2rem}
+
+/* la courbe du rythme */
+.courbe{background:var(--panel);border:2px solid var(--line);padding:.4rem;margin-top:.3rem}
+.courbe svg{display:block;width:100%;height:auto}
+
+/* le code */
+pre{background:var(--panel);border:2px solid var(--line);padding:.55rem .6rem;
+  overflow-x:auto;font-family:var(--f-fix);font-size:.7rem;line-height:1.5;color:var(--txt);
+  max-height:230px;overflow-y:auto}
+.actions{display:flex;gap:.4rem;margin-top:.45rem}
+.actions .bt{flex:1}
+
+/* ─── fenêtre d'ajout ─── */
+.dlg{position:fixed;inset:0;background:rgba(0,0,0,.86);display:none;align-items:center;
+  justify-content:center;padding:14px;z-index:200}
+.dlg.on{display:flex}
+.dlg .boite{background:var(--panel);border:2px solid var(--line);max-width:660px;width:100%;
+  max-height:90vh;overflow-y:auto;padding:1.2rem}
+.dlg h2{font-size:1rem;color:var(--accent);margin-bottom:.4rem}
+.dlg .expl{font-size:.8rem;color:var(--dim);line-height:1.55;margin-bottom:.8rem}
+.dlg label{display:block;font-size:.66rem;color:var(--dim);margin:.5rem 0 .16rem;
+  font-family:var(--f-fix);text-transform:uppercase;letter-spacing:.04em}
+.dlg input,.dlg textarea,.dlg select{width:100%;background:var(--panel2);
+  border:2px solid var(--line);color:var(--txt);padding:.38rem .5rem;font-size:.82rem;
+  font-family:var(--f-txt)}
+.dlg textarea{font-family:var(--f-fix);font-size:.74rem;min-height:120px;resize:vertical}
+.dlg .duo{display:flex;gap:.6rem}
+.dlg .duo>div{flex:1}
+.dlg .pied{display:flex;gap:.5rem;margin-top:1rem}
+.dlg .pied .bt{flex:1}
+
+.pied-page{background:var(--panel);border-top:2px solid var(--line);padding:.3rem;
+  text-align:center;font-size:.62rem;font-family:var(--f-fix);color:var(--dim);
+  letter-spacing:.14em;flex-shrink:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+@media (max-width:1080px){
+  main{flex-direction:column}
+  .liste{width:100%;border-right:none;border-bottom:2px solid var(--line);max-height:180px}
+  aside{width:100%;border-left:none;border-top:2px solid var(--line);max-height:46vh}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="lvl">MINESEC · BANQUE DE SIMULATIONS · REFERENTIEL</div>
+    <h1>Banque de mouvements</h1>
+  </div>
+  <div class="tools">
+    <button class="bt primary" onclick="M.rejouer()">Rejouer</button>
+    <button class="bt" onclick="M.exporterTout()">Exporter la feuille</button>
+    <button class="ic" onclick="M.theme()" title="Contraste" aria-label="Contraste">
+      <svg id="icTh" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="liste" id="liste"></div>
+
+  <div class="centre">
+    <div class="entete">
+      <h3 id="nom">—</h3>
+      <div class="q" id="quoi"></div>
+    </div>
+
+    <div class="piste" id="piste">
+      <div class="grille"></div>
+      <div class="repere"></div>
+      <div class="repere h"></div>
+      <div id="objet"></div>
+    </div>
+
+    <div class="cmd">
+      <label for="obj">Objet</label>
+      <select id="obj" onchange="M.objet()">
+        <option value="carte">Carte</option>
+        <option value="uc">Unité centrale</option>
+        <option value="jeton">Jeton</option>
+        <option value="barre">Barrière</option>
+      </select>
+      <label for="duree">Durée</label>
+      <input type="range" id="duree" min="80" max="1600" step="20" value="400" oninput="M.majDuree()">
+      <span class="val" id="vDuree">400 ms</span>
+      <label for="ral">Ralenti</label>
+      <input type="range" id="ral" min="1" max="8" step="1" value="1" oninput="M.majRal()">
+      <span class="val" id="vRal">×1</span>
+      <button class="bt" onclick="M.boucle()" id="btBoucle">En boucle</button>
+    </div>
+  </div>
+
+  <aside>
+    <div class="card">
+      <h2>MATRICE RELEVÉE EN DIRECT</h2>
+      <div class="mat" id="mat">
+        <div class="c"><div class="n">a</div><div class="v" id="ma">1</div></div>
+        <div class="c"><div class="n">c</div><div class="v" id="mc">0</div></div>
+        <div class="c"><div class="n">e</div><div class="v" id="me">0</div></div>
+        <div class="c"><div class="n">b</div><div class="v" id="mb">0</div></div>
+        <div class="c"><div class="n">d</div><div class="v" id="md">1</div></div>
+        <div class="c"><div class="n">f</div><div class="v" id="mf">0</div></div>
+      </div>
+      <div class="decomp">
+        <div><span class="k">translation …</span> <span class="v" id="dTr">0 ; 0</span></div>
+        <div><span class="k">échelle …….</span> <span class="v" id="dEc">1 ; 1</span></div>
+        <div><span class="k">rotation …..</span> <span class="v" id="dRo">0°</span></div>
+      </div>
+      <div class="hors">
+        <div class="t">Hors matrice</div>
+        <div class="decomp">
+          <div><span class="k">opacité ……</span> <span class="v" id="dOp">1</span></div>
+        </div>
+      </div>
+      <p style="margin-top:.45rem" id="noteMat"></p>
+    </div>
+
+    <div class="card">
+      <h2>LE RYTHME</h2>
+      <div class="decomp"><span class="k">courbe …….</span> <span class="v" id="dCo">—</span></div>
+      <div class="courbe" id="courbe"></div>
+      <p style="margin-top:.4rem">La courbe dit à quel instant le mouvement se trouve à quelle fraction de son parcours. La diagonale serait un mouvement mécanique, à vitesse constante.</p>
+    </div>
+
+    <div class="card">
+      <h2>CE QU'IL FAUT OBSERVER</h2>
+      <p id="obs"></p>
+    </div>
+
+    <div class="card">
+      <h2>CODE À COLLER</h2>
+      <pre id="code"></pre>
+      <div class="actions">
+        <button class="bt primary" id="btCp" onclick="M.copier()">Copier</button>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<div class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="tDlg">
+  <div class="boite">
+    <h2 id="tDlg">Ajouter un mouvement</h2>
+    <p class="expl">Décrivez les étapes en pourcentages, comme dans une règle @keyframes. Employez transform pour la géométrie — translate, rotate, scale — et opacity pour ce qui n'en relève pas. Le mouvement s'ajoute aussitôt au catalogue et se joue.</p>
+    <div class="duo">
+      <div><label for="nNom">Nom</label><input type="text" id="nNom" placeholder="ex. Rebond du plateau"></div>
+      <div><label for="nFam">Famille</label><select id="nFam"></select></div>
+    </div>
+    <div class="duo">
+      <div><label for="nDur">Durée en millisecondes</label><input type="number" id="nDur" value="400"></div>
+      <div><label for="nCou">Courbe</label><input type="text" id="nCou" value="cubic-bezier(.4,0,.2,1)"></div>
+    </div>
+    <label for="nQuoi">À quoi il sert</label>
+    <input type="text" id="nQuoi" placeholder="ex. Le plateau retombe après un dépôt.">
+    <label for="nObs">Ce qu'il faut observer</label>
+    <input type="text" id="nObs" placeholder="ex. Le dépassement se lit sur le coefficient d.">
+    <label for="nCss">Étapes</label>
+    <textarea id="nCss" spellcheck="false">0%   { transform: scale(1) }
+50%  { transform: scale(1.1) }
+100% { transform: scale(1) }</textarea>
+    <div class="pied">
+      <button class="bt" onclick="M.fermer()">Annuler</button>
+      <button class="bt primary" onclick="M.creer()">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<div class="pied-page">MINESEC — LAB</div>
+<div class="sr" id="live" aria-live="polite"></div>
+
+<style id="anim"></style>
+
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════
+   LES FAMILLES
+   ═══════════════════════════════════════════════════════════════ */
+const FAMILLES = [
+  { id:"apparition", nom:"Apparition",
+    def:"Un objet entre dans la scène. Le choix du mouvement dit à l'élève d'où il vient." },
+  { id:"disparition", nom:"Disparition",
+    def:"Un objet quitte la scène. Il ne doit jamais s'évanouir sans raison lisible." },
+  { id:"ouverture", nom:"Ouverture",
+    def:"Le double-clic et son avancée. L'objet grossit et s'estompe pendant que son contenu vient au premier plan." },
+  { id:"defilement", nom:"Défilement",
+    def:"Le balayage horizontal. L'élément central est net, ses voisins réduits et atténués." },
+  { id:"consequence", nom:"Conséquence",
+    def:"La loi de la conséquence, rendue visible. Une action juste, une action refusée, une chose à regarder." },
+  { id:"manipulation", nom:"Manipulation",
+    def:"Le glisser-déposer. Saisir, transporter, poser." },
+  { id:"mecanisme", nom:"Mécanisme",
+    def:"Un organe de la scène qui bouge : une barrière, un fléau de balance, un connecteur qu'on oriente." }
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   LES MOUVEMENTS
+   Chacun est employé dans au moins une ressource de la banque.
+   ═══════════════════════════════════════════════════════════════ */
+const MOUVEMENTS = [
+
+/* ---------- APPARITION ---------- */
+{ id:"fondu-entrant", fam:"apparition", nom:"Fondu entrant", duree:320,
+  courbe:"cubic-bezier(.4,0,.2,1)",
+  quoi:"L'objet apparaît sans se déplacer. Le plus discret des quatre : à employer quand la position de l'objet est déjà connue de l'élève, et qu'on ne veut pas attirer l'œil ailleurs.",
+  obs:"Regardez la matrice pendant que le mouvement se joue : elle ne bouge pas. Elle reste l'identité — a=1, b=0, c=0, d=1, e=0, f=0 — du début à la fin. Seule l'opacité varie, et elle est affichée à part. C'est la preuve qu'un fondu n'est pas une transformation géométrique.",
+  css:"0%   { opacity: 0 }\n100% { opacity: 1 }" },
+
+{ id:"avancee-entrante", fam:"apparition", nom:"Avancée entrante", duree:300,
+  courbe:"cubic-bezier(.34,1.2,.64,1)",
+  quoi:"L'objet vient au premier plan en grossissant légèrement. C'est le mouvement qui accompagne l'ouverture d'un contenu, après le double-clic.",
+  obs:"L'échelle part de 0,86 et dépasse brièvement 1 avant de s'y poser. Ce dépassement se lit sur les coefficients a et d : ils montent au-dessus de 1 puis redescendent. C'est la courbe qui le produit, non les étapes.",
+  css:"0%   { transform: scale(.86); opacity: 0 }\n100% { transform: scale(1);   opacity: 1 }" },
+
+{ id:"glissement-entrant", fam:"apparition", nom:"Glissement entrant", duree:380,
+  courbe:"cubic-bezier(.34,1.1,.64,1)",
+  quoi:"L'objet arrive par la gauche. À employer quand la provenance a un sens : une pièce prise dans un pupitre posé à gauche, un élève qui avance dans une file.",
+  obs:"Seul le coefficient e varie : c'est la translation horizontale. Les quatre premiers coefficients restent ceux de l'identité. Un déplacement pur ne déforme rien.",
+  css:"0%   { transform: translateX(-64px); opacity: 0 }\n100% { transform: translateX(0);     opacity: 1 }" },
+
+{ id:"atterrissage", fam:"apparition", nom:"Atterrissage", duree:340,
+  courbe:"cubic-bezier(.34,1.5,.64,1)",
+  quoi:"L'objet tombe sur son support et s'y stabilise. C'est le mouvement d'une brique posée sur un plateau de balance, d'un jeton déposé dans une zone d'accueil.",
+  obs:"Deux coefficients travaillent ensemble : f pour la chute, a et d pour l'écrasement. Le dépassement de la courbe — le troisième nombre vaut 1,5 — donne le petit rebond. Sans lui, l'objet se poserait comme une pierre.",
+  css:"0%   { transform: scale(1.5) translateY(-14px); opacity: 0 }\n55%  { transform: scale(.92) translateY(0);     opacity: 1 }\n100% { transform: scale(1)   translateY(0);     opacity: 1 }" },
+
+/* ---------- DISPARITION ---------- */
+{ id:"fondu-sortant", fam:"disparition", nom:"Fondu sortant", duree:260,
+  courbe:"cubic-bezier(.4,0,1,1)",
+  quoi:"L'objet s'efface sur place. À réserver aux éléments dont la disparition n'a pas à être expliquée : un message qui a été lu, un voile qui se lève.",
+  obs:"La courbe est plus sèche que celle du fondu entrant : elle finit par 1,1 au lieu de 0,2;1. Un objet qui part n'a pas besoin d'être accompagné aussi longtemps qu'un objet qui arrive.",
+  css:"0%   { opacity: 1 }\n100% { opacity: 0 }" },
+
+{ id:"retrait", fam:"disparition", nom:"Retrait", duree:280,
+  courbe:"cubic-bezier(.4,0,1,1)",
+  quoi:"L'objet s'éloigne en rapetissant. À employer quand l'objet est rangé, remis à sa place, ou qu'il n'a plus d'usage dans la scène.",
+  obs:"L'échelle descend sous 1 : a et d passent au-dessous de l'unité. Comparez avec l'ouverture, où ils la dépassent. Le même mécanisme, deux sens contraires, deux significations opposées.",
+  css:"0%   { transform: scale(1);   opacity: 1 }\n100% { transform: scale(.72); opacity: 0 }" },
+
+{ id:"glissement-sortant", fam:"disparition", nom:"Glissement sortant", duree:340,
+  courbe:"cubic-bezier(.4,0,1,1)",
+  quoi:"L'objet quitte la scène par la droite. Le pendant du glissement entrant : un élève qui franchit le portail, une pièce rangée dans un bac.",
+  obs:"Le coefficient e croît régulièrement. Notez qu'il s'exprime en pixels du repère de l'écran, non en unités de l'objet : c'est pourquoi le même mouvement produit le même déplacement quelle que soit la taille de l'objet.",
+  css:"0%   { transform: translateX(0);    opacity: 1 }\n100% { transform: translateX(80px); opacity: 0 }" },
+
+/* ---------- OUVERTURE ---------- */
+{ id:"ouverture-avancee", fam:"ouverture", nom:"Ouverture par avancée", duree:340,
+  courbe:"cubic-bezier(.34,1.2,.64,1)",
+  quoi:"Le geste d'ouverture prescrit par la charte. Le premier clic choisit, le second ouvre : l'objet grossit et s'estompe pendant que son contenu vient au premier plan. C'est le mouvement d'un dossier qu'on ouvre, d'un fichier qu'on exécute.",
+  obs:"Trois étapes et non deux. Le passage par 1,35 à mi-parcours donne l'impression que l'objet vient vers l'élève avant de s'ouvrir. Retirez cette étape intermédiaire et le mouvement devient une simple disparition.",
+  css:"0%   { transform: scale(1);   opacity: 1 }\n60%  { transform: scale(1.35); opacity: .55 }\n100% { transform: scale(1.9);  opacity: 0 }" },
+
+{ id:"contenu-entrant", fam:"ouverture", nom:"Contenu entrant", duree:300,
+  courbe:"cubic-bezier(.34,1.2,.64,1)",
+  quoi:"Ce qui remplace l'objet ouvert. Se joue immédiatement après l'ouverture par avancée : les deux mouvements forment une seule séquence.",
+  obs:"Le mouvement part de 0,86 et non de 0 : le contenu n'apparaît pas de nulle part, il vient d'un peu plus loin. Cette continuité d'échelle est ce qui donne l'impression d'entrer dans l'objet plutôt que de changer d'écran.",
+  css:"0%   { transform: scale(.86); opacity: 0 }\n100% { transform: scale(1);   opacity: 1 }" },
+
+/* ---------- DEFILEMENT ---------- */
+{ id:"balayage-centre", fam:"defilement", nom:"Balayage — venir au centre", duree:500,
+  courbe:"cubic-bezier(.34,1.1,.64,1)",
+  quoi:"L'élément suivant prend la place centrale. Employé dans tout défilement horizontal : catalogue de pièces, suite d'écrans, galerie.",
+  obs:"Deux coefficients varient ensemble, e pour la translation et a,d pour l'échelle. La durée de 500 millisecondes est celle de la charte : plus court, l'élève perd le fil du déplacement ; plus long, il attend.",
+  css:"0%   { transform: translateX(210px) scale(.72); opacity: .4 }\n100% { transform: translateX(0)     scale(1);   opacity: 1 }" },
+
+{ id:"balayage-cote", fam:"defilement", nom:"Balayage — passer sur le côté", duree:500,
+  courbe:"cubic-bezier(.34,1.1,.64,1)",
+  quoi:"L'élément central cède sa place et se range à gauche, réduit et atténué. Il reste visible : c'est ce qui permet à l'élève de savoir où il en est.",
+  obs:"L'objet ne disparaît pas complètement — l'opacité s'arrête à 0,4. Un élément entièrement effacé ferait perdre le repère du parcours.",
+  css:"0%   { transform: translateX(0)      scale(1);   opacity: 1 }\n100% { transform: translateX(-210px) scale(.72); opacity: .4 }" },
+
+/* ---------- CONSEQUENCE ---------- */
+{ id:"pulsation-juste", fam:"consequence", nom:"Pulsation — action juste", duree:500,
+  courbe:"ease-out",
+  quoi:"Une onde verte s'échappe de l'objet. Marque une action qui a produit l'effet attendu : une fiche entrée dans le bon port, un plateau qui s'équilibre.",
+  obs:"La matrice ne bouge pas du tout ici : c'est l'ombre portée qui s'élargit, et l'ombre n'est pas une transformation. Encore un mouvement qui ne passe pas par la matrice — et il fallait le dire.",
+  css:"0%   { box-shadow: 0 0 0 0 rgba(34,197,94,.5) }\n100% { box-shadow: 0 0 0 18px rgba(34,197,94,0) }" },
+
+{ id:"secousse-refus", fam:"consequence", nom:"Secousse — action refusée", duree:240,
+  courbe:"ease-in-out",
+  quoi:"L'objet tremble et revient à sa place. Marque un geste que la scène n'accepte pas : une fiche qui n'entre pas dans le port, une étape hors séquence.",
+  obs:"Regardez e sur le relevé : il part de zéro, va vers le négatif, passe au positif, revient à zéro. Le mouvement est symétrique, et c'est pourquoi l'objet finit exactement où il était. Un refus ne déplace rien.",
+  css:"0%,100% { transform: translateX(0) }\n25%      { transform: translateX(-6px) }\n75%      { transform: translateX(6px) }" },
+
+{ id:"battement", fam:"consequence", nom:"Battement — chose à regarder", duree:1100,
+  courbe:"ease-in-out",
+  quoi:"Un pouls lent et discret. Signale un élément qui attend une action, ou une démonstration en cours. Ne jamais l'employer sur plusieurs objets à la fois.",
+  obs:"Le mouvement est infini : la déclaration se termine par le mot infinite. C'est le seul de la banque qui ne s'arrête pas de lui-même, et c'est pour cela qu'il doit rester rare.",
+  css:"0%,100% { transform: scale(1);  opacity: 1 }\n50%      { transform: scale(.7); opacity: .35 }",
+  infini:true },
+
+{ id:"halo-attention", fam:"consequence", nom:"Halo — objet disponible", duree:1400,
+  courbe:"ease-in-out",
+  quoi:"Un contour ambré qui respire. Signale un objet saisissable que l'élève n'a pas encore remarqué. S'éteint dès qu'il le touche.",
+  obs:"Comme la pulsation, ce mouvement laisse la matrice à l'identité. {SANS} des {TOTAL} mouvements de cette banque ne passent pas par la matrice : c'est une proportion qu'il vaut mieux connaître que masquer.",
+  css:"0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,.55) }\n50%      { box-shadow: 0 0 0 10px rgba(245,158,11,0) }",
+  infini:true },
+
+/* ---------- MANIPULATION ---------- */
+{ id:"saisie", fam:"manipulation", nom:"Saisie", duree:180,
+  courbe:"cubic-bezier(.34,1.2,.64,1)",
+  quoi:"L'objet se soulève sous le doigt. Se déclenche au moment où l'élève commence à le glisser, et se maintient tant qu'il le tient.",
+  obs:"L'échelle monte à 1,08 seulement : à peine perceptible, mais suffisant pour que la main sente qu'elle tient quelque chose. Un grossissement plus fort donnerait l'impression que l'objet a changé de nature.",
+  css:"0%   { transform: scale(1) }\n100% { transform: scale(1.08) }" },
+
+{ id:"depot", fam:"manipulation", nom:"Dépôt", duree:260,
+  courbe:"cubic-bezier(.34,1.4,.64,1)",
+  quoi:"L'objet reprend sa taille en se posant. Complète la saisie : les deux mouvements encadrent tout glisser-déposer.",
+  obs:"La courbe dépasse à 1,4 : l'objet s'écrase légèrement sous son propre poids avant de se stabiliser. Comparez avec la saisie, dont la courbe est plus sage. Poser demande plus d'accompagnement que prendre.",
+  css:"0%   { transform: scale(1.08) }\n60%  { transform: scale(.97) }\n100% { transform: scale(1) }" },
+
+{ id:"retour-refuse", fam:"manipulation", nom:"Retour à sa place", duree:420,
+  courbe:"cubic-bezier(.34,1.1,.64,1)",
+  quoi:"L'objet regagne son point de départ quand le dépôt n'a pas abouti. Employé après un refus : c'est la forme qui n'accepte pas, non la machine qui corrige.",
+  obs:"Le retour est plus lent que l'aller — 420 millisecondes contre 180. Un objet qui revient trop vite paraît rejeté avec humeur ; un objet qui revient posément paraît simplement ne pas convenir.",
+  css:"0%   { transform: translate(48px,-24px) scale(1.08) }\n100% { transform: translate(0,0)        scale(1) }" },
+
+/* ---------- MECANISME ---------- */
+{ id:"levee-barriere", fam:"mecanisme", nom:"Levée de barrière", duree:500,
+  courbe:"cubic-bezier(.34,1.2,.64,1)",
+  quoi:"Une barrière pivote autour de son axe et libère le passage. Employé au portail de la ressource sur la structure alternative, et partout où un accès s'ouvre.",
+  obs:"C'est ici que la matrice devient parlante. Les quatre premiers coefficients varient ensemble : a et d suivent le cosinus de l'angle, b et c son sinus. Une rotation de 68 degrés donne a≈0,37 et b≈−0,93. Le repère de l'écran ne connaît pas les angles : il ne connaît que ces quatre nombres.",
+  css:"0%   { transform: rotate(0) }\n100% { transform: rotate(-68deg) }",
+  origine:"0% 50%" },
+
+{ id:"bascule-fleau", fam:"mecanisme", nom:"Bascule du fléau", duree:750,
+  courbe:"cubic-bezier(.34,1.22,.64,1)",
+  quoi:"Le fléau d'une balance penche du côté le plus lourd. Employé dans la ressource sur les unités d'information.",
+  obs:"La durée est longue — 750 millisecondes — et le dépassement marqué. Une balance qui s'arrête net paraît bloquée ; une balance qui oscille un peu avant de se poser paraît obéir à une masse.",
+  css:"0%   { transform: rotate(0) }\n100% { transform: rotate(13deg) }" },
+
+{ id:"rotation-connecteur", fam:"mecanisme", nom:"Rotation d'un connecteur", duree:300,
+  courbe:"cubic-bezier(.4,0,.2,1)",
+  quoi:"Une fiche pivote d'un quart de tour pour se présenter au port. Employé dans les ressources d'assemblage : c'est le geste qui met le détrompeur en évidence.",
+  obs:"Une rotation de 90 degrés donne exactement a=0, b=1, c=−1, d=0. Ces valeurs sont rondes parce que le cosinus de 90 degrés vaut zéro et son sinus vaut un. Arrêtez le ralenti sur la fin du mouvement pour les lire.",
+  css:"0%   { transform: rotate(0) }\n100% { transform: rotate(90deg) }" },
+
+{ id:"ouverture-porte", fam:"mecanisme", nom:"Ouverture d'un panneau", duree:420,
+  courbe:"cubic-bezier(.34,1.1,.64,1)",
+  quoi:"Un panneau s'écarte en pivotant sur son bord. Employé pour ouvrir un boîtier, un capot, une porte de salle.",
+  obs:"L'origine de la transformation est portée sur le bord gauche et non au centre. Changez ce seul réglage et le même code produit un panneau qui tourne sur lui-même au lieu de s'ouvrir. L'origine ne figure pas dans la matrice : elle dit où la matrice s'applique.",
+  css:"0%   { transform: perspective(600px) rotateY(0) }\n100% { transform: perspective(600px) rotateY(-58deg) }",
+  origine:"0% 50%" }
+];
+
+/* Les objets d'essai : on voit mieux une rotation sur une barre
+   que sur un carré, et mieux une échelle sur un objet familier. */
+const OBJETS = {
+  carte:`<svg width="150" height="96" viewBox="0 0 150 96" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="2" width="146" height="92" rx="8" fill="#2d3748" stroke="#1a202c" stroke-width="2"/>
+    <rect x="16" y="18" width="72" height="8" rx="3" fill="#8a929c"/>
+    <rect x="16" y="36" width="118" height="6" rx="3" fill="#4a5568"/>
+    <rect x="16" y="50" width="96" height="6" rx="3" fill="#4a5568"/>
+    <circle cx="122" cy="70" r="12" fill="#3b82f6"/></svg>`,
+  uc:`<svg width="86" height="140" viewBox="0 0 86 140" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="3" width="80" height="134" rx="8" fill="#2d3748" stroke="#1a202c" stroke-width="2"/>
+    <rect x="14" y="16" width="58" height="12" rx="3" fill="#1a202c"/>
+    <rect x="14" y="34" width="58" height="12" rx="3" fill="#1a202c"/>
+    <circle cx="43" cy="70" r="13" fill="#4a5568" stroke="#232a34" stroke-width="2"/>
+    <path d="M49 63.6 A 11 11 0 1 1 37 63.6 M43 58 v12" fill="none" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round"/>
+    <rect x="18" y="98" width="50" height="28" rx="4" fill="#232a34"/></svg>`,
+  jeton:`<svg width="96" height="42" viewBox="0 0 96 42" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="2" width="92" height="38" rx="4" fill="#b0873f" stroke="#7a5c26" stroke-width="2"/>
+    <text x="48" y="27" text-anchor="middle" font-size="16" font-weight="bold"
+      font-family="Consolas, monospace" fill="#12140f">1024</text></svg>`,
+  barre:`<svg width="220" height="20" viewBox="0 0 220 20" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="3" width="216" height="14" rx="4" fill="#8a929c" stroke="#1a202c" stroke-width="2"/>
+    <circle cx="10" cy="10" r="4" fill="#1a202c"/></svg>`
+};
+
+/* ═══════════════════════════════════════════════════════════════ */
+const M = {
+  sel:null, enBoucle:false, boucleT:null, releve:null, dureeSurcharge:null, ralenti:1,
+
+  init(){
+    this.batir();
+    this.choisir(MOUVEMENTS[0].id);
+    document.addEventListener("keydown", e=>{
+      if(e.key==="Escape") this.fermer();
+      if(e.key===" " && e.target===document.body){ e.preventDefault(); this.rejouer(); }
+    });
+  },
+
+  m(){ return MOUVEMENTS.find(x=>x.id===this.sel); },
+
+  /* ---------- la liste ---------- */
+  batir(){
+    const z=document.getElementById("liste"); z.innerHTML="";
+    FAMILLES.forEach(f=>{
+      const l=MOUVEMENTS.filter(m=>m.fam===f.id);
+      if(!l.length) return;
+      const s=document.createElement("section"); s.className="fam";
+      s.innerHTML=`<h2>${f.nom}</h2><div class="def">${f.def}</div>`;
+      l.forEach(m=>{
+        const b=document.createElement("button");
+        b.className="mv"; b.id="mv-"+m.id;
+        b.setAttribute("aria-pressed", String(m.id===this.sel));
+        b.innerHTML=`${m.nom}<div class="d">${m.duree} ms</div>`;
+        b.onclick=()=>this.choisir(m.id);
+        s.appendChild(b);
+      });
+      z.appendChild(s);
+    });
+    const p=document.createElement("button");
+    p.className="plus"; p.textContent="+ Ajouter un mouvement";
+    p.onclick=()=>this.ouvrir();
+    z.appendChild(p);
+  },
+
+  choisir(id){
+    this.sel=id;
+    document.querySelectorAll(".mv").forEach(b=>
+      b.setAttribute("aria-pressed", String(b.id==="mv-"+id)));
+    const m=this.m();
+    this.dureeSurcharge=null;
+    document.getElementById("duree").value=m.duree;
+    document.getElementById("vDuree").textContent=m.duree+" ms";
+    document.getElementById("nom").textContent=m.nom;
+    document.getElementById("quoi").textContent=m.quoi;
+    document.getElementById("obs").textContent=this.chiffrer(m.obs);
+    document.getElementById("dCo").textContent=m.courbe;
+    this.courbe(m.courbe);
+    this.code();
+    this.objet();
+    this.jouer();
+  },
+
+  /* Les chiffres cités dans les observations sont calculés sur le
+     catalogue réel, jamais écrits en dur : ils restent exacts même
+     après l'ajout d'un mouvement depuis l'interface. */
+  chiffrer(t){
+    const mots=["zéro","Un","Deux","Trois","Quatre","Cinq","Six","Sept","Huit","Neuf","Dix"];
+    const sans=MOUVEMENTS.filter(x=>!/transform\s*:/.test(x.css)).length;
+    const tot=MOUVEMENTS.length;
+    const nom=n=>n<=10?mots[n]:String(n);
+    return t.replace("{SANS}",nom(sans)).replace("{TOTAL}",String(tot));
+  },
+
+  duree(){ return this.dureeSurcharge || this.m().duree; },
+  majDuree(){
+    this.dureeSurcharge=+document.getElementById("duree").value;
+    document.getElementById("vDuree").textContent=this.dureeSurcharge+" ms";
+    this.code(); this.jouer();
+  },
+  majRal(){
+    this.ralenti=+document.getElementById("ral").value;
+    document.getElementById("vRal").textContent="×"+this.ralenti;
+    this.jouer();
+  },
+
+  objet(){
+    const k=document.getElementById("obj").value;
+    document.getElementById("objet").innerHTML=OBJETS[k];
+  },
+
+  /* ---------- jouer, et relever la matrice ---------- */
+  jouer(){
+    const m=this.m(), o=document.getElementById("objet");
+    const d=Math.round(this.duree()*this.ralenti);
+    const nom="mv_"+m.id.replace(/-/g,"_");
+    document.getElementById("anim").textContent =
+      `@keyframes ${nom}{${m.css}}`;
+    o.style.animation="none";
+    o.style.transformOrigin = m.origine || "50% 50%";
+    void o.offsetWidth;                       /* force la reprise */
+    o.style.animation=`${nom} ${d}ms ${m.courbe} ${m.infini?"infinite":"forwards"}`;
+    this.suivre(d, !!m.infini);
+    this.dire(m.nom);
+  },
+  rejouer(){ this.jouer(); },
+
+  /* Le relevé n'est pas calculé : il est LU auprès du navigateur,
+     image par image. C'est ce qui en fait une mesure. */
+  suivre(d, infini){
+    if(this.releve) cancelAnimationFrame(this.releve);
+    const o=document.getElementById("objet");
+    const t0=performance.now();
+    const lire=()=>{
+      const st=getComputedStyle(o);
+      const tr=st.transform;
+      let a=1,b=0,c=0,dd=1,e=0,f=0;
+      if(tr && tr!=="none"){
+        const n=tr.match(/matrix(3d)?\(([^)]+)\)/);
+        if(n){
+          const v=n[2].split(",").map(x=>parseFloat(x));
+          if(n[1]){ a=v[0]; b=v[1]; c=v[4]; dd=v[5]; e=v[12]; f=v[13]; }
+          else    { a=v[0]; b=v[1]; c=v[2]; dd=v[3]; e=v[4]; f=v[5]; }
+        }
+      }
+      this.afficher(a,b,c,dd,e,f, parseFloat(st.opacity));
+      const fini = !infini && (performance.now()-t0) > d+60;
+      document.getElementById("mat").classList.toggle("fige", fini);
+      if(!fini) this.releve=requestAnimationFrame(lire);
+    };
+    lire();
+  },
+
+  afficher(a,b,c,d,e,f,op){
+    const r=(x,n)=>{ const v=Math.abs(x)<1e-4?0:x; return v.toFixed(n===undefined?3:n); };
+    document.getElementById("ma").textContent=r(a);
+    document.getElementById("mb").textContent=r(b);
+    document.getElementById("mc").textContent=r(c);
+    document.getElementById("md").textContent=r(d);
+    document.getElementById("me").textContent=r(e,1);
+    document.getElementById("mf").textContent=r(f,1);
+    /* Décomposition : exacte tant qu'il n'y a pas de cisaillement. */
+    const sx=Math.sqrt(a*a+b*b), sy=Math.sqrt(c*c+d*d);
+    const ang=Math.atan2(b,a)*180/Math.PI;
+    document.getElementById("dTr").textContent=r(e,1)+" ; "+r(f,1)+" px";
+    document.getElementById("dEc").textContent=r(sx)+" ; "+r(sy);
+    document.getElementById("dRo").textContent=r(ang,2)+"°";
+    document.getElementById("dOp").textContent=(op===undefined?1:op).toFixed(3);
+    const imm = Math.abs(a-1)<1e-3 && Math.abs(b)<1e-3 && Math.abs(c)<1e-3 &&
+                Math.abs(d-1)<1e-3 && Math.abs(e)<.5 && Math.abs(f)<.5;
+    document.getElementById("noteMat").textContent = imm
+      ? "La matrice est restée l'identité pendant tout le mouvement : celui-ci ne relève pas de la géométrie."
+      : "Les six coefficients sont relevés auprès du navigateur, image par image, pendant que le mouvement se joue.";
+  },
+
+  boucle(){
+    this.enBoucle=!this.enBoucle;
+    document.getElementById("btBoucle").textContent=this.enBoucle?"Arrêter":"En boucle";
+    clearInterval(this.boucleT);
+    if(this.enBoucle){
+      this.jouer();
+      this.boucleT=setInterval(()=>this.jouer(), Math.round(this.duree()*this.ralenti)+700);
+    }
+  },
+
+  /* ---------- la courbe du rythme ---------- */
+  courbe(nom){
+    const nommees={ "ease":[.25,.1,.25,1], "ease-in":[.42,0,1,1],
+      "ease-out":[0,0,.58,1], "ease-in-out":[.42,0,.58,1], "linear":[0,0,1,1] };
+    let p=nommees[nom];
+    if(!p){
+      const m=nom.match(/cubic-bezier\(([^)]+)\)/);
+      p = m ? m[1].split(",").map(x=>parseFloat(x)) : [.4,0,.2,1];
+    }
+    const [x1,y1,x2,y2]=p, S=150, P=14;
+    const X=t=>P+t*S, Y=v=>P+S-v*S;
+    document.getElementById("courbe").innerHTML=
+      `<svg viewBox="0 0 ${S+P*2} ${S+P*2}" xmlns="http://www.w3.org/2000/svg">
+        <rect x="${P}" y="${P}" width="${S}" height="${S}" fill="none"
+              stroke="var(--line)" stroke-width="1.5"/>
+        <line x1="${P}" y1="${P+S}" x2="${P+S}" y2="${P}"
+              stroke="var(--line)" stroke-width="1" stroke-dasharray="4 4"/>
+        <path d="M ${X(0)},${Y(0)} C ${X(x1)},${Y(y1)} ${X(x2)},${Y(y2)} ${X(1)},${Y(1)}"
+              fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+        <circle cx="${X(x1)}" cy="${Y(y1)}" r="3.5" fill="var(--saisir)"/>
+        <circle cx="${X(x2)}" cy="${Y(y2)}" r="3.5" fill="var(--saisir)"/>
+        <line x1="${X(0)}" y1="${Y(0)}" x2="${X(x1)}" y2="${Y(y1)}"
+              stroke="var(--saisir)" stroke-width="1" opacity=".6"/>
+        <line x1="${X(1)}" y1="${Y(1)}" x2="${X(x2)}" y2="${Y(y2)}"
+              stroke="var(--saisir)" stroke-width="1" opacity=".6"/>
+      </svg>`;
+  },
+
+  /* ---------- le code ---------- */
+  texte(m, d){
+    const nom="mv-"+m.id;
+    let t=`@keyframes ${nom} {\n`;
+    m.css.split("\n").forEach(l=>t+="  "+l.trim()+"\n");
+    t+="}\n\n";
+    t+=`.${nom} {\n`;
+    t+=`  animation: ${nom} ${d||m.duree}ms ${m.courbe} ${m.infini?"infinite":"forwards"};\n`;
+    if(m.origine) t+=`  transform-origin: ${m.origine};\n`;
+    t+="}\n";
+    return t;
+  },
+  code(){
+    document.getElementById("code").textContent =
+      this.texte(this.m(), this.duree()) +
+      "\n/* Reprise du mouvement en JavaScript :\n" +
+      "   el.classList.remove(\"mv-" + this.m().id + "\");\n" +
+      "   void el.offsetWidth;            // force la reprise\n" +
+      "   el.classList.add(\"mv-" + this.m().id + "\"); */\n";
+  },
+  copier(){ this.presse(document.getElementById("code").textContent, "btCp"); },
+
+  exporterTout(){
+    let t="/* ══════════════════════════════════════════════════════════\n";
+    t+="   FEUILLE DE MOUVEMENTS — BANQUE DE SIMULATIONS MINESEC\n\n";
+    t+="   Un mouvement est une trajectoire matricielle assortie d'une\n";
+    t+="   loi temporelle. Les valeurs ci-dessous ne sont pas des\n";
+    t+="   approximations : le meme code produit toujours la meme\n";
+    t+="   trajectoire, sur n'importe quelle machine.\n";
+    t+="   ══════════════════════════════════════════════════════════ */\n\n";
+    t+="@media (prefers-reduced-motion: reduce){\n";
+    t+="  *{animation:none !important; transition:none !important}\n}\n\n";
+    FAMILLES.forEach(f=>{
+      const l=MOUVEMENTS.filter(m=>m.fam===f.id);
+      if(!l.length) return;
+      t+="/* ─── "+f.nom.toUpperCase()+" ─── */\n";
+      t+="/* "+f.def+" */\n\n";
+      l.forEach(m=>{ t+="/* "+m.nom+" — "+m.quoi+" */\n"+this.texte(m)+"\n"; });
+    });
+    const b=new Blob([t],{type:"text/plain;charset=utf-8"});
+    const u=URL.createObjectURL(b), a=document.createElement("a");
+    a.href=u; a.download="mouvements-minesec.css";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(u),1500);
+    this.dire("Feuille exportée.");
+  },
+
+  presse(txt,btn){
+    const z=document.createElement("textarea");
+    z.value=txt; z.style.position="fixed"; z.style.opacity="0";
+    document.body.appendChild(z); z.select();
+    let ok=false; try{ ok=document.execCommand("copy"); }catch(e){}
+    document.body.removeChild(z);
+    if(!ok && navigator.clipboard) navigator.clipboard.writeText(txt).catch(()=>{});
+    const b=document.getElementById(btn);
+    if(b){ b.textContent="Copié"; b.classList.add("ok");
+      setTimeout(()=>{ b.textContent="Copier"; b.classList.remove("ok"); },1500); }
+  },
+
+  /* ---------- ajouter un mouvement ---------- */
+  ouvrir(){
+    document.getElementById("nFam").innerHTML =
+      FAMILLES.map(f=>`<option value="${f.id}">${f.nom}</option>`).join("");
+    document.getElementById("dlg").classList.add("on");
+    document.getElementById("nNom").focus();
+  },
+  fermer(){ document.getElementById("dlg").classList.remove("on"); },
+  creer(){
+    const nom=document.getElementById("nNom").value.trim();
+    const css=document.getElementById("nCss").value.trim();
+    if(!nom||!css){ this.dire("Le nom et les étapes sont requis."); return; }
+    const base=nom.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+                  .replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+    let id=base,k=2; while(MOUVEMENTS.some(m=>m.id===id)) id=base+"-"+(k++);
+    MOUVEMENTS.push({ id, fam:document.getElementById("nFam").value, nom,
+      duree:+document.getElementById("nDur").value||400,
+      courbe:document.getElementById("nCou").value.trim()||"cubic-bezier(.4,0,.2,1)",
+      quoi:document.getElementById("nQuoi").value.trim()||"Mouvement ajouté depuis l'interface.",
+      obs:document.getElementById("nObs").value.trim()||"Observez le relevé matriciel pendant que le mouvement se joue.",
+      css });
+    this.fermer(); this.batir(); this.choisir(id);
+    this.dire("Mouvement « "+nom+" » ajouté.");
+  },
+
+  theme(){
+    const b=document.body;
+    if(b.classList.contains("light")){b.classList.remove("light");b.classList.add("hc");}
+    else if(b.classList.contains("hc")){b.classList.remove("hc");}
+    else {b.classList.add("light");}
+    document.getElementById("icTh").innerHTML=b.classList.contains("light")
+      ? '<path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/>'
+      : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  },
+  dire(m){ const r=document.getElementById("live"); if(r) r.textContent=m; }
+};
+
+window.addEventListener("load", ()=> M.init());
+</script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Leçon 1 — Anatomie d'une scène · MINESEC</title>
+<style>
+:root{
+  --bg:#121416; --panel:#1a1d21; --panel2:#25282d; --line:#3f454d;
+  --txt:#e8ebee; --dim:#98a1ab; --accent:#3b82f6; --ok:#22c55e; --no:#ef4444; --saisir:#f59e0b;
+  --f-txt:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; --f-fix:Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--f-txt);background:var(--bg);color:var(--txt);display:flex;flex-direction:column;overflow:hidden}
+button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+header.res{background:var(--panel);border-bottom:2px solid var(--line);padding:12px 16px;flex-shrink:0}
+header.res .niveau{font-family:var(--f-fix);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)}
+header.res h1{font-size:clamp(1.1rem,3vw,1.5rem);font-weight:700;margin:2px 0}
+header.res .sous{font-family:var(--f-fix);font-size:.72rem;color:var(--accent)}
+
+.consigne{background:var(--panel);border-bottom:2px solid var(--line);padding:10px 16px;flex-shrink:0;
+  font-size:.86rem;color:var(--dim);line-height:1.5;transition:outline .15s}
+.consigne b{color:var(--txt)} .consigne code{font-family:var(--f-fix);color:var(--accent)}
+
+main{flex:1;display:flex;min-height:0}
+
+/* rail pédagogique (gauche) */
+aside.lecon{width:320px;flex-shrink:0;background:var(--panel);border-right:2px solid var(--line);
+  overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+aside.lecon h2{font-size:.62rem;font-family:var(--f-fix);text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+.parts{display:flex;flex-direction:column;gap:5px}
+.parts button{background:var(--panel2);border:2px solid var(--line);border-radius:6px;padding:9px 11px;
+  font-size:.8rem;text-align:left}
+.parts button:hover{border-color:var(--accent)}
+.parts button.actif{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.parts button.etoile{border-style:dashed}
+pre.code{background:#0d0f11;border:2px solid var(--line);border-radius:6px;padding:10px;
+  font-family:var(--f-fix);font-size:.74rem;line-height:1.6;color:#e8ebee;white-space:pre-wrap;overflow-x:auto}
+pre.code .k{color:#7aa2f7} pre.code .a{color:#f0a35e} pre.code .v{color:#7ee787} pre.code .c{color:#98a1ab}
+.desc{font-size:.85rem;color:var(--dim);line-height:1.55} .desc b{color:var(--txt)}
+
+/* la scène type (milieu) */
+.scene{flex:1;min-width:0;position:relative;background:var(--bg);display:flex}
+.scene svg{width:100%;height:100%;display:block;color:var(--txt)}
+.etiq{font-family:var(--f-fix);font-size:14px;fill:var(--dim);text-anchor:middle}
+
+/* pupitre exemple (droite) */
+aside.pupitre{width:190px;flex-shrink:0;background:var(--panel);border-left:2px solid var(--line);padding:12px;
+  display:flex;flex-direction:column;gap:8px;transition:outline .15s}
+aside.pupitre .t{font-size:.62rem;font-family:var(--f-fix);text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+aside.pupitre .ex{background:var(--panel2);border:2px solid var(--line);border-radius:6px;padding:8px;font-size:.76rem;color:var(--dim)}
+
+.pied{background:var(--panel);border-top:2px solid var(--line);padding:6px;text-align:center;
+  font-size:.6rem;font-family:var(--f-fix);color:var(--dim);letter-spacing:.12em;flex-shrink:0}
+
+/* surlignage */
+.surligne-dom{outline:3px dashed var(--accent);outline-offset:4px;border-radius:4px}
+.surligne-svg{filter:drop-shadow(0 0 8px var(--accent))}
+
+/* un mouvement pour la démo */
+.prop{transform-box:fill-box;transform-origin:center}
+.mv-consequence-juste{animation:cj 620ms ease-out}
+@keyframes cj{0%,100%{transform:scale(1);color:var(--txt)}30%{transform:scale(1.08);color:var(--ok)}}
+
+@media (max-width:920px){ main{flex-direction:column} aside.lecon,aside.pupitre{width:100%;border:none;border-top:2px solid var(--line)} .scene{min-height:40vh} }
+</style>
+</head>
+<body>
+
+<header class="res">
+  <div class="niveau">MINESEC · APPRENTISSAGE · LEÇON 1</div>
+  <h1>L'anatomie d'une scène</h1>
+  <div class="sous">toute scène est faite de ces parts — apprends à les repérer dans le code</div>
+</header>
+
+<div class="consigne" id="barreConsigne">
+  <b>Clique une part</b> à gauche : elle s'allume dans la scène, son <b>marqueur de code</b> et sa <b>nomenclature</b> s'affichent. C'est le HTML qui permet d'identifier chaque élément — <code>class</code> et <code>data-role</code> sont tes repères.
+</div>
+
+<main>
+  <aside class="lecon">
+    <h2>Les parts d'une scène</h2>
+    <div class="parts" id="parts"></div>
+    <h2 style="margin-top:6px">Marqueur de code</h2>
+    <pre class="code" id="code"><span class="c">// choisis une part…</span></pre>
+    <p class="desc" id="desc"></p>
+  </aside>
+
+  <div class="scene">
+    <svg viewBox="0 0 820 430" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Scène type">
+      <!-- LE DÉCOR (fond) -->
+      <rect id="fond" x="12" y="12" width="796" height="406" rx="12" fill="var(--panel2)" stroke="currentColor" stroke-width="2" opacity="0.9"/>
+      <line x1="40" y1="340" x2="780" y2="340" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+
+      <!-- PROP 1 : clé USB -->
+      <g class="pos">
+        <g class="prop" data-role="cle-usb" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" transform="translate(170,150)">
+          <rect x="6" y="34" width="88" height="42" rx="8" stroke-width="4"/>
+          <path d="M94 45 h26 v20 h-26" stroke-width="4"/>
+          <rect x="104" y="51" width="12" height="8" stroke-width="3"/>
+          <circle cx="22" cy="55" r="6" stroke-width="3"/>
+        </g>
+        <text class="etiq" x="230" y="360">clé USB</text>
+      </g>
+
+      <!-- PROP 2 : bécher (avec une sous-partie .liquide) -->
+      <g class="pos">
+        <g class="prop" data-role="becher" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" transform="translate(520,120)">
+          <rect class="liquide" x="34" y="62" width="72" height="66" fill="var(--accent)" opacity="0.35" stroke="none"/>
+          <path d="M28 22 L44 30 M112 22 L96 30" stroke-width="3"/>
+          <path d="M40 30 v88 a12 12 0 0 0 12 12 h36 a12 12 0 0 0 12 -12 v-88" stroke-width="4"/>
+          <path d="M52 52 h12 M52 74 h12 M52 96 h12" stroke-width="2.5"/>
+        </g>
+        <text class="etiq" x="590" y="360">bécher</text>
+      </g>
+    </svg>
+  </div>
+
+  <aside class="pupitre" id="pupitre">
+    <div class="t">Pupitre (exemple)</div>
+    <div class="ex">Élément : ▸ clé USB</div>
+    <div class="ex">Mouvement : ▸ saisie</div>
+    <div class="ex">Appliquer</div>
+  </aside>
+</main>
+
+<div class="pied">MINESEC — LEÇON 1 · LE HTML EST LA CARTE : class ET data-role SONT TES REPÈRES</div>
+
+<script>
+"use strict";
+const CONTRAT =
+`<span class="c">// Le contrat de nomenclature — à donner à Gemini,</span>
+<span class="c">// puis à retrouver dans le code généré.</span>
+
+Scène        <span class="k">&lt;svg</span> <span class="a">id</span>=<span class="v">"scene"</span><span class="k">&gt;</span>
+Décor        <span class="k">&lt;rect</span> <span class="a">class</span>=<span class="v">"fond"</span><span class="k">&gt;</span>
+Prop         <span class="k">&lt;g</span> <span class="a">class</span>=<span class="v">"prop"</span> <span class="a">data-role</span>=<span class="v">"nom"</span><span class="k">&gt;</span>
+Adressage    <span class="a">data-role</span>=<span class="v">"nom"</span>  →  appliquer(<span class="v">"nom"</span>, …)
+Mouvement    <span class="a">class</span>=<span class="v">"mv-&lt;famille&gt;-&lt;variante&gt;"</span>   <span class="c">// geste, 1 fois</span>
+Ambiance     <span class="a">class</span>=<span class="v">"al-&lt;nom&gt;"</span>                <span class="c">// boucle</span>
+Comportement sous-partie <span class="v">.liquide</span> / <span class="v">.substance</span> / <span class="v">.oscille</span>
+Consigne     <span class="k">&lt;div</span> <span class="a">class</span>=<span class="v">"consigne"</span><span class="k">&gt;</span>
+Pupitre      <span class="k">&lt;aside&gt;</span>`;
+
+const PARTS = [
+  { id:"fond", nom:"① Le décor (fond)", cible:"#fond", dom:false,
+    code:`<span class="k">&lt;rect</span> <span class="a">class</span>=<span class="v">"fond"</span> <span class="a">x</span>=<span class="v">"12"</span> <span class="a">y</span>=<span class="v">"12"</span> … <span class="k">/&gt;</span>`,
+    desc:`Le <b>fond</b> de la scène : couleur ou décor. Souvent un &lt;rect&gt; nommé <b>fond</b>, ou le fond du canvas. Il pose l'espace, sans rien enseigner.` },
+  { id:"prop", nom:"② Le prop (objet)", cible:'[data-role="cle-usb"]', dom:false,
+    code:`<span class="k">&lt;g</span> <span class="a">class</span>=<span class="v">"prop"</span> <span class="a">data-role</span>=<span class="v">"cle-usb"</span><span class="k">&gt;</span> … <span class="k">&lt;/g&gt;</span>`,
+    desc:`Un <b>objet</b> qu'on manipule. Toujours un &lt;g&gt; portant <b>class="prop"</b>. C'est la brique de base d'une scène.` },
+  { id:"adressage", nom:"③ L'adressage (data-role)", cible:'[data-role="cle-usb"]', dom:false,
+    code:`<span class="a">data-role</span>=<span class="v">"cle-usb"</span>`,
+    desc:`La <b>poignée</b> pour cibler l'élément dans le code : c'est ce que tu cherches pour modifier le bon prop, et ce que tu passes à <b>appliquer("cle-usb", …)</b>.` },
+  { id:"comportement", nom:"④ Le comportement (matière)", cible:".liquide", dom:false,
+    code:`<span class="k">&lt;rect</span> <span class="a">class</span>=<span class="v">"liquide"</span> … <span class="k">/&gt;</span>`,
+    desc:`Une <b>sous-partie</b> qui a un comportement : <b>.liquide</b> se remplit, <b>.substance</b> diffuse, <b>.oscille</b> bat. Le comportement s'y accroche.` },
+  { id:"mouvement", nom:"⑤ Le mouvement (effet)", cible:'[data-role="cle-usb"]', dom:false, anim:true,
+    code:`<span class="a">class</span>=<span class="v">"prop mv-consequence-juste"</span>`,
+    desc:`L'<b>animation</b> s'ajoute en <b>classe</b> : <b>mv-…</b> pour un geste (une fois), <b>al-…</b> pour une ambiance (en boucle). Regarde la clé USB jouer.` },
+  { id:"consigne", nom:"⑥ La consigne (guide)", cible:"#barreConsigne", dom:true,
+    code:`<span class="k">&lt;div</span> <span class="a">class</span>=<span class="v">"consigne"</span><span class="k">&gt;</span> … <span class="k">&lt;/div&gt;</span>`,
+    desc:`Le <b>texte</b> qui explique la notion. Une seule, courte. Le texte ne <b>nomme</b> qu'après la manipulation.` },
+  { id:"pupitre", nom:"⑦ Le pupitre (commandes)", cible:"#pupitre", dom:true,
+    code:`<span class="k">&lt;aside&gt;</span> … boutons, listes … <span class="k">&lt;/aside&gt;</span>`,
+    desc:`Les <b>contrôles</b> : ce que l'élève actionne. Presque toujours dans un &lt;aside&gt; à côté de la scène.` },
+  { id:"nomenclature", nom:"★ La nomenclature (pour Gemini)", cible:null, dom:false, etoile:true,
+    code:CONTRAT,
+    desc:`Voici ton <b>catalogue de dénomination</b>. Donne-le à Gemini Canvas dans ton prompt : « nomme chaque élément ainsi ». Ensuite, dans le code généré, tu retrouves chaque zone <b>par son marqueur</b> et tu modifies exactement.` }
+];
+
+const boite = document.getElementById("parts");
+const paneCode = document.getElementById("code");
+const paneDesc = document.getElementById("desc");
+
+function nettoyer(){ document.querySelectorAll(".surligne-dom,.surligne-svg").forEach(e=>e.classList.remove("surligne-dom","surligne-svg")); }
+function choisir(part, btn){
+  nettoyer();
+  if(part.cible){ const el=document.querySelector(part.cible); if(el) el.classList.add(part.dom?"surligne-dom":"surligne-svg"); }
+  if(part.anim){ const p=document.querySelector('[data-role="cle-usb"]'); if(p){ p.classList.remove("mv-consequence-juste"); void p.getBoundingClientRect(); p.classList.add("mv-consequence-juste"); } }
+  paneCode.innerHTML = part.code;
+  paneDesc.innerHTML = part.desc;
+  [...boite.children].forEach(b=>b.classList.toggle("actif", b===btn));
+}
+
+PARTS.forEach((p,i)=>{
+  const b=document.createElement("button");
+  b.textContent=p.nom; if(p.etoile) b.classList.add("etoile");
+  b.onclick=()=>choisir(p,b);
+  boite.appendChild(b);
+  if(i===0) choisir(p,b);
+});
+</script>
+</body>
+</html>

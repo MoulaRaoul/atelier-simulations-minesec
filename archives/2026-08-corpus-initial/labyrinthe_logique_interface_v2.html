@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Labyrinthe Logique 6e — MINESEC</title>
+<style>
+:root {
+  --bg: #121416;          
+  --panel: #1a1d21;       
+  --panel2: #25282d;      
+  --line: #3f454d;        
+
+  --txt: #e8ebee;         
+  --dim: #98a1ab;         
+
+  --accent: #3b82f6;      
+  --ok: #22c55e;          
+  --no: #ef4444;          
+  --saisir: #f59e0b;      
+
+  --fs: 16px;
+  
+  --f-txt: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-fix: Consolas, "Courier New", monospace;
+}
+
+body.light {
+  --bg: #f4f5f7; --panel: #fff; --panel2: #eceef1; --line: #b9bec6; 
+  --txt: #16181d; --dim: #5b6270; --accent: #1d4ed8; --ok: #15803d; 
+  --no: #b91c1c; --saisir: #b45309;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Le pied ne défile pas : il reste au bas de la fenêtre.
+   Le <body> doit donc être une colonne flexible. */
+html, body { height: 100%; }
+body { 
+  font-family: var(--f-txt); font-size: var(--fs); background: var(--bg); 
+  color: var(--txt); display: flex; flex-direction: column; overflow: hidden;
+}
+button { font-family: inherit; font-size: inherit; cursor: pointer; color: inherit; background: none; border: none; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* ── EN-TETE DE RESSOURCE — CHARTE V1, ICONES SEULES ───────────
+   Aucune couleur ne bouge. Chaque variable porte une chaîne de
+   repli : le bloc fonctionne sur la palette v1 comme sur un
+   fichier qui aurait déjà migré vers la v2.
+   Espacements et rayons en pixels littéraux, pour ne dépendre
+   d'aucune échelle absente. */
+
+header.res {
+  background: var(--panel, #1a1d21);
+  border-bottom: 2px solid var(--line, #3f454d);
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 16px; flex-shrink: 0; flex-wrap: wrap;
+  z-index: 100;
+}
+header.res .ident { flex: 1; min-width: 240px; }
+
+header.res .ident .niveau {
+  font-family: var(--f-fix, Consolas, "Courier New", monospace);
+  font-size: .84rem;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--dim, #98a1ab);
+}
+header.res .ident h1 {
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  font-weight: 700; line-height: 1.2; margin: 2px 0;
+  color: var(--txt, #e8ebee);
+}
+header.res .ident .lecons {
+  font-family: var(--f-fix, Consolas, "Courier New", monospace);
+  font-size: .84rem; letter-spacing: .04em;
+  color: var(--accent, #3b82f6);
+}
+
+header.res .outils { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+header.res .ic {
+  background: var(--panel2, var(--champ, #25282d));
+  border: 2px solid var(--line, #3f454d);
+  border-radius: 5px;
+  width: 48px; height: 48px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+header.res .ic:hover { border-color: var(--accent, #3b82f6); color: var(--accent, #3b82f6); transform: translateY(-2px); }
+header.res .ic svg {
+  width: 22px; height: 22px;
+  stroke: currentColor; fill: none; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+header.res .ic.hero {
+  background: var(--accent, #3b82f6); color: #07131f;
+  border-color: var(--accent, #3b82f6);
+}
+header.res .ic.hero svg { stroke: #07131f; }
+
+header.res .lang {
+  display: flex; border: 2px solid var(--line, #3f454d); border-radius: 5px;
+  overflow: hidden; height: 48px;
+}
+header.res .lang button {
+  background: var(--panel2, var(--champ, #25282d)); border: none; padding: 0 12px;
+  font-family: var(--f-fix, Consolas, "Courier New", monospace);
+  font-size: .8rem; font-weight: 700; letter-spacing: .04em;
+  transition: background 0.15s;
+}
+header.res .lang button[aria-pressed="true"] {
+  background: var(--accent, #3b82f6); color: #07131f;
+}
+
+/* ── BANDEAU DE CONSIGNE ── */
+.consigne {
+  background: var(--panel, #1a1d21);
+  border-bottom: 2px solid var(--line, #3f454d);
+  padding: 10px 16px; flex-shrink: 0;
+  font-size: .88rem; color: var(--dim, #98a1ab);
+  z-index: 99;
+}
+.consigne b { color: var(--txt, #e8ebee); }
+
+#bandeau-demo {
+  background: var(--saisir); color: #121416; font-family: var(--f-fix); font-weight: bold;
+  font-size: .75rem; text-align: center; padding: .25rem; letter-spacing: .08em;
+  display: none; flex-shrink: 0; z-index: 200;
+}
+#bandeau-demo.on { display: block; }
+
+.obj { border: 2px solid var(--line); transition: all .18s; }
+.obj:hover { border-color: var(--accent); transform: translateY(-2px); }
+.obj.choisi { border: 3px solid var(--accent); background: rgba(59,130,246,.12); }
+.obj.juste { border-color: var(--ok); color: var(--ok); animation: pulse-ok .5s ease-out; }
+.obj.refus { border-color: var(--no); color: var(--no); animation: secousse .24s; }
+
+@keyframes pulse-ok { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,.5); } 100% { box-shadow: 0 0 0 14px rgba(34,197,94,0); } }
+@keyframes secousse { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+main { 
+  flex: 1; display: flex; min-height: 0; padding: 1rem; gap: 1.5rem; 
+  position: relative; justify-content: center; align-items: stretch; 
+}
+
+.col-gauche, .col-droite { 
+  flex: 1; max-width: 620px; background: var(--panel); 
+  border: 2px solid var(--line); display: flex; flex-direction: column; overflow: hidden; 
+}
+
+.titre-carte { 
+  font-family: var(--f-fix); font-size: .68rem; color: var(--accent); 
+  text-transform: uppercase; letter-spacing: .07em; 
+  padding: .7rem 1rem; border-bottom: 2px solid var(--line); background: var(--panel2);
+  display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+}
+
+.contenu-colonne { flex: 1; display: flex; flex-direction: column; padding: 1rem; gap: .8rem; overflow-y: auto; }
+
+.statut-bar { display: flex; justify-content: space-between; gap: .5rem; font-family: var(--f-fix); font-size: .72rem; flex-shrink: 0; }
+.stat-box { flex: 1; background: var(--panel2); border: 2px solid var(--line); padding: .4rem; text-align: center; }
+.stat-val { font-size: 1.05rem; font-weight: bold; margin-top: .15rem; display: block; color: var(--txt); }
+
+.grille-container {
+  width: 100%; aspect-ratio: 1; background: var(--panel2); border: 2px solid var(--line);
+  display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+  position: relative; overflow: hidden; flex-shrink: 0;
+}
+.cellule { border: 1px solid var(--line); opacity: 0.85; transition: background 0.3s; position: relative; }
+.cellule.trace { background: rgba(59, 130, 246, 0.35); opacity: 1; }
+.mur { background: var(--line); opacity: 1; border: none; }
+.donnee::after {
+  content: ""; display: block; width: 40%; height: 40%; margin: 30%;
+  background: var(--saisir); border-radius: 50%; box-shadow: 0 0 10px var(--saisir);
+}
+.arrivee { background: var(--panel); border: 2px dashed var(--ok); opacity: 1; display: flex; align-items: center; justify-content: center; }
+.arrivee::after { content: "🎯"; font-size: 1.5rem; }
+
+#robot {
+  position: absolute; width: 12.5%; height: 12.5%;
+  transition: all 0.3s ease-in-out; z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+}
+#robot-svg { width: 70%; height: 70%; fill: var(--accent); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
+
+.console-retour {
+  background: var(--panel2); border: 2px solid var(--line); padding: .75rem; 
+  font-family: var(--f-fix); font-size: .72rem; line-height: 1.4; height: 100px; overflow-y: auto; flex-shrink: 0;
+}
+
+.palette { display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; flex-shrink: 0; }
+.btn-bloc { background: var(--panel2); padding: .6rem; text-align: left; font-size: .85rem; display: flex; align-items: center; gap: .5rem; border-radius: 4px; }
+.btn-bloc .icone { font-size: 1.1rem; }
+
+.programme-liste {
+  flex: 1; background: var(--panel2); border: 2px solid var(--line);
+  padding: .6rem; overflow-y: auto; display: flex; flex-direction: column; gap: .4rem; min-height: 100px;
+}
+.instruction {
+  background: var(--panel); padding: .5rem .75rem; display: flex; 
+  justify-content: space-between; align-items: center; font-size: .85rem; border-radius: 3px;
+}
+.instruction .del { color: var(--no); font-weight: bold; padding: 0 .4rem; }
+.instruction .del:hover { opacity: .7; }
+
+.pupitre-actions { display: flex; gap: .6rem; flex-shrink: 0; height: 100px; align-items: flex-end; }
+.btn-action { flex: 1; padding: .75rem; font-family: var(--f-fix); font-size: .78rem; text-transform: uppercase; font-weight: bold; border-radius: 4px; text-align: center; }
+.btn-action.secondaire { background: var(--panel2); }
+.btn-action.primaire { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-action.primaire:hover { opacity: .9; }
+
+.feedback-stamp {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+  width: 200px; height: 200px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 7.5rem; font-weight: bold; z-index: 100; opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.35s; pointer-events: none;
+}
+.feedback-stamp.succes { background: rgba(34, 197, 94, 0.35); border: 6px solid var(--ok); color: var(--ok); box-shadow: 0 0 60px rgba(34, 197, 94, 0.8); }
+.feedback-stamp.echec { background: rgba(239, 68, 68, 0.35); border: 6px solid var(--no); color: var(--no); box-shadow: 0 0 60px rgba(239, 68, 68, 0.8); }
+.feedback-stamp.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.modal-overlay.on { opacity: 1; pointer-events: auto; }
+.modal-box {
+  background: var(--panel); border: 2px solid var(--line);
+  padding: 2rem; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;
+  border-radius: 6px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); position: relative;
+}
+.modal-box.celeb { border-color: var(--ok); text-align: center; max-width: 420px; border-width: 3px; }
+.modal-box h2 { color: var(--ok); margin-bottom: .8rem; font-family: var(--f-fix); }
+.modal-box p { margin-bottom: 1.5rem; font-size: .95rem; }
+
+/* Guide Styles */
+.guide-content h3 { color: var(--accent); margin: 1.5rem 0 .5rem; font-size: 1.1rem; }
+.guide-content h3:first-child { margin-top: 0; }
+.guide-content ul { padding-left: 1.5rem; margin-bottom: 1rem; color: var(--txt); }
+.guide-content li { margin-bottom: .4rem; }
+.btn-close-modal {
+  position: absolute; top: 1rem; right: 1rem; background: var(--panel2);
+  border: 1px solid var(--line); width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;
+}
+.btn-close-modal:hover { background: var(--no); color: white; border-color: var(--no); }
+
+/* ── PIED DE PAGE ── */
+.pied {
+  background: var(--panel, #1a1d21);
+  border-top: 2px solid var(--line, #3f454d);
+  padding: 6px; text-align: center; flex-shrink: 0;
+  font-family: var(--f-fix, Consolas, "Courier New", monospace);
+  font-size: .70rem;
+  letter-spacing: .16em;
+  color: var(--dim, #98a1ab);
+}
+
+@media (max-width: 900px) { 
+  main { flex-direction: column; overflow-y: auto; align-items: center; } 
+  .col-gauche, .col-droite { width: 100%; max-width: 520px; min-height: auto; } 
+}
+</style>
+</head>
+<body>
+
+<header class="res">
+  <div class="ident">
+    <div class="niveau">CLASSE DE 6E · MODULE : INITIATION AU RAISONNEMENT ANALYTIQUE ET LOGIQUE · UNITE : RAISONNEMENT LOGIQUE</div>
+<h1>Labyrinthe logique</h1>
+<div class="lecons">Leçons concernées : Ordonnancement des actions pour la résolution d'un problème · Simulation d'une séquence logique animée</div>
+  </div>
+  <div class="outils">
+    <button class="ic hero" aria-label="Guide" title="Guide" onclick="app.guide()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7a2 2 0 012 2v12a2 2 0 00-2-2H4zM20 5h-7a2 2 0 00-2 2v12a2 2 0 012-2h7z"/></svg>
+    </button>
+    <div class="lang" role="group" aria-label="Langue">
+      <button aria-pressed="true" id="btn-fr" onclick="app.langue('fr')">FR</button>
+      <button aria-pressed="false" id="btn-en" onclick="app.langue('en')">EN</button>
+    </div>
+    <button class="ic" aria-label="Contraste renforcé" title="Contraste renforcé" onclick="app.contraste()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18z" fill="currentColor" stroke="none"/></svg>
+    </button>
+    <button class="ic" aria-label="Taille du texte" title="Taille du texte" onclick="app.taille()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19l5-14 5 14M4.8 14h6.4"/><path d="M17 11v8M13 15h8"/></svg>
+    </button>
+    <button class="ic" aria-label="Écouter" title="Écouter" onclick="app.ecouter()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 010 7"/><path d="M19 6a8 8 0 010 12"/></svg>
+    </button>
+    <button class="ic" aria-label="Recommencer" title="Recommencer" onclick="app.recommencer()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 11-2.6-5.9"/><path d="M20 4v5h-5"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="consigne">Lisez d'abord le <b>guide</b>. Ensuite, assemblez les blocs d'instructions pour diriger le robot vers la cible en collectant les données.</div>
+
+<div id="bandeau-demo">MODE DÉMO — Touchez l'écran ou cliquez pour reprendre la main</div>
+
+<main>
+  <div id="central-feedback" class="feedback-stamp"></div>
+
+  <div class="col-gauche">
+    <div class="titre-carte">
+      <span>Zone de Jeu & Robot</span>
+      <span id="stat-niv-hdr" style="color:var(--txt);">Niveau 1/5</span>
+    </div>
+    <div class="contenu-colonne">
+      <div class="statut-bar">
+        <div class="stat-box"><span class="dim">NIVEAU</span><span id="stat-niv" class="stat-val">1 / 5</span></div>
+        <div class="stat-box"><span class="dim">DONNÉES</span><span id="stat-donnees" class="stat-val">0 / 0</span></div>
+        <div class="stat-box"><span class="dim">INSTRUCTIONS</span><span id="stat-inst" class="stat-val">0</span></div>
+      </div>
+
+      <div class="grille-container" id="grille">
+        <div id="robot">
+          <svg viewBox="0 0 24 24" id="robot-svg">
+            <path d="M12 2L22 20L12 17L2 20L12 2Z" />
+          </svg>
+        </div>
+      </div>
+
+      <div class="console-retour" id="console">
+        <span class="dim">> SYSTÈME PRÊT.</span><br/>
+        > Assemblez les blocs et exécutez la séquence.
+      </div>
+    </div>
+  </div>
+
+  <div class="col-droite">
+    <div class="titre-carte">
+      <span>Zone d'assemblage logique</span>
+    </div>
+    <div class="contenu-colonne">
+      <div class="palette">
+        <button class="obj btn-bloc" onclick="UI.ajouterBloc('avancer', 'Avancer')"><span class="icone">⬆️</span> Avancer</button>
+        <button class="obj btn-bloc" onclick="UI.ajouterBloc('gauche', 'Rotation Gauche')"><span class="icone">↩️</span> Gauche</button>
+        <button class="obj btn-bloc" onclick="UI.ajouterBloc('droite', 'Rotation Droite')"><span class="icone">↪️</span> Droite</button>
+        <button class="obj btn-bloc" onclick="UI.ajouterBloc('repeter', 'Répéter (x2)')"><span class="icone">🔄</span> Répéter bloc</button>
+      </div>
+
+      <div class="programme-liste" id="liste-programme">
+        <div style="text-align:center; margin-top:2rem;" class="dim" id="msg-vide">Aucune instruction assemblée.</div>
+      </div>
+
+      <div class="pupitre-actions">
+        <button class="obj btn-action secondaire" onclick="Moteur.effacerToutUI()">Effacer</button>
+        <button class="obj btn-action primaire" id="btn-run" onclick="Moteur.lancerProg()">Exécuter</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="celebration" class="modal-overlay">
+    <div class="modal-box celeb">
+      <h2>🎉 CIBLE ATTEINTE !</h2>
+      <p id="celeb-msg">Séquence logique validée avec succès.</p>
+      <button class="obj btn-action primaire" onclick="UI.niveauSuivant()">Continuer</button>
+    </div>
+  </div>
+
+  <div id="modal-guide" class="modal-overlay">
+    <div class="modal-box guide-content">
+      <button class="btn-close-modal" aria-label="Fermer le guide" onclick="app.fermerGuide()">✕</button>
+      
+      <h3>Objectifs visés</h3>
+      <p>Au terme de cette ressource, l'élève est capable de :</p>
+      <ul>
+        <li><b>Décomposer</b> une tâche complexe en instructions élémentaires simples.</li>
+        <li><b>Ordonner</b> séquentiellement des instructions pour résoudre un problème.</li>
+        <li><b>Identifier et corriger</b> une erreur de logique (débogage) dans une séquence.</li>
+      </ul>
+
+      <h3>Savoirs essentiels</h3>
+      <p>Algorithme, Programme, Séquence d'instructions, Boucle simple, Erreur de syntaxe/logique.</p>
+
+      <h3>Évaluation des prérequis</h3>
+      <p>Savoir s'orienter dans l'espace (différencier la gauche de la droite par rapport à la position de l'objet) et comprendre le fonctionnement d'une grille (lignes et colonnes).</p>
+
+      <h3>Situation-problème</h3>
+      <p>Un robot explorateur est égaré dans une zone accidentée (le labyrinthe). Son système de pilotage automatique est défectueux. Il doit absolument récupérer des balises de données environnementales et rejoindre sa base d'extraction. En tant qu'opérateur système, tu dois construire manuellement la séquence précise de ses déplacements sans l'endommager contre un mur.</p>
+
+      <h3>Comment se servir de la ressource</h3>
+      <ul>
+        <li>Cliquer sur les <b>blocs d'assemblage</b> à droite pour construire votre séquence d'instructions.</li>
+        <li>Observer la <b>grille</b> pour anticiper le trajet et le regard du robot (la flèche bleue).</li>
+        <li>Cliquer sur <b>Exécuter</b> pour transmettre la séquence au robot et observer le résultat.</li>
+        <li>En cas d'erreur (mur ou hors limite), la séquence s'arrête. Cliquez sur <b>Effacer</b> et recommencez !</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<div class="pied">MINESEC-LAB</div>
+
+<script>
+"use strict";
+
+let fontSizeLvl = 0; // 0: normal, 1: grand, 2: très grand
+let voiceEnabled = false;
+
+const app = {
+  guide() {
+    document.getElementById("modal-guide").classList.add("on");
+    DEMO.arreter(false); // Arrête la démo si le guide est ouvert
+  },
+  
+  fermerGuide() {
+    document.getElementById("modal-guide").classList.remove("on");
+  },
+
+  langue(lang) {
+    document.getElementById("btn-fr").setAttribute("aria-pressed", lang === 'fr');
+    document.getElementById("btn-en").setAttribute("aria-pressed", lang === 'en');
+    UI.log(`<span class="dim">> Langue modifiée : ${lang.toUpperCase()}</span>`);
+  },
+
+  contraste() {
+    document.body.classList.toggle("light");
+    UI.log(`<span class="dim">> Contraste modifié.</span>`);
+  },
+
+  taille() {
+    fontSizeLvl = (fontSizeLvl + 1) % 3;
+    const sizes = ['16px', '18px', '20px'];
+    document.documentElement.style.setProperty('--fs', sizes[fontSizeLvl]);
+    UI.log(`<span class="dim">> Taille du texte ajustée.</span>`);
+  },
+
+  ecouter() {
+    voiceEnabled = !voiceEnabled;
+    UI.log(`<span class="dim">> Assistance vocale : ${voiceEnabled ? 'ACTIVÉE' : 'DÉSACTIVÉE'}.</span>`);
+  },
+
+  recommencer() {
+    if (Moteur.enExecution) {
+      clearInterval(Moteur.interval);
+      Moteur.enExecution = false;
+      document.getElementById("btn-run").style.opacity = "1";
+    }
+    document.getElementById("celebration").classList.remove("on");
+    DEMO.arreter(false);
+    
+    // Relance depuis le début
+    R.chargerNiveau(0);
+    UI.effacerUI();
+    UI.log("<span class='txt-ok'>> RÉINITIALISATION COMPLÈTE DU SYSTÈME.</span>");
+  }
+};
+
+const NIVEAUX = [
+  { carte: [[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,0,0,0,0,0,3,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1]], init: { x:1, y:3, dir:1 } },
+  { carte: [[1,1,1,1,1,1,1,1],[1,0,0,0,1,1,1,1],[1,1,1,0,1,1,1,1],[1,1,1,0,1,1,1,1],[1,1,1,3,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1]], init: { x:1, y:1, dir:1 } },
+  { carte: [[1,1,1,1,1,1,1,1],[1,1,0,0,0,1,1,1],[1,1,0,1,2,1,1,1],[1,1,2,1,0,0,3,1],[1,1,0,1,1,1,1,1],[1,1,0,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1]], init: { x:2, y:5, dir:0 } },
+  { carte: [[1,1,1,1,1,1,1,1],[1,1,1,1,1,3,1,1],[1,1,1,1,1,0,1,1],[1,1,1,1,0,0,1,1],[1,1,1,1,0,1,1,1],[1,1,0,0,0,1,1,1],[1,0,0,1,1,1,1,1],[1,1,1,1,1,1,1,1]], init: { x:1, y:6, dir:1 } },
+  { carte: [[1,1,1,1,1,1,1,1],[1,0,0,2,0,0,1,1],[1,0,1,1,1,0,1,1],[1,0,1,3,1,0,1,1],[1,0,1,0,1,0,1,1],[1,0,1,0,0,2,1,1],[1,0,1,1,1,1,1,1],[1,1,1,1,1,1,1,1]], init: { x:1, y:6, dir:0 } }
+];
+
+const R = {
+  taille: 8, niveauActuel: 0, carte: [], robot: { x: 0, y: 0, dir: 1 }, 
+  donneesCollectees: 0, totalDonnees: 0,
+
+  chargerNiveau(index) {
+    if(index >= NIVEAUX.length) index = 0;
+    this.niveauActuel = index;
+    const n = NIVEAUX[index];
+    
+    this.carte = JSON.parse(JSON.stringify(n.carte));
+    this.robot = { ...n.init };
+    this.donneesCollectees = 0;
+    this.totalDonnees = this.carte.flat().filter(c => c === 2).length;
+
+    const stamp = document.getElementById("central-feedback");
+    if(stamp) stamp.classList.remove("show");
+
+    UI.dessinerGrille();
+    UI.dessinerRobot();
+    UI.majStats();
+    UI.log(`<span class='dim'>> NIVEAU ${index + 1} PRÊT.</span>`);
+  },
+
+  resetPositions() { this.chargerNiveau(this.niveauActuel); }
+};
+
+const UI = {
+  blocs: [],
+
+  dessinerGrille() {
+    const cont = document.getElementById("grille");
+    Array.from(cont.children).forEach(c => { if(c.id !== "robot") c.remove(); });
+
+    for (let y = 0; y < R.taille; y++) {
+      for (let x = 0; x < R.taille; x++) {
+        const val = R.carte[y][x];
+        const cell = document.createElement("div");
+        cell.className = "cellule";
+        if (val === 1) cell.classList.add("mur");
+        else if (val === 2) cell.classList.add("donnee");
+        else if (val === 3) cell.classList.add("arrivee");
+        
+        cell.style.gridColumn = `${x + 1}`;
+        cell.style.gridRow = `${y + 1}`;
+        cell.id = `cell-${x}-${y}`;
+        cont.appendChild(cell);
+      }
+    }
+  },
+
+  dessinerRobot() {
+    const rob = document.getElementById("robot");
+    const svg = document.getElementById("robot-svg");
+    rob.style.left = `${(R.robot.x * 100) / 8}%`;
+    rob.style.top = `${(R.robot.y * 100) / 8}%`;
+    const angles = [0, 90, 180, -90]; 
+    svg.style.transform = `rotate(${angles[R.robot.dir]}deg)`;
+  },
+
+  majStats() {
+    document.getElementById("stat-niv").innerText = `${R.niveauActuel + 1} / 5`;
+    document.getElementById("stat-niv-hdr").innerText = `Niveau ${R.niveauActuel + 1}/5`;
+    document.getElementById("stat-donnees").innerText = `${R.donneesCollectees} / ${R.totalDonnees}`;
+    document.getElementById("stat-inst").innerText = this.blocs.length;
+  },
+
+  log(msg) {
+    const c = document.getElementById("console");
+    c.innerHTML += `<br/>${msg}`;
+    c.scrollTop = c.scrollHeight;
+  },
+
+  clearLog() {
+    document.getElementById("console").innerHTML = `<span class='dim'>> EXÉCUTION EN COURS...</span>`;
+  },
+
+  ajouterBloc(type, label) {
+    if (Moteur.enExecution) return;
+    const id = 'bloc_' + Date.now() + Math.random().toString(36).substr(2, 5);
+    this.blocs.push({ id, type, label });
+
+    document.getElementById("msg-vide").style.display = "none";
+    const liste = document.getElementById("liste-programme");
+    const div = document.createElement("div");
+    div.className = "instruction obj"; div.id = id;
+    
+    let ic = type==='avancer'?'⬆️': type==='gauche'?'↩️': type==='droite'?'↪️':'🔄';
+    div.innerHTML = `<span><span class="dim" style="font-family:var(--f-fix); margin-right:.5rem">${ic}</span> ${label}</span><button class="del" onclick="UI.supprimerBloc('${id}')">✕</button>`;
+    
+    liste.appendChild(div);
+    this.majStats();
+    liste.scrollTop = liste.scrollHeight;
+  },
+
+  supprimerBloc(id) {
+    if (Moteur.enExecution) return;
+    this.blocs = this.blocs.filter(b => b.id !== id);
+    const el = document.getElementById(id);
+    if (el) el.remove();
+    if (this.blocs.length === 0) document.getElementById("msg-vide").style.display = "block";
+    this.majStats();
+  },
+
+  effacerUI() {
+    this.blocs = [];
+    const liste = document.getElementById("liste-programme");
+    Array.from(liste.children).forEach(c => { if(c.id !== "msg-vide") c.remove(); });
+    document.getElementById("msg-vide").style.display = "block";
+    this.majStats();
+  },
+
+  celebrer() {
+    let msg = R.donneesCollectees < R.totalDonnees 
+      ? `Attention: Il manque ${R.totalDonnees - R.donneesCollectees} donnée(s).` 
+      : "Score parfait !";
+    if (R.niveauActuel === NIVEAUX.length - 1) {
+      msg = "🎉 VOUS AVEZ TERMINÉ TOUS LES NIVEAUX DU LAB !";
+    }
+    document.getElementById("celeb-msg").innerText = msg;
+    document.getElementById("celebration").classList.add("on");
+  },
+  
+  niveauSuivant() {
+    document.getElementById("celebration").classList.remove("on");
+    Moteur.effacerToutUI();
+    R.chargerNiveau(R.niveauActuel + 1);
+  }
+};
+
+const Moteur = {
+  enExecution: false, interval: null,
+
+  effacerToutUI() {
+    if (this.enExecution) return;
+    UI.effacerUI(); R.resetPositions();
+  },
+
+  lancerProg() {
+    if (this.enExecution || UI.blocs.length === 0) return;
+    
+    this.enExecution = true;
+    document.getElementById("btn-run").style.opacity = "0.5";
+    R.resetPositions(); UI.clearLog();
+    
+    const stamp = document.getElementById("central-feedback");
+    if(stamp) stamp.classList.remove("show");
+    
+    let sequence = [];
+    for (let i = 0; i < UI.blocs.length; i++) {
+      const b = UI.blocs[i];
+      if (b.type === 'repeter') {
+        const prev = sequence[sequence.length - 1];
+        if (prev) { sequence.push({ type: prev.type, domId: b.id }); sequence.push({ type: prev.type, domId: b.id }); }
+      } else { sequence.push({ type: b.type, domId: b.id }); }
+    }
+
+    let etapeIndex = 0;
+    
+    this.interval = setInterval(() => {
+      document.querySelectorAll(".instruction").forEach(el => el.classList.remove("choisi", "refus", "juste"));
+
+      if (etapeIndex >= sequence.length) { this.terminer("fin_normale"); return; }
+
+      const instr = sequence[etapeIndex];
+      const domEl = document.getElementById(instr.domId);
+      if (domEl) { domEl.classList.add("choisi"); domEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+
+      let nx = R.robot.x, ny = R.robot.y, ndir = R.robot.dir;
+
+      if (instr.type === 'gauche') ndir = (ndir + 3) % 4;
+      else if (instr.type === 'droite') ndir = (ndir + 1) % 4;
+      else if (instr.type === 'avancer') {
+        if (ndir === 0) ny--; else if (ndir === 1) nx++;
+        else if (ndir === 2) ny++; else if (ndir === 3) nx--;
+      }
+
+      if (nx < 0 || nx >= R.taille || ny < 0 || ny >= R.taille) {
+        if(domEl) { domEl.classList.remove("choisi"); domEl.classList.add("refus"); }
+        this.terminer("hors_limites"); return;
+      }
+
+      const caseCible = R.carte[ny][nx];
+      if (caseCible === 1) {
+        if(domEl) { domEl.classList.remove("choisi"); domEl.classList.add("refus"); }
+        this.terminer("mur"); return;
+      }
+
+      R.robot.x = nx; R.robot.y = ny; R.robot.dir = ndir;
+
+      const cellVisitee = document.getElementById(`cell-${nx}-${ny}`);
+      if (cellVisitee && !cellVisitee.classList.contains('arrivee') && !cellVisitee.classList.contains('donnee')) {
+        cellVisitee.classList.add("trace");
+      }
+
+      if (caseCible === 2) {
+        R.donneesCollectees++; R.carte[ny][nx] = 0;
+        const cell = document.getElementById(`cell-${nx}-${ny}`);
+        if(cell) cell.classList.remove("donnee");
+      }
+
+      UI.dessinerRobot(); UI.majStats();
+
+      if (caseCible === 3) {
+        if(domEl) { domEl.classList.remove("choisi"); domEl.classList.add("juste"); }
+        this.terminer("victoire"); return;
+      }
+
+      etapeIndex++;
+    }, 600);
+  },
+
+  terminer(raison) {
+    clearInterval(this.interval); this.enExecution = false; document.getElementById("btn-run").style.opacity = "1";
+
+    setTimeout(() => { document.querySelectorAll(".instruction").forEach(el => el.classList.remove("choisi")); }, 500);
+
+    const stamp = document.getElementById("central-feedback");
+    if (stamp) {
+      stamp.className = "feedback-stamp";
+      if (raison === "victoire") { stamp.innerHTML = "✓"; stamp.classList.add("succes", "show"); } 
+      else { stamp.innerHTML = "✕"; stamp.classList.add("echec", "show"); }
+    }
+
+    if (raison === "fin_normale") UI.log("<span style='color:var(--no)'>> ÉCHEC: Cible non atteinte. Séquence incomplète.</span>");
+    else if (raison === "hors_limites") UI.log("<span style='color:var(--no)'>> CRASH: Sortie de la grille.</span>");
+    else if (raison === "mur") UI.log("<span style='color:var(--no)'>> COLLISION: Obstacle rencontré.</span>");
+    else if (raison === "victoire") {
+      UI.log(`<span style='color:var(--ok)'>> SUCCÈS: Séquence validée !</span>`);
+      if(!DEMO.active) setTimeout(() => UI.celebrer(), 600);
+    }
+  }
+};
+
+const DEMO = {
+  active: false, forcerArret: false,
+
+  pause(ms) { return new Promise(r => setTimeout(() => { r(!this.forcerArret); }, ms)); },
+
+  async lancer() {
+    if(this.active) return;
+    this.active = true; this.forcerArret = false;
+    document.getElementById("bandeau-demo").classList.add("on");
+    
+    while(this.active && !this.forcerArret){
+      R.chargerNiveau(0); UI.effacerUI();
+      if(!await this.pause(800)) break; UI.ajouterBloc('avancer', 'Avancer');
+      if(!await this.pause(600)) break; UI.ajouterBloc('droite', 'Rotation Droite');
+      if(!await this.pause(600)) break; UI.ajouterBloc('avancer', 'Avancer');
+      if(!await this.pause(800)) break; Moteur.lancerProg();
+      if(!await this.pause(4500)) break;
+    }
+    this.active = false;
+  },
+
+  arreter(resetApres = true) {
+    if(!this.active) return;
+    this.forcerArret = true; document.getElementById("bandeau-demo").classList.remove("on");
+    
+    if(Moteur.enExecution) { clearInterval(Moteur.interval); Moteur.enExecution = false; document.getElementById("btn-run").style.opacity = "1"; }
+    
+    if(resetApres) { UI.effacerUI(); R.chargerNiveau(0); UI.log("<span style='color:var(--accent)'>> MODE MANUEL ACTIVÉ. À vous !</span>"); }
+  }
+};
+
+["pointerdown", "keydown", "touchstart"].forEach(ev =>
+  document.addEventListener(ev, e => {
+    // Ignorer si on clique sur un bouton de contrôle principal (header)
+    if(e.target.closest('header') || e.target.closest('.modal-box')) return; 
+    
+    if (DEMO.active) { e.preventDefault(); DEMO.arreter(true); }
+  }, {capture: true})
+);
+
+window.addEventListener("load", () => {
+  R.chargerNiveau(0);
+  setTimeout(() => DEMO.lancer(), 500);
+});
+</script>
+</body>
+</html>

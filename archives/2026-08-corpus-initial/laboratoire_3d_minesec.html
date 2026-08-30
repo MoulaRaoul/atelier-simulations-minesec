@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratoire 3D - MINESEC</title>
+    
+    <!-- Tailwind CSS pour un prototypage rapide et élégant -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Polices et Icônes -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #07090f;
+            --glass-bg: rgba(15, 23, 42, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.5);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.1), transparent 25%);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Conteneur 3D */
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+        }
+
+        /* Effet Glassmorphism pour les panneaux */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Animations d'entrée (Motion Design) */
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .anim-left { animation: slideInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .anim-right { animation: slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .anim-top { animation: fadeInDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* Styles des boutons dynamiques */
+        .shape-btn {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .shape-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.05), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+        .shape-btn:hover::before { transform: translateX(100%); }
+        .shape-btn.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+            color: #fff;
+        }
+
+        /* Range Sliders personnalisés */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.1);
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--accent-glow);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active {
+            transform: scale(1.2);
+        }
+
+        /* Tooltip personnalisée */
+        .info-badge {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
+    </style>
+
+    <!-- Importmap pour Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <!-- Arrière-plan 3D -->
+    <div id="canvas-container"></div>
+
+    <!-- En-tête -->
+    <header class="fixed top-0 left-0 w-full z-10 p-4 anim-top pointer-events-none">
+        <div class="glass-panel mx-auto max-w-7xl rounded-2xl px-6 py-4 flex justify-between items-center pointer-events-auto">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-cube text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-wide text-white leading-tight">MINESEC <span class="font-light text-blue-400">LAB 3D</span></h1>
+                    <p class="text-[10px] font-mono text-gray-400 uppercase tracking-widest">Laboratoire d'Opérations Volumiques</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button id="btn-reset" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-800 border border-gray-700 hover:border-blue-500 hover:bg-gray-700 transition-all text-gray-300">
+                    <i class="fa-solid fa-rotate-left mr-2"></i>Réinitialiser
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Panneau Latéral Gauche : Bibliothèque de Solides -->
+    <aside class="fixed left-4 top-1/2 -translate-y-1/2 w-64 z-10 anim-left pointer-events-none">
+        <div class="glass-panel rounded-2xl p-5 flex flex-col gap-4 pointer-events-auto">
+            <div>
+                <h2 class="text-xs font-mono text-blue-400 uppercase tracking-widest mb-1">Catalogue</h2>
+                <p class="text-sm font-bold text-white mb-3">Sélection du Solide</p>
+                <div class="h-[1px] w-full bg-gradient-to-r from-gray-700 to-transparent mb-4"></div>
+            </div>
+
+            <div class="flex flex-col gap-2" id="shape-selector">
+                <button data-shape="cube" class="shape-btn active flex items-center gap-3 w-full p-3 rounded-xl border border-gray-700 bg-gray-800/50 text-gray-300 text-sm font-medium">
+                    <i class="fa-solid fa-box text-lg w-6 text-center"></i> Cube
+                </button>
+                <button data-shape="sphere" class="shape-btn flex items-center gap-3 w-full p-3 rounded-xl border border-gray-700 bg-gray-800/50 text-gray-300 text-sm font-medium">
+                    <i class="fa-solid fa-circle text-lg w-6 text-center"></i> Sphère
+                </button>
+                <button data-shape="cylinder" class="shape-btn flex items-center gap-3 w-full p-3 rounded-xl border border-gray-700 bg-gray-800/50 text-gray-300 text-sm font-medium">
+                    <i class="fa-solid fa-database text-lg w-6 text-center"></i> Cylindre
+                </button>
+                <button data-shape="cone" class="shape-btn flex items-center gap-3 w-full p-3 rounded-xl border border-gray-700 bg-gray-800/50 text-gray-300 text-sm font-medium">
+                    <i class="fa-solid fa-caret-up text-xl w-6 text-center"></i> Cône
+                </button>
+                <button data-shape="prism" class="shape-btn flex items-center gap-3 w-full p-3 rounded-xl border border-gray-700 bg-gray-800/50 text-gray-300 text-sm font-medium">
+                    <i class="fa-brands fa-playstation text-lg w-6 text-center"></i> Prisme
+                </button>
+            </div>
+            
+            <div class="mt-4 p-3 rounded-xl bg-blue-900/20 border border-blue-500/20">
+                <p class="text-[11px] text-blue-300 leading-relaxed">
+                    <i class="fa-solid fa-circle-info mr-1"></i>
+                    Faites glisser la souris sur le fond pour pivoter la caméra. Scrollez pour zoomer.
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Panneau Latéral Droit : Opération de Coupe -->
+    <aside class="fixed right-4 top-1/2 -translate-y-1/2 w-80 z-10 anim-right pointer-events-none">
+        <div class="glass-panel rounded-2xl p-5 flex flex-col gap-6 pointer-events-auto">
+            <div>
+                <div class="flex justify-between items-end mb-1">
+                    <h2 class="text-xs font-mono text-emerald-400 uppercase tracking-widest">Opération</h2>
+                    <span id="cut-status" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">ACTIF</span>
+                </div>
+                <p class="text-lg font-bold text-white mb-2">Paramètres de Coupe</p>
+                <div class="h-[1px] w-full bg-gradient-to-r from-gray-700 to-transparent"></div>
+            </div>
+
+            <!-- Contrôles du Plan -->
+            <div class="flex flex-col gap-5">
+                <!-- Hauteur -->
+                <div>
+                    <div class="flex justify-between text-xs text-gray-400 mb-2 font-mono">
+                        <span>Hauteur (Y)</span>
+                        <span id="val-y">0.00</span>
+                    </div>
+                    <input type="range" id="slider-y" min="-2" max="2" step="0.01" value="0">
+                </div>
+
+                <!-- Inclinaison X -->
+                <div>
+                    <div class="flex justify-between text-xs text-gray-400 mb-2 font-mono">
+                        <span>Rotation Axe X</span>
+                        <span id="val-rx">0°</span>
+                    </div>
+                    <input type="range" id="slider-rx" min="-90" max="90" step="1" value="0">
+                </div>
+
+                <!-- Inclinaison Z -->
+                <div>
+                    <div class="flex justify-between text-xs text-gray-400 mb-2 font-mono">
+                        <span>Rotation Axe Z</span>
+                        <span id="val-rz">0°</span>
+                    </div>
+                    <input type="range" id="slider-rz" min="-90" max="90" step="1" value="0">
+                </div>
+            </div>
+
+            <!-- Analyse en temps réel -->
+            <div class="bg-gray-900/60 rounded-xl p-4 border border-gray-700/50">
+                <h3 class="text-xs text-gray-400 uppercase tracking-widest font-mono mb-3">Analyse de la Section</h3>
+                
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-300">Solide Actuel :</span>
+                        <span id="info-shape" class="text-sm font-bold text-white">Cube</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-300">Figure de section :</span>
+                        <span id="info-section" class="text-sm font-bold text-blue-400">Polygone</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="toggle-plane" checked class="w-4 h-4 accent-blue-500 cursor-pointer">
+                <label for="toggle-plane" class="text-sm text-gray-300 cursor-pointer">Afficher la lame (Plan visuel)</label>
+            </div>
+        </div>
+    </aside>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // Variables globales
+        let scene, camera, renderer, controls;
+        let currentMeshGroup = new THREE.Group();
+        let clippingPlane;
+        let visualPlane;
+        let currentShapeName = 'cube';
+
+        // Paramètres actuels du plan
+        const planeParams = {
+            y: 0,
+            rotationX: 0,
+            rotationZ: 0
+        };
+
+        // Définitions des géométries
+        const geometries = {
+            cube: new THREE.BoxGeometry(2, 2, 2),
+            sphere: new THREE.SphereGeometry(1.2, 64, 64),
+            cylinder: new THREE.CylinderGeometry(1, 1, 2.5, 32),
+            cone: new THREE.ConeGeometry(1.2, 2.5, 32),
+            prism: new THREE.CylinderGeometry(1.2, 1.2, 2.5, 3) // Prisme à base triangulaire
+        };
+
+        const shapeNames = {
+            cube: "Cube", sphere: "Sphère", cylinder: "Cylindre", cone: "Cône", prism: "Prisme Droit"
+        };
+
+        init();
+        animate();
+
+        function init() {
+            // Container
+            const container = document.getElementById('canvas-container');
+
+            // Moteur de rendu
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            // VITAL pour l'effet de coupe
+            renderer.localClippingEnabled = true; 
+            container.appendChild(renderer.domElement);
+
+            // Scène
+            scene = new THREE.Scene();
+            // Léger brouillard pour la profondeur
+            scene.fog = new THREE.FogExp2(0x07090f, 0.03);
+
+            // Caméra
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(5, 4, 6);
+
+            // Contrôles
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 3;
+            controls.maxDistance = 15;
+
+            // Lumières (Design Studio)
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            mainLight.position.set(5, 10, 7);
+            scene.add(mainLight);
+
+            const fillLight = new THREE.DirectionalLight(0x3b82f6, 1.0); // Lumière bleutée
+            fillLight.position.set(-5, 0, -5);
+            scene.add(fillLight);
+            
+            const backLight = new THREE.DirectionalLight(0x10b981, 0.5); // Lumière émeraude
+            backLight.position.set(0, -5, -5);
+            scene.add(backLight);
+
+            // Grille de référence subtile
+            const gridHelper = new THREE.GridHelper(10, 20, 0x334155, 0x1e293b);
+            gridHelper.position.y = -2;
+            scene.add(gridHelper);
+
+            // Initialisation du plan de coupe
+            initClippingSystem();
+
+            // Ajouter le premier objet
+            scene.add(currentMeshGroup);
+            loadShape('cube');
+
+            // Événements
+            window.addEventListener('resize', onWindowResize);
+            setupUIBindings();
+        }
+
+        function initClippingSystem() {
+            // Le plan mathématique utilisé par le moteur de rendu
+            clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
+
+            // Le plan visuel transparent (la "lame")
+            const planeGeom = new THREE.PlaneGeometry(6, 6);
+            const planeMat = new THREE.MeshPhysicalMaterial({
+                color: 0x3b82f6,
+                transparent: true,
+                opacity: 0.2,
+                side: THREE.DoubleSide,
+                roughness: 0.1,
+                metalness: 0.5,
+                depthWrite: false
+            });
+            
+            visualPlane = new THREE.Mesh(planeGeom, planeMat);
+            // Bordure brillante pour la lame
+            const edges = new THREE.LineSegments(
+                new THREE.EdgesGeometry(planeGeom),
+                new THREE.LineBasicMaterial({ color: 0x60a5fa, linewidth: 2 })
+            );
+            visualPlane.add(edges);
+            
+            // On oriente le plan visuel pour qu'il soit horizontal par défaut (comme le clippingPlane)
+            visualPlane.rotation.x = -Math.PI / 2;
+            scene.add(visualPlane);
+        }
+
+        function updateClippingPlane() {
+            // 1. Mettre à jour la position et rotation de la lame visuelle
+            visualPlane.position.y = planeParams.y;
+            
+            // La rotation initiale du visuel est de -90 sur X (pour être à plat).
+            // On y ajoute les rotations des sliders.
+            const rxRad = THREE.MathUtils.degToRad(planeParams.rotationX);
+            const rzRad = THREE.MathUtils.degToRad(planeParams.rotationZ);
+            
+            visualPlane.rotation.set(-Math.PI / 2 + rxRad, 0, rzRad, 'YXZ');
+
+            // 2. Calculer le vecteur normal pour le plan mathématique
+            // Un plan par défaut pointe vers (0, 1, 0). Appliquons les rotations.
+            const normal = new THREE.Vector3(0, 1, 0);
+            
+            // Créer une matrice de rotation basée sur les angles
+            const euler = new THREE.Euler(rxRad, 0, rzRad, 'YXZ');
+            normal.applyEuler(euler);
+            normal.normalize();
+
+            // Inverser la normale car THREE.Plane coupe ce qui est dans la direction de la normale
+            clippingPlane.normal.copy(normal).negate();
+
+            // 3. Calculer la constante (distance à l'origine)
+            // L'équation du plan est N.P = d. 
+            // Si le plan passe par le point (0, y, 0), alors d = Nx*0 + Ny*y + Nz*0 = Ny * y
+            clippingPlane.constant = normal.y * planeParams.y;
+
+            // Mettre à jour l'analyse heuristique de la coupe
+            analyzeSection();
+        }
+
+        function loadShape(shapeKey) {
+            currentShapeName = shapeKey;
+            document.getElementById('info-shape').innerText = shapeNames[shapeKey];
+
+            // Nettoyer le groupe actuel
+            while(currentMeshGroup.children.length > 0){ 
+                currentMeshGroup.remove(currentMeshGroup.children[0]); 
+            }
+
+            const geometry = geometries[shapeKey];
+
+            // 1. Matériau principal extérieur (côté face)
+            const outMaterial = new THREE.MeshStandardMaterial({
+                color: 0x94a3b8, // Gris métallique doux
+                roughness: 0.3,
+                metalness: 0.2,
+                clippingPlanes: [clippingPlane],
+                side: THREE.FrontSide
+            });
+
+            // 2. Matériau intérieur pour simuler la solidité
+            // Astuce : Rendre l'intérieur de la géométrie avec une couleur unie
+            const inMaterial = new THREE.MeshBasicMaterial({
+                color: 0x1e293b, // Gris foncé pour la face coupée
+                clippingPlanes: [clippingPlane],
+                side: THREE.BackSide
+            });
+
+            const meshOut = new THREE.Mesh(geometry, outMaterial);
+            const meshIn = new THREE.Mesh(geometry, inMaterial);
+            
+            // Bordures filaires esthétiques (Wireframe)
+            const wireframeGeom = new THREE.EdgesGeometry(geometry);
+            const wireMaterial = new THREE.LineBasicMaterial({ 
+                color: 0xffffff, 
+                transparent: true, 
+                opacity: 0.1,
+                clippingPlanes: [clippingPlane]
+            });
+            const wireframe = new THREE.LineSegments(wireframeGeom, wireMaterial);
+
+            // Animation d'apparition
+            currentMeshGroup.scale.set(0.01, 0.01, 0.01);
+            
+            currentMeshGroup.add(meshIn);
+            currentMeshGroup.add(meshOut);
+            currentMeshGroup.add(wireframe);
+
+            // Lancer l'analyse initiale
+            updateClippingPlane();
+        }
+
+        function setupUIBindings() {
+            // Sélection des formes
+            const buttons = document.querySelectorAll('.shape-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // Update active state
+                    buttons.forEach(b => b.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    
+                    // Load shape
+                    const shape = e.currentTarget.getAttribute('data-shape');
+                    loadShape(shape);
+                });
+            });
+
+            // Sliders du plan de coupe
+            const sliderY = document.getElementById('slider-y');
+            const sliderRx = document.getElementById('slider-rx');
+            const sliderRz = document.getElementById('slider-rz');
+
+            const valY = document.getElementById('val-y');
+            const valRx = document.getElementById('val-rx');
+            const valRz = document.getElementById('val-rz');
+
+            sliderY.addEventListener('input', (e) => {
+                planeParams.y = parseFloat(e.target.value);
+                valY.innerText = planeParams.y.toFixed(2);
+                updateClippingPlane();
+            });
+
+            sliderRx.addEventListener('input', (e) => {
+                planeParams.rotationX = parseFloat(e.target.value);
+                valRx.innerText = planeParams.rotationX + '°';
+                updateClippingPlane();
+            });
+
+            sliderRz.addEventListener('input', (e) => {
+                planeParams.rotationZ = parseFloat(e.target.value);
+                valRz.innerText = planeParams.rotationZ + '°';
+                updateClippingPlane();
+            });
+
+            // Toggle Plane
+            document.getElementById('toggle-plane').addEventListener('change', (e) => {
+                visualPlane.visible = e.target.checked;
+            });
+
+            // Reset
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                sliderY.value = 0;
+                sliderRx.value = 0;
+                sliderRz.value = 0;
+                sliderY.dispatchEvent(new Event('input'));
+                sliderRx.dispatchEvent(new Event('input'));
+                sliderRz.dispatchEvent(new Event('input'));
+                
+                controls.reset();
+                camera.position.set(5, 4, 6);
+            });
+        }
+
+        function analyzeSection() {
+            // En fonction de la forme et des angles, on déduit le type de section
+            // Ceci remplace les calculs lourds de BSP par une logique pédagogique adaptée.
+            
+            const rx = Math.abs(planeParams.rotationX);
+            const rz = Math.abs(planeParams.rotationZ);
+            const isHorizontal = (rx === 0 && rz === 0);
+            const isVertical = (rx === 90 || rz === 90);
+            const isOblique = (!isHorizontal && !isVertical);
+            const y = planeParams.y;
+
+            let result = "Inconnue";
+
+            // Vérifier si le plan est hors de l'objet (approx)
+            if (y > 1.3 || y < -1.3) {
+                document.getElementById('info-section').innerText = "Vide (Hors objet)";
+                document.getElementById('info-section').className = "text-sm font-bold text-red-400";
+                return;
+            }
+
+            switch(currentShapeName) {
+                case 'cube':
+                    if (isHorizontal || isVertical) result = "Carré / Rectangle";
+                    else if (rx === 45 || rz === 45) result = "Rectangle Oblique";
+                    else result = "Polygone irrégulier / Hexagone";
+                    break;
+                case 'sphere':
+                    if (y > 1.2 || y < -1.2) result = "Vide";
+                    else if (Math.abs(y) === 1.2) result = "Point";
+                    else result = "Cercle"; // Toute coupe plane d'une sphère est un cercle
+                    break;
+                case 'cylinder':
+                    if (isHorizontal) result = "Cercle";
+                    else if (isVertical) result = "Rectangle";
+                    else result = "Ellipse";
+                    break;
+                case 'cone':
+                    if (y > 1.25 || y < -1.25) { result = "Vide"; }
+                    else if (isHorizontal) {
+                        result = Math.abs(y - 1.25) < 0.05 ? "Point (Sommet)" : "Cercle";
+                    }
+                    else if (isVertical) result = "Triangle isocèle / Hyperbole";
+                    else result = "Ellipse / Parabole";
+                    break;
+                case 'prism':
+                    if (isHorizontal) result = "Triangle";
+                    else if (isVertical) result = "Rectangle";
+                    else result = "Trapèze / Triangle";
+                    break;
+            }
+
+            document.getElementById('info-section').innerText = result;
+            document.getElementById('info-section').className = "text-sm font-bold text-emerald-400";
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Animation d'apparition en douceur du solide
+            if (currentMeshGroup.scale.x < 1) {
+                const s = currentMeshGroup.scale.x + 0.05;
+                currentMeshGroup.scale.set(Math.min(s, 1), Math.min(s, 1), Math.min(s, 1));
+            }
+
+            // Légère rotation continue automatique si non manipulé (facultatif, ici on laisse fixe pour étudier la coupe)
+            // currentMeshGroup.rotation.y += 0.001;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

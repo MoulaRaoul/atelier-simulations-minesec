@@ -1,0 +1,656 @@
+<!--
+================================================================================
+CHARTE VISUELLE ET MECANIQUE — BANQUE DE SIMULATIONS MINESEC
+Ce fichier n'enseigne rien. Il fixe ce qui doit être identique dans les
+soixante-dix ressources, et donne le code à copier pour chaque point.
+
+Il se lit à l'écran et se copie morceau par morceau : chaque bloc de code
+porte son bouton.
+
+ETABLIE D'APRES  : les fichiers de référence versés au dossier
+                   simulateur_interconnexion_peripheriques_v2.html
+                   les_services_d_internet__1_.html
+                   pr_server_sa_vie_priv_e_en_ligne__1_.html
+                   55-3e-convertisseur-et-balance.html
+
+CORRECTION FACTUELLE APPORTEE AU MODELE DE PORT VGA
+  Le dessin de référence porte neuf broches sur deux rangées : c'est un port
+  série, non un VGA. Le VGA est un HD-15, quinze broches sur trois rangées.
+  La forme et les teintes du modèle sont conservées, le nombre est corrigé.
+  Le port série reste disponible comme prop distinct : le manuel demande de
+  les distinguer.
+================================================================================
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Charte visuelle et mécanique — MINESEC</title>
+<style>
+/* ═══════════════ 1. LA PALETTE ═══════════════
+   Une couleur, une fonction. Aucune couleur n'est décorative. */
+:root{
+  /* Surfaces */
+  --bg:#121416;          /* fond de l'application */
+  --panel:#1a1d21;       /* bandeaux, pupitre, cartes */
+  --panel2:#25282d;      /* creux, champs, matériel inerte */
+  --line:#3f454d;        /* toute bordure au repos */
+
+  /* Texte */
+  --txt:#e8ebee;         /* texte courant */
+  --dim:#98a1ab;         /* texte secondaire, étiquettes */
+
+  /* Fonctions */
+  --accent:#3b82f6;      /* ACTIF : choisi, survolé, ce sur quoi on agit */
+  --ok:#22c55e;          /* JUSTE : fonctionne, équilibre atteint */
+  --no:#ef4444;          /* REFUS : dommage, hors service */
+  --saisir:#f59e0b;      /* SAISISSABLE : objet disponible à prendre */
+
+  /* Matériel */
+  --boitier:#2d3748;     /* corps d'un appareil, face avant */
+  --boitier-clair:#4a5568;
+  --panneau:#a0aec0;     /* face arrière, tôle */
+  --metal:#8a929c;       /* connecteurs, contours métalliques */
+
+  --fs:16px;
+}
+body.light{--bg:#f4f5f7;--panel:#fff;--panel2:#eceef1;--line:#b9bec6;--txt:#16181d;
+  --dim:#5b6270;--accent:#1d4ed8;--ok:#15803d;--no:#b91c1c;--saisir:#b45309;
+  --boitier:#cfd4da;--boitier-clair:#e4e8ec;--panneau:#b9bec6;--metal:#6b7280}
+body.hc{--bg:#000;--panel:#000;--panel2:#000;--line:#fff;--txt:#fff;--dim:#fff;
+  --accent:#ff0;--ok:#0f0;--no:#f55;--saisir:#ff0;--boitier:#000;--boitier-clair:#000;
+  --panneau:#000;--metal:#fff}
+
+/* ═══════════════ 2. TYPOGRAPHIE ═══════════════
+   Deux polices système, jamais d'autre. */
+:root{
+  --f-txt:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-fix:Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--f-txt);font-size:var(--fs);background:var(--bg);color:var(--txt);
+  display:flex;flex-direction:column;overflow:hidden}
+button{font-family:inherit;font-size:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-fix);text-transform:uppercase;letter-spacing:.06em}
+
+/* ─── Le bandeau supérieur, à la taille arrêtée ─── */
+header.charte{background:var(--panel);border-bottom:2px solid var(--line);
+  padding:.55rem .9rem;display:flex;align-items:center;gap:.7rem;flex-shrink:0;flex-wrap:wrap}
+.brand{flex:1;min-width:220px}
+.brand .lvl{font-size:.72rem;color:var(--dim);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.06em}
+.brand h1{font-size:clamp(1.05rem,2.8vw,1.35rem);font-weight:700;line-height:1.2}
+.brand .lec{font-size:.72rem;color:var(--accent);font-family:var(--f-fix)}
+
+/* ─── Icônes de la barre d'outils : 40 px, libellé dessous ─── */
+.tools{display:flex;gap:.35rem;align-items:flex-start}
+.ic{background:var(--panel2);border:2px solid var(--line);border-radius:5px;
+  width:44px;min-height:44px;padding:.28rem 0 .18rem;display:flex;flex-direction:column;
+  align-items:center;gap:.12rem}
+.ic:hover{border-color:var(--accent);color:var(--accent)}
+.ic svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.ic .lb{font-size:.55rem;font-family:var(--f-fix);letter-spacing:.03em;text-transform:uppercase}
+.ic.hero{background:var(--accent);color:#07131f;border-color:var(--accent);width:auto;padding:.28rem .6rem .18rem}
+.ic.hero svg{stroke:#07131f}
+.lang{display:flex;border:2px solid var(--line);border-radius:5px;overflow:hidden;height:44px}
+.lang button{background:var(--panel2);border:none;padding:0 .55rem;font-size:.78rem;
+  font-weight:700;font-family:var(--f-fix)}
+.lang button[aria-pressed="true"]{background:var(--accent);color:#07131f}
+
+main{flex:1;display:flex;min-height:0}
+nav{width:220px;flex-shrink:0;background:var(--panel);border-right:2px solid var(--line);
+  overflow-y:auto;padding:.6rem}
+nav button{display:block;width:100%;text-align:left;background:transparent;border:none;
+  padding:.4rem .5rem;font-size:.8rem;border-left:3px solid transparent}
+nav button:hover{color:var(--accent)}
+nav button[aria-current="true"]{border-left-color:var(--accent);color:var(--accent);
+  background:var(--panel2)}
+.corps{flex:1;overflow-y:auto;padding:1rem 1.2rem 3rem}
+section{margin-bottom:2.2rem;scroll-margin-top:1rem}
+section > h2{font-size:.78rem;color:var(--accent);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.07em;border-bottom:2px solid var(--line);
+  padding-bottom:.3rem;margin-bottom:.7rem}
+section h3{font-size:.94rem;margin:1rem 0 .4rem}
+p,li{font-size:.86rem;line-height:1.6;color:var(--txt);margin-bottom:.4rem}
+ul{margin-left:1.2rem}
+.dim{color:var(--dim)}
+
+/* ─── Tableaux de charte ─── */
+table{width:100%;border-collapse:collapse;margin:.5rem 0 .8rem;background:var(--panel)}
+th,td{border:1px solid var(--line);padding:.4rem .55rem;font-size:.8rem;text-align:left;
+  vertical-align:top}
+th{background:var(--panel2);color:var(--dim);font-family:var(--f-fix);font-size:.66rem;
+  text-transform:uppercase;letter-spacing:.05em}
+.pastille{width:26px;height:26px;border:2px solid var(--line);display:inline-block;
+  vertical-align:middle}
+
+/* ─── Blocs de code copiables ─── */
+.bloc{position:relative;margin:.5rem 0 1rem}
+.bloc pre{background:var(--panel2);border:2px solid var(--line);padding:.7rem .8rem;
+  overflow-x:auto;font-family:var(--f-fix);font-size:.72rem;line-height:1.5;color:var(--txt)}
+.bloc .cp{position:absolute;top:.35rem;right:.35rem;background:var(--accent);color:#07131f;
+  border:none;padding:.24rem .6rem;font-size:.64rem;font-weight:700;font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.04em}
+.bloc .cp.ok{background:var(--ok)}
+
+/* ═══════════════ 3. LES ETATS DE CLIC ═══════════════ */
+.demo-etats{display:flex;gap:.5rem;flex-wrap:wrap;margin:.6rem 0}
+.et{background:var(--panel);border:2px solid var(--line);padding:.6rem .8rem;
+  font-size:.78rem;transition:all .18s}
+.et.survol{border-color:var(--accent);transform:translateY(-2px)}
+.et.choisi{border:3px solid var(--accent);background:rgba(59,130,246,.12)}
+.et.saisir{border:2px dashed var(--saisir);color:var(--saisir)}
+.et.glisse{box-shadow:0 8px 18px rgba(0,0,0,.55);transform:scale(1.08)}
+.et.accueil{border:2px dashed var(--accent);background:rgba(59,130,246,.14)}
+.et.juste{border-color:var(--ok);color:var(--ok);animation:pulse-ok .5s ease-out}
+.et.refus{border-color:var(--no);color:var(--no);animation:secousse .24s}
+@keyframes pulse-ok{0%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}100%{box-shadow:0 0 0 14px rgba(34,197,94,0)}}
+@keyframes secousse{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+/* ═══════════════ 4. LES DEUX DECORS ═══════════════ */
+.decors{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.7rem}
+.decor{background:var(--panel);border:2px solid var(--line);padding:.7rem}
+.decor h4{font-size:.7rem;color:var(--accent);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem}
+.apercu-decor{height:132px;border:1px solid var(--line);margin-bottom:.5rem;position:relative;
+  overflow:hidden;background:var(--panel2)}
+
+/* atelier : un objet posé, en volume */
+.at-obj{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);
+  width:64px;height:92px;border-radius:8px;border:2px solid #1a202c;
+  background:linear-gradient(145deg,var(--boitier-clair),var(--boitier));
+  box-shadow:6px 6px 16px rgba(0,0,0,.35),inset -3px -3px 9px rgba(0,0,0,.45)}
+.at-sol{position:absolute;left:0;right:0;bottom:0;height:22px;background:var(--panel);
+  border-top:2px solid var(--line)}
+.at-lb{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);
+  font-size:.56rem;font-family:var(--f-fix);color:var(--dim)}
+
+/* tableau de bord : des cartes sans corps */
+.tb-grille{position:absolute;inset:8px;display:grid;grid-template-columns:1fr 1fr 1fr;
+  grid-template-rows:1fr 1fr;gap:6px}
+.tb-c{border:2px solid var(--accent);background:rgba(59,130,246,.06)}
+.tb-c:nth-child(2){border-color:var(--line)}
+.tb-c:nth-child(5){border-color:var(--line)}
+
+/* ═══════════════ 5. PORTS DE REFERENCE ═══════════════ */
+.ports{display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;
+  background:var(--panneau);border:3px solid var(--metal);padding:1rem;margin:.5rem 0}
+.pw{display:flex;flex-direction:column;align-items:center;gap:.25rem}
+.pw .pl{font-size:.62rem;font-family:var(--f-fix);color:#2d3748;font-weight:700}
+.port{box-shadow:inset 1px 1px 3px rgba(0,0,0,.7);background:#000;position:relative}
+.p-vga{width:56px;height:24px;background:#3182ce;border:2px solid silver;
+  border-radius:3px 3px 11px 11px;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;gap:2px;padding:2px 4px}
+.p-serie{width:44px;height:20px;background:#2d3748;border:2px solid silver;
+  border-radius:3px 3px 10px 10px;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;gap:2px;padding:2px 4px}
+.rang{display:flex;gap:3px}
+.br{width:3px;height:3px;border-radius:50%;background:#0a0a0a}
+.p-usb{width:38px;height:13px;background:#222;border:2px solid #cbd5e0}
+.p-rj45{width:32px;height:26px;background:#222;border:2px solid #cbd5e0;
+  clip-path:polygon(0 0,100% 0,100% 100%,75% 100%,75% 75%,25% 75%,25% 100%,0 100%)}
+.p-ps2{width:24px;height:24px;border-radius:50%;background:#111}
+.p-ps2.kb{border:4px solid #9f7aea}
+.p-ps2.ms{border:4px solid #48bb78}
+.p-jack{width:18px;height:18px;border-radius:50%;border:3px solid #111}
+.p-jack.v{background:#48bb78}.p-jack.r{background:#ed64a6}.p-jack.b{background:#4299e1}
+.p-power{width:52px;height:34px;background:#111;clip-path:polygon(10% 0,90% 0,100% 100%,0 100%);
+  display:flex;justify-content:space-evenly;align-items:center;padding:0 5px}
+.pin{width:4px;height:12px;background:silver;border-radius:2px}
+
+/* ═══════════════ 6. LE PIED DE PAGE ═══════════════ */
+.pied{background:var(--panel);border-top:2px solid var(--line);padding:.3rem;
+  text-align:center;font-size:.62rem;font-family:var(--f-fix);color:var(--dim);
+  letter-spacing:.14em;flex-shrink:0}
+
+@media (max-width:820px){
+  main{flex-direction:column}
+  nav{width:100%;border-right:none;border-bottom:2px solid var(--line);max-height:120px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="charte">
+  <div class="brand">
+    <div class="lvl">MINESEC · BANQUE DE SIMULATIONS · REFERENTIEL</div>
+    <h1>Charte visuelle et mécanique</h1>
+    <div class="lec">Version 1 — à valider</div>
+  </div>
+  <div class="tools">
+    <button class="ic hero"><svg viewBox="0 0 24 24"><path d="M4 5h7a2 2 0 012 2v12a2 2 0 00-2-2H4zM20 5h-7a2 2 0 00-2 2v12a2 2 0 012-2h7z"/></svg><span class="lb">Guide</span></button>
+    <div class="lang"><button aria-pressed="true">FR</button><button aria-pressed="false">EN</button></div>
+    <button class="ic" onclick="K.theme()"><svg id="icTh" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="lb">Contraste</span></button>
+    <button class="ic"><svg viewBox="0 0 24 24"><path d="M3 19l5-14 5 14M4.8 14h6.4"/><path d="M17 11v8M13 15h8"/></svg><span class="lb">Taille</span></button>
+    <button class="ic"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 010 7"/></svg><span class="lb">Écouter</span></button>
+    <button class="ic"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-2.6-5.9"/><path d="M20 4v5h-5"/></svg><span class="lb">Recommencer</span></button>
+  </div>
+</header>
+
+<main>
+  <nav id="nav"></nav>
+  <div class="corps" id="corps">
+
+<section id="s1"><h2>1 — La palette : une couleur, une fonction</h2>
+<p>Aucune couleur n'est décorative. Si une teinte n'exprime pas une fonction, elle ne figure pas dans la ressource.</p>
+<table>
+<tr><th>Variable</th><th></th><th>Fonction</th><th>Où elle apparaît</th></tr>
+<tr><td><code>--accent</code> #3b82f6</td><td><span class="pastille" style="background:#3b82f6"></span></td><td><b>Actif</b> — choisi, survolé, ce sur quoi on agit maintenant</td><td>interface et scène</td></tr>
+<tr><td><code>--ok</code> #22c55e</td><td><span class="pastille" style="background:#22c55e"></span></td><td><b>Juste</b> — fonctionne, branché, équilibre atteint</td><td>interface et scène</td></tr>
+<tr><td><code>--no</code> #ef4444</td><td><span class="pastille" style="background:#ef4444"></span></td><td><b>Refus</b> — dommage, hors service, incompatible</td><td>interface et scène</td></tr>
+<tr><td><code>--saisir</code> #f59e0b</td><td><span class="pastille" style="background:#f59e0b"></span></td><td><b>Saisissable</b> — objet disponible à prendre, brique de poids</td><td>scène seulement</td></tr>
+<tr><td><code>--boitier</code> #2d3748</td><td><span class="pastille" style="background:#2d3748"></span></td><td>Corps d'un appareil, face avant</td><td>scène</td></tr>
+<tr><td><code>--panneau</code> #a0aec0</td><td><span class="pastille" style="background:#a0aec0"></span></td><td>Face arrière, tôle, plan de travail</td><td>scène</td></tr>
+</table>
+<h3>La réserve qui protège le sens</h3>
+<p>Les teintes normalisées des ports — violet du PS/2 clavier, vert du PS/2 souris, bleu du VGA, vert de la sortie audio, rose du micro — <b>ne servent jamais à l'interface</b>. Ce sont des données que le manuel demande à l'élève de connaître.</p>
+<p>Le seul conflit possible est le vert. La règle qui le lève : dans la scène, une couleur <b>pleine</b> sur un connecteur est une donnée normalisée ; dans l'interface, la même couleur n'apparaît qu'en <b>contour ou en texte</b>.</p>
+<div class="bloc"><button class="cp">Copier</button><pre id="c-palette"></pre></div>
+</section>
+
+<section id="s2"><h2>2 — Typographie et tailles, bloc par bloc</h2>
+<p>Deux polices système, jamais d'autre. Aucune police distante.</p>
+<div class="bloc"><button class="cp">Copier</button><pre>--f-txt: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+--f-fix: Consolas, "Courier New", monospace;</pre></div>
+<table>
+<tr><th>Bloc</th><th>Police</th><th>Taille</th><th>Traitement</th></tr>
+<tr><td>Ligne de niveau — classe · chapitre</td><td>fixe</td><td>0,72 rem</td><td>majuscules, interlettrage .06em, couleur <code>--dim</code></td></tr>
+<tr><td>Titre de la ressource</td><td>texte</td><td>clamp(1,05 — 1,35 rem)</td><td>gras 700</td></tr>
+<tr><td>Leçons servies</td><td>fixe</td><td>0,72 rem</td><td>couleur <code>--accent</code></td></tr>
+<tr><td>Icône de barre d'outils</td><td>—</td><td>44 px, glyphe 20 px</td><td>libellé dessous, 0,55 rem, fixe</td></tr>
+<tr><td>Bandeau de consigne</td><td>texte</td><td>0,86 rem</td><td>couleur <code>--dim</code>, mots forts en <code>--txt</code></td></tr>
+<tr><td>Titre de carte du pupitre</td><td>fixe</td><td>0,68 rem</td><td>majuscules, <code>--accent</code></td></tr>
+<tr><td>Corps du pupitre</td><td>texte</td><td>0,82 rem</td><td>interligne 1,45</td></tr>
+<tr><td>Étiquette sous un port ou un objet</td><td>fixe</td><td>0,62 rem</td><td>couleur <code>--dim</code>, jamais dans l'objet</td></tr>
+<tr><td>Valeur numérique de la scène</td><td>fixe</td><td>clamp(0,85 — 1,15 rem)</td><td>gras, chiffres tabulaires</td></tr>
+<tr><td>Pied de page</td><td>fixe</td><td>0,62 rem</td><td>interlettrage .14em, <code>--dim</code></td></tr>
+</table>
+</section>
+
+<section id="s3"><h2>3 — Les états de clic</h2>
+<p>Sept états, et pas un de plus. Passez la souris sur chacun.</p>
+<div class="demo-etats">
+  <div class="et">Au repos</div>
+  <div class="et survol">Survolé</div>
+  <div class="et choisi">Choisi</div>
+  <div class="et saisir">Saisissable</div>
+  <div class="et glisse">En cours de glisser</div>
+  <div class="et accueil">Zone d'accueil active</div>
+  <div class="et juste">Juste</div>
+  <div class="et refus">Refusé</div>
+</div>
+<p class="dim">Le choix ne se marque jamais par la couleur seule : contour épaissi <b>et</b> fond teinté. Un élève qui distingue mal les couleurs doit pouvoir suivre.</p>
+<div class="bloc"><button class="cp">Copier</button><pre id="c-etats"></pre></div>
+</section>
+
+<section id="s4"><h2>4 — Les deux décors</h2>
+<p>Le décor n'est pas un goût : il dit à l'élève ce qu'il peut faire.</p>
+<div class="decors">
+  <div class="decor">
+    <h4>Atelier</h4>
+    <div class="apercu-decor">
+      <div class="at-sol"></div><div class="at-obj"></div>
+      <div class="at-lb">UNITE CENTRALE</div>
+    </div>
+    <p style="font-size:.8rem">On manipule une chose qui a un corps : on la prend, on la branche, on la retourne. Volumes pleins, ombres douces, angles arrondis à 8–12 px, étiquette sous l'objet.</p>
+    <p class="dim" style="font-size:.76rem">Ressources : poste de travail, assemblage, unité centrale, mémoires, balance, supports.</p>
+  </div>
+  <div class="decor">
+    <h4>Tableau de bord</h4>
+    <div class="apercu-decor">
+      <div class="tb-grille"><div class="tb-c"></div><div class="tb-c"></div><div class="tb-c"></div>
+      <div class="tb-c"></div><div class="tb-c"></div><div class="tb-c"></div></div>
+    </div>
+    <p style="font-size:.8rem">On explore des entités sans corps : on choisit, on lit, on classe. Cartes ou grille, contours nets, aucun volume, panneau de lecture à droite.</p>
+    <p class="dim" style="font-size:.76rem">Ressources : services d'Internet, vie privée, licences, fichiers, algorithmique, citoyenneté.</p>
+  </div>
+</div>
+</section>
+
+<section id="s5"><h2>5 — Les mécaniques d'interaction</h2>
+
+<h3>Défilement horizontal — balayage doux et flèches</h3>
+<p>Trois éléments visibles : celui du centre est net et à l'échelle 1, ceux des côtés sont réduits et atténués. Deux flèches encadrent. La transition dure 500 ms.</p>
+<div class="bloc"><button class="cp">Copier</button><pre id="c-defil"></pre></div>
+
+<h3>Ouverture d'un élément — double clic et avancée</h3>
+<p>Un objet qui s'ouvre — dossier, fichier, fenêtre — ne s'ouvre pas d'un simple clic. Le premier clic <b>choisit</b>, le second <b>ouvre</b>, et l'ouverture se joue comme une avancée rapide : l'objet grossit et s'estompe pendant que son contenu vient au premier plan. C'est le geste réel du système d'exploitation, et le manuel le prescrit pour lancer un fichier d'installation.</p>
+<div class="bloc"><button class="cp">Copier</button><pre id="c-ouvre"></pre></div>
+
+<h3>La démonstration au lancement</h3>
+<p>À l'ouverture, une démonstration se joue en boucle et montre comment se servir de la ressource. Un bandeau la déclare. Au premier clic ou à la première touche, elle s'arrête net et la scène est remise à zéro pour l'élève. L'icône <b>Recommencer</b> la relance.</p>
+<p class="dim">Deux règles apprises à nos dépens : elle ne s'interrompt <b>jamais</b> sur un simple mouvement de souris, et elle ne repart <b>jamais</b> d'elle-même après un temps d'inactivité — un élève qui réfléchit perdrait son travail.</p>
+<div class="bloc"><button class="cp">Copier</button><pre id="c-demo"></pre></div>
+</section>
+
+<section id="s6"><h2>6 — Les ports, modèle de référence</h2>
+<p>Repris de votre fichier, avec le nombre de broches corrigé.</p>
+<div class="ports" id="ports"></div>
+<p><b>Correction apportée.</b> Le modèle portait neuf broches sur deux rangées : c'est un port série. Le VGA est un HD-15, <b>quinze broches sur trois rangées</b>. La forme et les teintes sont conservées ; les deux ports figurent désormais séparément, car le manuel demande de les distinguer.</p>
+<div class="bloc"><button class="cp">Copier</button><pre id="c-ports"></pre></div>
+</section>
+
+<section id="s7"><h2>7 — Le pied de page</h2>
+<p>Une ligne, au centre, dans toutes les ressources.</p>
+<div class="bloc"><button class="cp">Copier</button><pre>&lt;div class="pied"&gt;MINESEC — LAB&lt;/div&gt;</pre></div>
+</section>
+
+<section id="s8"><h2>8 — Le texte à coller dans les prompts</h2>
+<p>À joindre à toute commande de production, après le bloc de contraintes.</p>
+<div class="bloc"><button class="cp">Copier</button><pre id="c-prompt"></pre></div>
+</section>
+
+  </div>
+</main>
+
+<div class="pied">MINESEC — LAB</div>
+
+<script>
+"use strict";
+
+const CODES = {
+"c-palette":`:root{
+  --bg:#121416; --panel:#1a1d21; --panel2:#25282d; --line:#3f454d;
+  --txt:#e8ebee; --dim:#98a1ab;
+  --accent:#3b82f6;   /* ACTIF   : choisi, survolé, ce sur quoi on agit */
+  --ok:#22c55e;       /* JUSTE   : fonctionne, équilibre atteint */
+  --no:#ef4444;       /* REFUS   : dommage, hors service */
+  --saisir:#f59e0b;   /* SAISISSABLE : objet disponible à prendre */
+  --boitier:#2d3748; --boitier-clair:#4a5568;
+  --panneau:#a0aec0; --metal:#8a929c;
+  --fs:16px;
+}
+body.light{--bg:#f4f5f7;--panel:#fff;--panel2:#eceef1;--line:#b9bec6;--txt:#16181d;
+  --dim:#5b6270;--accent:#1d4ed8;--ok:#15803d;--no:#b91c1c;--saisir:#b45309;
+  --boitier:#cfd4da;--boitier-clair:#e4e8ec;--panneau:#b9bec6;--metal:#6b7280}
+body.hc{--bg:#000;--panel:#000;--panel2:#000;--line:#fff;--txt:#fff;--dim:#fff;
+  --accent:#ff0;--ok:#0f0;--no:#f55;--saisir:#ff0;--boitier:#000;--panneau:#000;--metal:#fff}`,
+
+"c-etats":`/* Sept états, jamais la couleur seule : contour ET fond. */
+.obj{border:2px solid var(--line);transition:all .18s}
+.obj:hover        {border-color:var(--accent);transform:translateY(-2px)}
+.obj.choisi       {border:3px solid var(--accent);background:rgba(59,130,246,.12)}
+.obj.saisissable  {border:2px dashed var(--saisir);color:var(--saisir)}
+.obj.glisse       {box-shadow:0 8px 18px rgba(0,0,0,.55);transform:scale(1.08);cursor:grabbing}
+.zone.accueil     {border:2px dashed var(--accent);background:rgba(59,130,246,.14)}
+.obj.juste        {border-color:var(--ok);color:var(--ok);animation:pulse-ok .5s ease-out}
+.obj.refus        {border-color:var(--no);color:var(--no);animation:secousse .24s}
+
+@keyframes pulse-ok{0%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}
+                    100%{box-shadow:0 0 0 14px rgba(34,197,94,0)}}
+@keyframes secousse{0%,100%{transform:translateX(0)}
+                    25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}`,
+
+"c-defil":`/* Balayage doux : le centre net, les côtés réduits et atténués. */
+.piste{position:relative;display:flex;align-items:center;justify-content:center;
+       overflow:hidden;min-height:150px}
+.item{position:absolute;transition:all .5s cubic-bezier(.34,1.1,.64,1);
+      opacity:0;transform:translateX(120px) scale(.6);pointer-events:none}
+.item.actif  {opacity:1;  transform:translateX(0)      scale(1);   pointer-events:auto;z-index:10}
+.item.avant  {opacity:.4; transform:translateX(-210px) scale(.72)}
+.item.apres  {opacity:.4; transform:translateX(210px)  scale(.72)}
+
+.fleche{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;
+        border-radius:50%;background:var(--accent);color:#07131f;border:none;z-index:20}
+.fleche:hover{transform:translateY(-50%) scale(1.1)}
+.fleche:disabled{background:var(--line);cursor:not-allowed;transform:translateY(-50%)}
+.fleche.g{left:14px}  .fleche.d{right:14px}
+
+/* Balayage au doigt : même effet que les flèches. */
+piste.addEventListener("pointerdown", e => { depart = e.clientX; });
+piste.addEventListener("pointerup",   e => {
+  const d = e.clientX - depart;
+  if (Math.abs(d) > 45) d < 0 ? suivant() : precedent();
+});`,
+
+"c-ouvre":`/* Le premier clic choisit, le second ouvre.
+   L'ouverture se joue comme une avancée : l'objet grossit et s'estompe,
+   son contenu vient au premier plan. */
+.ouvrable.choisi{outline:3px solid var(--accent);outline-offset:2px}
+.ouvrable.ouvre {animation:avancee .34s cubic-bezier(.34,1.2,.64,1) forwards}
+@keyframes avancee{
+  0%  {transform:scale(1);    opacity:1}
+  60% {transform:scale(1.35); opacity:.55}
+  100%{transform:scale(1.9);  opacity:0}
+}
+.contenu.entre{animation:venir .3s cubic-bezier(.34,1.2,.64,1)}
+@keyframes venir{0%{transform:scale(.86);opacity:0}100%{transform:scale(1);opacity:1}}
+
+let dernier = null, quand = 0;
+function surObjet(el){
+  const t = performance.now();
+  if (dernier === el && t - quand < 450) { ouvrir(el); dernier = null; return; }
+  choisir(el); dernier = el; quand = t;
+}
+function ouvrir(el){
+  el.classList.add("ouvre");
+  setTimeout(() => { el.classList.remove("ouvre"); afficherContenu(el); }, 340);
+}`,
+
+"c-demo":`/* ── SOCLE DE DEMONSTRATION ────────────────────────────────
+   Se lance à l'ouverture, tourne en boucle, se déclare par un
+   bandeau, s'arrête net au premier geste, et se relance par
+   l'icône Recommencer.
+
+   Deux règles apprises à nos dépens :
+   - elle ne s'interrompt JAMAIS sur un simple mouvement de souris ;
+   - elle ne repart JAMAIS d'elle-même après un temps d'inactivité
+     (un élève qui réfléchit perdrait son travail).
+   ────────────────────────────────────────────────────────── */
+const DEMO = {
+  active:false, arretee:false, pas:0,
+
+  pause(ms){ return new Promise(r => setTimeout(() => r(this.active), ms)); },
+
+  async lancer(){
+    if(this.active) return;
+    this.active = true; this.arretee = false;
+    document.getElementById("bandeau-demo").classList.add("on");
+    while(this.active){
+      R.reset();
+      /* … la suite des gestes montrés, chacun suivi de :
+         if(!await this.pause(1200)) break;
+         Terminer sur l'état réussi, tenu 3 secondes. */
+      if(!await this.pause(3000)) break;
+    }
+  },
+
+  arreter(){
+    if(!this.active) return;
+    this.active = false; this.arretee = true;
+    document.getElementById("bandeau-demo").classList.remove("on");
+    R.reset();                       /* la scène est rendue vierge à l'élève */
+  },
+
+  relancer(){ this.arretee = false; this.lancer(); }
+};
+
+/* Interception : le clic, la touche et le toucher arrêtent. Pas le survol. */
+["pointerdown","keydown","touchstart"].forEach(ev =>
+  document.addEventListener(ev, e => {
+    if(e.type === "keydown" && ["Tab","Shift","Control","Alt","Meta"].includes(e.key)) return;
+    DEMO.arreter();
+  }, {passive:true})
+);
+
+/* L'icône Recommencer relance la démonstration. */
+document.getElementById("btn-reset").addEventListener("click", () => {
+  R.reset(); setTimeout(() => DEMO.relancer(), 250);
+});
+
+window.addEventListener("load", () => setTimeout(() => DEMO.lancer(), 900));`,
+
+"c-ports":`/* Ports — teintes normalisées, reprises du modèle de référence.
+   Ces couleurs sont des DONNEES : elles ne servent jamais à l'interface. */
+.port{box-shadow:inset 1px 1px 3px rgba(0,0,0,.7);background:#000}
+
+/* VGA — HD-15 : quinze broches sur TROIS rangées */
+.p-vga{width:56px;height:24px;background:#3182ce;border:2px solid silver;
+       border-radius:3px 3px 11px 11px}
+/* rangées : 5 + 5 + 5 */
+
+/* Série — DB-9 : neuf broches sur DEUX rangées */
+.p-serie{width:44px;height:20px;background:#2d3748;border:2px solid silver;
+         border-radius:3px 3px 10px 10px}
+/* rangées : 5 + 4 */
+
+.p-usb  {width:38px;height:13px;background:#222;border:2px solid #cbd5e0}
+.p-rj45 {width:32px;height:26px;background:#222;border:2px solid #cbd5e0;
+         clip-path:polygon(0 0,100% 0,100% 100%,75% 100%,75% 75%,25% 75%,25% 100%,0 100%)}
+.p-ps2      {width:24px;height:24px;border-radius:50%;background:#111}
+.p-ps2.kb   {border:4px solid #9f7aea}   /* violet — clavier */
+.p-ps2.ms   {border:4px solid #48bb78}   /* vert   — souris  */
+.p-jack     {width:18px;height:18px;border-radius:50%;border:3px solid #111}
+.p-jack.v   {background:#48bb78}         /* vert  — sortie audio */
+.p-jack.r   {background:#ed64a6}         /* rose  — microphone   */
+.p-jack.b   {background:#4299e1}         /* bleu  — entrée ligne */
+.p-power{width:52px;height:34px;background:#111;
+         clip-path:polygon(10% 0,90% 0,100% 100%,0 100%)}`,
+
+"c-prompt":`CHARTE VISUELLE ET MECANIQUE — A RESPECTER SANS EXCEPTION
+
+COULEURS. Une couleur, une fonction, et rien d'autre.
+  #3b82f6 actif (choisi, survolé)   #22c55e juste   #ef4444 refus
+  #f59e0b objet saisissable          #2d3748 corps d'appareil
+  #a0aec0 face arrière et tôle
+Les teintes normalisées des ports sont RESERVEES et ne servent jamais à
+l'interface : violet PS/2 clavier, vert PS/2 souris, bleu VGA, vert sortie
+audio, rose microphone. Dans la scène une couleur pleine sur un connecteur
+est une donnée ; dans l'interface la même couleur n'apparaît qu'en contour.
+
+POLICES. Deux, système, jamais d'autre :
+  texte  : "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif
+  fixe   : Consolas, "Courier New", monospace
+Ligne de niveau 0,72 rem fixe majuscules ; titre 1,05 à 1,35 rem gras ;
+leçons 0,72 rem fixe accent ; icônes de barre d'outils 44 px avec libellé
+dessous en 0,55 rem ; consigne 0,86 rem ; titre de carte 0,68 rem fixe
+accent ; corps du pupitre 0,82 rem ; étiquette d'objet 0,62 rem fixe ;
+valeur numérique en chasse fixe et gras ; pied de page 0,62 rem.
+
+DECOR. Deux familles, et le décor dit ce que l'élève peut faire.
+  ATELIER — on manipule une chose qui a un corps : volumes pleins, ombres
+  douces, angles arrondis 8 à 12 px, étiquette sous l'objet.
+  TABLEAU DE BORD — on explore des entités sans corps : cartes ou grille,
+  contours nets, aucun volume, panneau de lecture à droite.
+
+ETATS. Sept, et le choix ne se marque jamais par la couleur seule : contour
+épaissi ET fond teinté. Repos, survolé, choisi, saisissable, en cours de
+glisser, zone d'accueil active, juste, refusé.
+
+MECANIQUES.
+  Défilement horizontal : balayage doux, l'élément central net à l'échelle 1,
+  les voisins réduits à 0,72 et atténués à 0,4 ; deux flèches rondes de 42 px ;
+  transition 500 ms ; le balayage au doigt produit le même effet.
+  Ouverture d'un élément : le premier clic choisit, le second ouvre ;
+  l'ouverture se joue comme une avancée rapide, l'objet grossit et s'estompe
+  pendant que son contenu vient au premier plan.
+  Démonstration au lancement : elle se joue en boucle, un bandeau la déclare,
+  elle s'arrête net au premier clic ou à la première touche et remet la scène
+  à zéro, et l'icône Recommencer la relance. Elle ne s'interrompt jamais sur
+  un simple mouvement de souris et ne repart jamais d'elle-même.
+
+PIED DE PAGE. Une ligne au centre, dans toutes les ressources :
+  MINESEC — LAB`
+};
+
+/* Les ports de référence, dessinés avec le bon nombre de broches. */
+const PORTS_DEMO = [
+  {c:"vga",   l:"VGA (Vidéo)",    rangs:[5,5,5]},
+  {c:"serie", l:"Série",          rangs:[5,4]},
+  {c:"usb",   l:"USB"},
+  {c:"rj45",  l:"Réseau RJ45"},
+  {c:"ps2kb", l:"PS/2 Clavier"},
+  {c:"ps2ms", l:"PS/2 Souris"},
+  {c:"jv",    l:"Sortie audio"},
+  {c:"jr",    l:"Micro"},
+  {c:"jb",    l:"Entrée ligne"},
+  {c:"pw",    l:"Alimentation"}
+];
+
+const K = {
+  init(){
+    /* code des blocs */
+    for(const id in CODES){
+      const el = document.getElementById(id);
+      if(el) el.textContent = CODES[id];
+    }
+    document.querySelectorAll(".bloc .cp").forEach(b=>{
+      b.addEventListener("click", ()=> this.copier(b));
+    });
+    this.ports();
+    this.sommaire();
+  },
+
+  ports(){
+    const z = document.getElementById("ports"); z.innerHTML = "";
+    PORTS_DEMO.forEach(p=>{
+      const w = document.createElement("div"); w.className = "pw";
+      let h = "";
+      if(p.c === "vga" || p.c === "serie"){
+        h = `<div class="port p-${p.c}">` +
+            p.rangs.map(n=>`<div class="rang">`+
+              Array.from({length:n}, ()=>`<span class="br"></span>`).join("")+`</div>`).join("") +
+            `</div>`;
+      }
+      else if(p.c === "usb")   h = `<div class="port p-usb"></div>`;
+      else if(p.c === "rj45")  h = `<div class="port p-rj45"></div>`;
+      else if(p.c === "ps2kb") h = `<div class="p-ps2 kb"></div>`;
+      else if(p.c === "ps2ms") h = `<div class="p-ps2 ms"></div>`;
+      else if(p.c === "jv")    h = `<div class="p-jack v"></div>`;
+      else if(p.c === "jr")    h = `<div class="p-jack r"></div>`;
+      else if(p.c === "jb")    h = `<div class="p-jack b"></div>`;
+      else if(p.c === "pw")    h = `<div class="port p-power"><span class="pin"></span><span class="pin"></span><span class="pin"></span></div>`;
+      w.innerHTML = h + `<span class="pl">${p.l}</span>`;
+      z.appendChild(w);
+    });
+  },
+
+  sommaire(){
+    const n = document.getElementById("nav"); n.innerHTML = "";
+    document.querySelectorAll("section").forEach(s=>{
+      const b = document.createElement("button");
+      b.textContent = s.querySelector("h2").textContent;
+      b.onclick = ()=>{
+        s.scrollIntoView({behavior:"smooth", block:"start"});
+        n.querySelectorAll("button").forEach(x=>x.removeAttribute("aria-current"));
+        b.setAttribute("aria-current","true");
+      };
+      n.appendChild(b);
+    });
+  },
+
+  copier(btn){
+    const pre = btn.parentElement.querySelector("pre");
+    const zone = document.createElement("textarea");
+    zone.value = pre.textContent;
+    zone.style.position = "fixed"; zone.style.opacity = "0";
+    document.body.appendChild(zone); zone.select();
+    let fait = false;
+    try{ fait = document.execCommand("copy"); }catch(e){}
+    document.body.removeChild(zone);
+    if(!fait && navigator.clipboard) navigator.clipboard.writeText(pre.textContent).catch(()=>{});
+    btn.textContent = "Copié"; btn.classList.add("ok");
+    setTimeout(()=>{ btn.textContent = "Copier"; btn.classList.remove("ok"); }, 1500);
+  },
+
+  theme(){
+    const b = document.body;
+    if(b.classList.contains("light")){ b.classList.remove("light"); b.classList.add("hc"); }
+    else if(b.classList.contains("hc")){ b.classList.remove("hc"); }
+    else { b.classList.add("light"); }
+    document.getElementById("icTh").innerHTML = b.classList.contains("light")
+      ? '<path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/>'
+      : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  }
+};
+
+window.addEventListener("load", ()=> K.init());
+</script>
+</body>
+</html>

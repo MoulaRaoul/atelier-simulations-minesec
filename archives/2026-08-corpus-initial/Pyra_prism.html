@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pyramide & Prisme — Géométrie 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0e17; --panel: #0f1520; --card: #151d2e;
+    --border: #243049; --fg: #e2e8f0; --muted: #5a6a84;
+    --accent: #f59e0b; --accent-dim: #b47408;
+    --pyramid: #f97316; --pyramid-edge: #fdba74; --pyramid-face: rgba(249,115,22,0.25);
+    --prism: #14b8a6; --prism-edge: #5eead4; --prism-face: rgba(20,184,166,0.25);
+    --radius: 10px;
+  }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--fg); font-family: 'Space Grotesk', sans-serif; }
+  #app { display: flex; height: 100vh; }
+
+  /* ===== PANNEAU GAUCHE ===== */
+  #panel {
+    width: 340px; min-width: 300px; background: var(--panel);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    padding: 28px 22px; gap: 24px; overflow-y: auto; z-index: 10;
+  }
+  .panel-header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .panel-header .subtitle { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 400; }
+
+  section h2 {
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--muted); margin-bottom: 14px;
+  }
+
+  /* Grille des formes */
+  #shape-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .shape-btn {
+    aspect-ratio: 1; border: 1.5px solid var(--border); border-radius: var(--radius);
+    background: var(--card); cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.25s ease; position: relative; overflow: hidden;
+  }
+  .shape-btn svg { width: 32px; height: 32px; color: var(--muted); transition: color 0.25s; }
+  .shape-btn span { font-size: 10px; font-weight: 500; color: var(--muted); transition: color 0.25s; }
+  .shape-btn:hover { border-color: var(--accent-dim); background: #1a2540; }
+  .shape-btn:hover svg, .shape-btn:hover span { color: var(--fg); }
+  .shape-btn.active {
+    border-color: var(--accent); background: rgba(245,158,11,0.08);
+    box-shadow: 0 0 20px rgba(245,158,11,0.1);
+  }
+  .shape-btn.active svg, .shape-btn.active span { color: var(--accent); }
+  .shape-btn.free-btn { grid-column: span 1; }
+  .shape-btn.free-btn svg { width: 28px; height: 28px; }
+
+  /* Zone dessin libre */
+  #free-draw-area { margin-top: 14px; display: none; }
+  #free-draw-area.visible { display: block; animation: fadeSlideIn 0.3s ease; }
+  #draw-canvas {
+    width: 100%; aspect-ratio: 1; border: 1.5px solid var(--border);
+    border-radius: var(--radius); cursor: crosshair; background: var(--card);
+    display: block;
+  }
+  #draw-buttons { display: flex; gap: 8px; margin-top: 10px; }
+  #draw-buttons button {
+    flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--card); color: var(--fg); font-family: inherit;
+    font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+  }
+  #draw-buttons button:hover { border-color: var(--accent-dim); }
+  #draw-buttons button:disabled { opacity: 0.35; cursor: not-allowed; }
+  #draw-buttons button.valid-btn:not(:disabled) {
+    background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600;
+  }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+
+  /* Section hauteur */
+  #height-section { transition: opacity 0.4s; }
+  #height-section.disabled { opacity: 0.3; pointer-events: none; }
+  #height-control { display: flex; align-items: center; gap: 16px; }
+  #height-track {
+    width: 8px; height: 180px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 4px; position: relative; cursor: pointer; flex-shrink: 0;
+  }
+  #height-fill {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, var(--accent-dim), var(--accent));
+    border-radius: 3px; transition: height 0.05s linear;
+  }
+  #height-thumb {
+    position: absolute; left: 50%; width: 22px; height: 22px;
+    background: var(--accent); border: 2px solid var(--bg);
+    border-radius: 50%; transform: translate(-50%, 50%);
+    cursor: grab; transition: box-shadow 0.2s, transform 0.15s;
+    box-shadow: 0 0 8px rgba(245,158,11,0.3);
+    bottom: 0;
+  }
+  #height-thumb:hover { box-shadow: 0 0 16px rgba(245,158,11,0.5); transform: translate(-50%, 50%) scale(1.15); }
+  #height-thumb.dragging { cursor: grabbing; box-shadow: 0 0 20px rgba(245,158,11,0.6); transform: translate(-50%, 50%) scale(1.2); }
+  #height-display { display: flex; flex-direction: column; gap: 2px; }
+  #height-display .label { font-size: 11px; color: var(--muted); }
+  #height-value { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 500; color: var(--accent); }
+
+  /* Bouton reset */
+  #btn-reset {
+    margin-top: auto; padding: 10px; border: 1px solid var(--border);
+    border-radius: 8px; background: transparent; color: var(--muted);
+    font-family: inherit; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; display: none;
+  }
+  #btn-reset.visible { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  #btn-reset:hover { border-color: #ef4444; color: #ef4444; }
+
+  /* ===== VUE 3D ===== */
+  #views { flex: 1; position: relative; background: var(--bg); overflow: hidden; }
+  #scene-canvas { width: 100%; height: 100%; display: block; }
+  .view-label {
+    position: absolute; left: 16px; padding: 6px 14px;
+    background: rgba(15,21,32,0.85); border: 1px solid var(--border);
+    border-radius: 6px; font-size: 13px; font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+    backdrop-filter: blur(8px); pointer-events: none;
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .view-label.visible { opacity: 1; }
+  .view-label .dot { width: 8px; height: 8px; border-radius: 50%; }
+  #label-pyramid { top: 12px; }
+  #label-prism { bottom: 12px; }
+  #view-divider {
+    position: absolute; left: 0; right: 0; top: 50%;
+    height: 1px; background: var(--border); pointer-events: none;
+    opacity: 0; transition: opacity 0.4s;
+  }
+  #view-divider.visible { opacity: 1; }
+  #empty-hint {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 15px; color: var(--muted); pointer-events: none;
+    transition: opacity 0.5s;
+  }
+  #empty-hint.hidden { opacity: 0; }
+
+  /* Indicateur de vue */
+  #view-indicator {
+    position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+    padding: 6px 12px; background: rgba(15,21,32,0.85);
+    border: 1px solid var(--border); border-radius: 6px;
+    font-size: 11px; color: var(--muted); backdrop-filter: blur(8px);
+    pointer-events: none; opacity: 0; transition: opacity 0.3s;
+    font-weight: 500;
+  }
+  #view-indicator.visible { opacity: 1; }
+
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 768px) {
+    #app { flex-direction: column; }
+    #panel { width: 100%; min-width: auto; max-height: 45vh; border-right: none; border-bottom: 1px solid var(--border); padding: 16px; gap: 16px; }
+    #shape-grid { grid-template-columns: repeat(5, 1fr); }
+    .shape-btn span { display: none; }
+    #height-track { height: 100px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="panel-header">
+      <h1>Géométrie 3D</h1>
+      <p class="subtitle">Comprendre pyramide et prisme</p>
+    </div>
+
+    <section id="base-section">
+      <h2>1. Choisir la base</h2>
+      <div id="shape-grid">
+        <button class="shape-btn" data-shape="triangle">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+            <polygon points="20,6 6,34 34,34"/>
+          </svg>
+          <span>Triangle</span>
+        </button>
+        <button class="shape-btn" data-shape="square">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+            <rect x="7" y="7" width="26" height="26"/>
+          </svg>
+          <span>Carré</span>
+        </button>
+        <button class="shape-btn" data-shape="pentagon">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+            <polygon points="20,5 36,16 30,34 10,34 4,16"/>
+          </svg>
+          <span>Pentagone</span>
+        </button>
+        <button class="shape-btn" data-shape="hexagon">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+            <polygon points="20,4 35,12 35,28 20,36 5,28 5,12"/>
+          </svg>
+          <span>Hexagone</span>
+        </button>
+        <button class="shape-btn" data-shape="circle">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="20" cy="20" r="14"/>
+          </svg>
+          <span>Cercle</span>
+        </button>
+        <button class="shape-btn free-btn" data-shape="free">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 32 Q12 8, 20 18 Q28 28, 32 8"/>
+          </svg>
+          <span>Libre</span>
+        </button>
+      </div>
+      <div id="free-draw-area">
+        <canvas id="draw-canvas" width="440" height="440"></canvas>
+        <div id="draw-buttons">
+          <button id="btn-clear-draw"><i class="fas fa-eraser"></i> Effacer</button>
+          <button id="btn-validate-draw" class="valid-btn" disabled><i class="fas fa-check"></i> Valider</button>
+        </div>
+        <p class="hint">Cliquez pour placer des sommets, puis reliez au premier point pour fermer.</p>
+      </div>
+    </section>
+
+    <section id="height-section" class="disabled">
+      <h2>2. Ajuster la hauteur</h2>
+      <div id="height-control">
+        <div id="height-track">
+          <div id="height-fill" style="height:0%"></div>
+          <div id="height-thumb"></div>
+        </div>
+        <div id="height-display">
+          <span class="label">hauteur</span>
+          <span id="height-value">0.00</span>
+        </div>
+      </div>
+      <p class="hint">Attrapez le curseur et glissez. Relâchez pour voir en 3D.</p>
+    </section>
+
+    <button id="btn-reset"><i class="fas fa-rotate-left"></i> Réinitialiser</button>
+  </aside>
+
+  <main id="views">
+    <canvas id="scene-canvas"></canvas>
+    <div class="view-label" id="label-pyramid"><span class="dot" style="background:var(--pyramid)"></span>Pyramide</div>
+    <div class="view-label" id="label-prism"><span class="dot" style="background:var(--prism)"></span>Prisme</div>
+    <div id="view-divider"></div>
+    <div id="empty-hint">Choisissez une base pour commencer</div>
+    <div id="view-indicator"></div>
+  </main>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+// =============================================
+// ÉTAT DE L'APPLICATION
+// =============================================
+const state = {
+  baseShape: null,       // 'triangle' | 'square' | 'pentagon' | 'hexagon' | 'circle' | 'free'
+  baseVertices: [],      // [{x, z}, ...]
+  height: 0,
+  maxHeight: 3.5,
+  isDragging: false,
+  viewMode: 'initial',   // 'initial' | 'top' | 'front' | 'iso'
+  phase: 'select-base'   // 'select-base' | 'base-selected' | 'drawing-free'
+};
+
+// =============================================
+// DÉFINITIONS DES FORMES
+// =============================================
+function regularPolygon(n, radius) {
+  const verts = [];
+  for (let i = 0; i < n; i++) {
+    const a = (2 * Math.PI * i / n) - Math.PI / 2;
+    verts.push({ x: radius * Math.cos(a), z: radius * Math.sin(a) });
+  }
+  return verts;
+}
+
+const SHAPES = {
+  triangle: regularPolygon(3, 1.0),
+  square: [
+    { x: -0.8, z: -0.8 }, { x: 0.8, z: -0.8 },
+    { x: 0.8, z: 0.8 }, { x: -0.8, z: 0.8 }
+  ],
+  pentagon: regularPolygon(5, 0.9),
+  hexagon: regularPolygon(6, 0.85),
+  circle: regularPolygon(36, 0.85)
+};
+
+// =============================================
+// ÉLÉMENTS DOM
+// =============================================
+const viewsEl = document.getElementById('views');
+const canvasEl = document.getElementById('scene-canvas');
+const emptyHint = document.getElementById('empty-hint');
+const labelPyramid = document.getElementById('label-pyramid');
+const labelPrism = document.getElementById('label-prism');
+const viewDivider = document.getElementById('view-divider');
+const viewIndicator = document.getElementById('view-indicator');
+const heightSection = document.getElementById('height-section');
+const heightTrack = document.getElementById('height-track');
+const heightFill = document.getElementById('height-fill');
+const heightThumb = document.getElementById('height-thumb');
+const heightValue = document.getElementById('height-value');
+const btnReset = document.getElementById('btn-reset');
+const freeDrawArea = document.getElementById('free-draw-area');
+const drawCanvas = document.getElementById('draw-canvas');
+const drawCtx = drawCanvas.getContext('2d');
+const btnClearDraw = document.getElementById('btn-clear-draw');
+const btnValidateDraw = document.getElementById('btn-validate-draw');
+const shapeBtns = document.querySelectorAll('.shape-btn');
+
+// =============================================
+// DESSIN LIBRE
+// =============================================
+let freePoints = [];
+let freeClosed = false;
+let freeHoverFirst = false;
+
+function renderDrawCanvas() {
+  const w = drawCanvas.width, h = drawCanvas.height;
+  drawCtx.clearRect(0, 0, w, h);
+
+  // Grille subtile
+  drawCtx.strokeStyle = '#1e293b';
+  drawCtx.lineWidth = 1;
+  const step = w / 10;
+  for (let i = 0; i <= 10; i++) {
+    drawCtx.beginPath(); drawCtx.moveTo(i * step, 0); drawCtx.lineTo(i * step, h); drawCtx.stroke();
+    drawCtx.beginPath(); drawCtx.moveTo(0, i * step); drawCtx.lineTo(w, i * step); drawCtx.stroke();
+  }
+
+  if (freePoints.length === 0) return;
+
+  // Lignes
+  drawCtx.strokeStyle = '#f59e0b';
+  drawCtx.lineWidth = 2.5;
+  drawCtx.beginPath();
+  drawCtx.moveTo(freePoints[0].x, freePoints[0].y);
+  for (let i = 1; i < freePoints.length; i++) drawCtx.lineTo(freePoints[i].x, freePoints[i].y);
+  if (freeClosed) drawCtx.lineTo(freePoints[0].x, freePoints[0].y);
+  drawCtx.stroke();
+
+  // Points
+  freePoints.forEach((p, i) => {
+    drawCtx.beginPath();
+    drawCtx.arc(p.x, p.y, i === 0 ? 7 : 5, 0, Math.PI * 2);
+    drawCtx.fillStyle = i === 0 ? '#f59e0b' : '#e2e8f0';
+    drawCtx.fill();
+    if (i === 0 && !freeClosed) {
+      drawCtx.strokeStyle = '#f59e0b';
+      drawCtx.lineWidth = 1.5;
+      drawCtx.stroke();
+    }
+  });
+
+  // Indicateur de fermeture
+  if (freePoints.length >= 3 && !freeClosed && freeHoverFirst) {
+    drawCtx.beginPath();
+    drawCtx.arc(freePoints[0].x, freePoints[0].y, 16, 0, Math.PI * 2);
+    drawCtx.strokeStyle = 'rgba(245,158,11,0.6)';
+    drawCtx.lineWidth = 2;
+    drawCtx.stroke();
+  }
+}
+
+function getDrawPos(e) {
+  const rect = drawCanvas.getBoundingClientRect();
+  const scaleX = drawCanvas.width / rect.width;
+  const scaleY = drawCanvas.height / rect.height;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+}
+
+function dist(a, b) { return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2); }
+
+drawCanvas.addEventListener('click', (e) => {
+  if (freeClosed) return;
+  const p = getDrawPos(e);
+  if (freePoints.length >= 3 && dist(p, freePoints[0]) < 20) {
+    freeClosed = true;
+    btnValidateDraw.disabled = false;
+  } else {
+    freePoints.push(p);
+  }
+  renderDrawCanvas();
+});
+
+drawCanvas.addEventListener('mousemove', (e) => {
+  if (freeClosed || freePoints.length < 3) { freeHoverFirst = false; renderDrawCanvas(); return; }
+  freeHoverFirst = dist(getDrawPos(e), freePoints[0]) < 20;
+  renderDrawCanvas();
+});
+
+btnClearDraw.addEventListener('click', () => {
+  freePoints = []; freeClosed = false; freeHoverFirst = false;
+  btnValidateDraw.disabled = true;
+  renderDrawCanvas();
+});
+
+btnValidateDraw.addEventListener('click', () => {
+  if (!freeClosed || freePoints.length < 3) return;
+  // Normaliser les points dessinés vers un polygone 3D
+  const cx = freePoints.reduce((s, p) => s + p.x, 0) / freePoints.length;
+  const cy = freePoints.reduce((s, p) => s + p.y, 0) / freePoints.length;
+  const centered = freePoints.map(p => ({ x: p.x - cx, y: p.y - cy }));
+  const maxD = Math.max(...centered.map(p => Math.sqrt(p.x * p.x + p.y * p.y)));
+  if (maxD < 5) return;
+  const scale = 0.9 / maxD;
+  state.baseVertices = centered.map(p => ({ x: p.x * scale, z: -p.y * scale }));
+  state.baseShape = 'free';
+  state.height = 0;
+  state.phase = 'base-selected';
+  freeDrawArea.classList.remove('visible');
+  activateBaseSelected();
+});
+
+// =============================================
+// CONSTRUCTEURS DE GÉOMÉTRIE
+// =============================================
+function buildBaseOnlyGeo(verts) {
+  const positions = [];
+  const indices = [];
+  const n = verts.length;
+  // Centre du polygone
+  const cx = verts.reduce((s, v) => s + v.x, 0) / n;
+  const cz = verts.reduce((s, v) => s + v.z, 0) / n;
+
+  for (const v of verts) positions.push(v.x, 0.001, v.z); // léger décalage Y pour éviter z-fighting
+  positions.push(cx, 0.001, cz);
+
+  const ci = n;
+  for (let i = 0; i < n; i++) {
+    indices.push(i, (i + 1) % n, ci);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function buildPyramidGeo(verts, h) {
+  const n = verts.length;
+  const cx = verts.reduce((s, v) => s + v.x, 0) / n;
+  const cz = verts.reduce((s, v) => s + v.z, 0) / n;
+  const positions = [];
+  const indices = [];
+
+  // Sommets de la base (0..n-1)
+  for (const v of verts) positions.push(v.x, 0, v.z);
+  // Sommet (n)
+  positions.push(cx, h, cz);
+
+  // Face de base (éventail depuis sommet 0)
+  for (let i = 1; i < n - 1; i++) indices.push(0, i + 1, i);
+
+  // Faces latérales
+  const apex = n;
+  for (let i = 0; i < n; i++) indices.push(i, (i + 1) % n, apex);
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function buildPrismGeo(verts, h) {
+  const n = verts.length;
+  const positions = [];
+  const indices = [];
+
+  // Base basse (0..n-1)
+  for (const v of verts) positions.push(v.x, 0, v.z);
+  // Base haute (n..2n-1)
+  for (const v of verts) positions.push(v.x, h, v.z);
+
+  // Face basse
+  for (let i = 1; i < n - 1; i++) indices.push(0, i + 1, i);
+  // Face haute
+  for (let i = 1; i < n - 1; i++) indices.push(n, n + i, n + i + 1);
+  // Faces latérales
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    indices.push(i, n + i, n + j);
+    indices.push(i, n + j, j);
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// =============================================
+// SCÈNES THREE.JS
+// =============================================
+const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: false });
+renderer.setClearColor(0x0a0e17, 1);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+function createScene() {
+  const scene = new THREE.Scene();
+  const group = new THREE.Group();
+  scene.add(group);
+
+  // Grille
+  const grid = new THREE.GridHelper(6, 12, 0x243049, 0x151d2e);
+  grid.material.transparent = true;
+  grid.material.opacity = 0.5;
+  scene.add(grid);
+
+  // Lumières
+  scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.6);
+  dir.position.set(4, 6, 4);
+  scene.add(dir);
+  const dir2 = new THREE.DirectionalLight(0x8899bb, 0.3);
+  dir2.position.set(-3, 2, -2);
+  scene.add(dir2);
+
+  // Caméra orthographique (sera configurée au resize)
+  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 50);
+
+  return { scene, group, camera };
+}
+
+const pyramid = createScene();
+const prism = createScene();
+
+// État de la caméra (pour le lerp)
+const camState = {
+  pyrPos: new THREE.Vector3(3, 3, 3),
+  pyrTarget: new THREE.Vector3(0, 0, 0),
+  priPos: new THREE.Vector3(3, 3, 3),
+  priTarget: new THREE.Vector3(0, 0, 0)
+};
+
+function getCameraConfig(mode, h) {
+  const hh = Math.max(h, 0.3);
+  switch (mode) {
+    case 'initial': return { pos: [3, 3, 3], target: [0, 0, 0] };
+    case 'top':     return { pos: [1.8, 4.5, 1.8], target: [0, 0, 0] };
+    case 'front':   return { pos: [0, hh / 2, 10], target: [0, hh / 2, 0] };
+    case 'iso':     return { pos: [4.5, hh / 2 + 2, 4.5], target: [0, hh / 2, 0] };
+    default:        return { pos: [3, 3, 3], target: [0, 0, 0] };
+  }
+}
+
+// =============================================
+// MISE À JOUR DES MAILLES
+// =============================================
+function clearGroup(group) {
+  while (group.children.length) {
+    const c = group.children[0];
+    if (c.geometry) c.geometry.dispose();
+    if (c.material) {
+      if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+      else c.material.dispose();
+    }
+    group.remove(c);
+  }
+}
+
+function buildMeshes(scn, verts, h, faceColor, edgeColor) {
+  clearGroup(scn.group);
+  if (!verts || verts.length < 3) return;
+
+  const eps = 0.02;
+  let geo;
+  if (h < eps) {
+    geo = buildBaseOnlyGeo(verts);
+  } else if (scn === pyramid) {
+    geo = buildPyramidGeo(verts, h);
+  } else {
+    geo = buildPrismGeo(verts, h);
+  }
+
+  // Face semi-transparente
+  const mat = new THREE.MeshPhongMaterial({
+    color: faceColor, transparent: true, opacity: h < eps ? 0.5 : 0.3,
+    side: THREE.DoubleSide, depthWrite: false
+  });
+  scn.group.add(new THREE.Mesh(geo, mat));
+
+  // Arêtes
+  if (h >= eps) {
+    try {
+      const edgeGeo = new THREE.EdgesGeometry(geo, 15);
+      const edgeMat = new THREE.LineBasicMaterial({ color: edgeColor, linewidth: 1 });
+      scn.group.add(new THREE.LineSegments(edgeGeo, edgeMat));
+    } catch (e) { /* géométrie dégénérée */ }
+  } else {
+    // Contour du polygone plat
+    const lineVerts = [];
+    for (let i = 0; i <= verts.length; i++) {
+      const v = verts[i % verts.length];
+      lineVerts.push(new THREE.Vector3(v.x, 0.002, v.z));
+    }
+    const lineGeo = new THREE.BufferGeometry().setFromPoints(lineVerts);
+    const lineMat = new THREE.LineBasicMaterial({ color: edgeColor });
+    scn.group.add(new THREE.Line(lineGeo, lineMat));
+  }
+}
+
+function updateMeshes() {
+  const v = state.baseVertices;
+  const h = state.height;
+  buildMeshes(pyramid, v, h, 0xf97316, 0xfdba74);
+  buildMeshes(prism, v, h, 0x14b8a6, 0x5eead4);
+}
+
+// =============================================
+// REDIMENSIONNEMENT
+// =============================================
+function onResize() {
+  const rect = viewsEl.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  renderer.setSize(w, h, false);
+
+  const halfH = h / 2;
+  const aspect = w / halfH;
+  const fh = 5.5;
+
+  [pyramid.camera, prism.camera].forEach(cam => {
+    cam.left = -fh * aspect / 2;
+    cam.right = fh * aspect / 2;
+    cam.top = fh / 2;
+    cam.bottom = -fh / 2;
+    cam.updateProjectionMatrix();
+  });
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+// =============================================
+// SÉLECTION DE BASE
+// =============================================
+function activateBaseSelected() {
+  heightSection.classList.remove('disabled');
+  emptyHint.classList.add('hidden');
+  labelPyramid.classList.add('visible');
+  labelPrism.classList.add('visible');
+  viewDivider.classList.add('visible');
+  btnReset.classList.add('visible');
+  state.viewMode = 'top';
+  updateMeshes();
+  updateHeightUI();
+}
+
+shapeBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const shape = btn.dataset.shape;
+    if (shape === 'free') {
+      // Afficher zone de dessin
+      shapeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      freeDrawArea.classList.add('visible');
+      freePoints = []; freeClosed = false; freeHoverFirst = false;
+      btnValidateDraw.disabled = true;
+      renderDrawCanvas();
+      state.phase = 'drawing-free';
+      state.viewMode = 'initial';
+      clearGroup(pyramid.group);
+      clearGroup(prism.group);
+      return;
+    }
+
+    // Forme prédéfinie
+    shapeBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    freeDrawArea.classList.remove('visible');
+
+    state.baseShape = shape;
+    state.baseVertices = SHAPES[shape];
+    state.height = 0;
+    state.phase = 'base-selected';
+    activateBaseSelected();
+  });
+});
+
+// =============================================
+// SLIDER DE HAUTEUR
+// =============================================
+function updateHeightUI() {
+  const pct = (state.height / state.maxHeight) * 100;
+  heightFill.style.height = pct + '%';
+  heightThumb.style.bottom = pct + '%';
+  heightValue.textContent = state.height.toFixed(2);
+}
+
+function setHeightFromY(clientY) {
+  const rect = heightTrack.getBoundingClientRect();
+  const y = 1 - Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+  state.height = Math.round(y * state.maxHeight * 100) / 100;
+  updateHeightUI();
+  updateMeshes();
+}
+
+function startDrag(e) {
+  if (state.phase !== 'base-selected') return;
+  e.preventDefault();
+  state.isDragging = true;
+  state.viewMode = 'front';
+  heightThumb.classList.add('dragging');
+  viewIndicator.textContent = 'Vue orthogonale';
+  viewIndicator.classList.add('visible');
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  setHeightFromY(clientY);
+}
+
+function moveDrag(e) {
+  if (!state.isDragging) return;
+  e.preventDefault();
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  setHeightFromY(clientY);
+}
+
+function endDrag() {
+  if (!state.isDragging) return;
+  state.isDragging = false;
+  state.viewMode = 'iso';
+  heightThumb.classList.remove('dragging');
+  viewIndicator.textContent = 'Vue isométrique';
+  setTimeout(() => viewIndicator.classList.remove('visible'), 1200);
+}
+
+heightThumb.addEventListener('mousedown', startDrag);
+heightThumb.addEventListener('touchstart', startDrag, { passive: false });
+heightTrack.addEventListener('mousedown', startDrag);
+heightTrack.addEventListener('touchstart', startDrag, { passive: false });
+window.addEventListener('mousemove', moveDrag);
+window.addEventListener('touchmove', moveDrag, { passive: false });
+window.addEventListener('mouseup', endDrag);
+window.addEventListener('touchend', endDrag);
+
+// =============================================
+// RESET
+// =============================================
+btnReset.addEventListener('click', () => {
+  state.baseShape = null;
+  state.baseVertices = [];
+  state.height = 0;
+  state.isDragging = false;
+  state.viewMode = 'initial';
+  state.phase = 'select-base';
+
+  shapeBtns.forEach(b => b.classList.remove('active'));
+  freeDrawArea.classList.remove('visible');
+  heightSection.classList.add('disabled');
+  emptyHint.classList.remove('hidden');
+  labelPyramid.classList.remove('visible');
+  labelPrism.classList.remove('visible');
+  viewDivider.classList.remove('visible');
+  btnReset.classList.remove('visible');
+  viewIndicator.classList.remove('visible');
+
+  updateHeightUI();
+  clearGroup(pyramid.group);
+  clearGroup(prism.group);
+
+  freePoints = []; freeClosed = false; freeHoverFirst = false;
+  btnValidateDraw.disabled = true;
+  renderDrawCanvas();
+});
+
+// =============================================
+// BOUCLE D'ANIMATION
+// =============================================
+const LERP = 0.16;
+const tmpV1 = new THREE.Vector3();
+const tmpV2 = new THREE.Vector3();
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const h = state.height;
+  const cfg = getCameraConfig(state.viewMode, h);
+
+  // Lerp caméra pyramide
+  tmpV1.set(...cfg.pos);
+  tmpV2.set(...cfg.target);
+  camState.pyrPos.lerp(tmpV1, LERP);
+  camState.pyrTarget.lerp(tmpV2, LERP);
+  pyramid.camera.position.copy(camState.pyrPos);
+  pyramid.camera.lookAt(camState.pyrTarget);
+
+  // Lerp caméra prisme
+  camState.priPos.lerp(tmpV1, LERP);
+  camState.priTarget.lerp(tmpV2, LERP);
+  prism.camera.position.copy(camState.priPos);
+  prism.camera.lookAt(camState.priTarget);
+
+  // Rendu avec viewport scindé
+  const w = canvasEl.clientWidth;
+  const halfH = Math.floor(canvasEl.clientHeight / 2);
+  const dpr = renderer.getPixelRatio();
+  const pw = Math.floor(w * dpr);
+  const ph = Math.floor(halfH * dpr);
+
+  renderer.setScissorTest(true);
+
+  // Pyramide (moitié supérieure en CSS = moitié inférieure en WebGL)
+  renderer.setViewport(0, ph, pw, ph);
+  renderer.setScissor(0, ph, pw, ph);
+  renderer.render(pyramid.scene, pyramid.camera);
+
+  // Prisme (moitié inférieure en CSS = moitié supérieure en WebGL)
+  renderer.setViewport(0, 0, pw, ph);
+  renderer.setScissor(0, 0, pw, ph);
+  renderer.render(prism.scene, prism.camera);
+
+  renderer.setScissorTest(false);
+}
+
+animate();
+
+// Initialiser le canvas de dessin
+renderDrawCanvas();
+</script>
+</body>
+</html>

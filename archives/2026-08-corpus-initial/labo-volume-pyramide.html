@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Laboratoire — Volume de la pyramide · MINESEC</title>
+<style>
+  :root{
+    --bg1:#0b1220; --bg2:#111a2e; --pan:#131c30; --line:#243349;
+    --txt:#e6ecf7; --mut:#8ea2c0; --accent:#5b9bd5;
+    --vert:#74c46a; --rouge:#e5735f; --bleu:#5b9bd5;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--txt); background:radial-gradient(130% 130% at 50% 20%,var(--bg2),var(--bg1));
+    overflow:hidden; -webkit-font-smoothing:antialiased;}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  .app{display:flex; height:100dvh; width:100%;}
+  /* Panneau */
+  .panel{width:340px; flex:0 0 340px; background:var(--pan); border-right:1px solid var(--line);
+    padding:20px 20px 24px; display:flex; flex-direction:column; gap:16px; overflow-y:auto;}
+  .marque{font-size:11px; letter-spacing:2px; color:var(--mut); text-transform:uppercase;}
+  h1{font-size:19px; margin:2px 0 0; letter-spacing:-.2px;}
+  .lead{font-size:12.5px; line-height:1.5; color:var(--mut); margin:0;}
+  .etape{border:1px solid var(--line); border-radius:14px; padding:14px; background:#0f1728;}
+  .etape .num{font-size:11px; color:var(--accent); letter-spacing:1px;}
+  .etape .titre{font-size:15.5px; margin:4px 0 6px; font-weight:600;}
+  .etape .desc{font-size:12.5px; color:var(--mut); line-height:1.5; min-height:34px;}
+  .barre{height:5px; border-radius:4px; background:#1b2740; overflow:hidden; margin-top:10px;}
+  .barre i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--accent),#8ec5ff); transition:width .35s;}
+  .btns{display:flex; gap:8px;}
+  button{font:inherit; font-size:13px; padding:10px 12px; border-radius:10px; border:1px solid var(--line);
+    background:#16223a; color:var(--txt); cursor:pointer; transition:.15s; flex:1 1 auto;}
+  button:hover:not(:disabled){border-color:#33507a; background:#1b2butt;}
+  button:hover:not(:disabled){background:#1b2b47;}
+  button:disabled{opacity:.4; cursor:default;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#08111f; font-weight:600;}
+  button.primary:hover:not(:disabled){filter:brightness(1.08);}
+  .toggle{display:flex; align-items:center; gap:9px; font-size:12.5px; cursor:pointer; user-select:none; color:var(--mut);}
+  .toggle input{position:absolute; opacity:0; width:0; height:0;}
+  .sw{width:36px; height:21px; border-radius:11px; background:#26344d; position:relative; transition:.18s; flex:0 0 auto;}
+  .sw::after{content:""; position:absolute; top:2px; left:2px; width:17px; height:17px; border-radius:50%; background:#e6ecf7; transition:.18s;}
+  .toggle input:checked + .sw{background:var(--accent);}
+  .toggle input:checked + .sw::after{transform:translateX(15px);}
+  .legende{display:flex; flex-direction:column; gap:8px; font-size:12.5px;}
+  .legende .it{display:flex; align-items:center; gap:9px;}
+  .chip{width:14px; height:14px; border-radius:4px; flex:0 0 auto;}
+  .formule{text-align:center; font-size:14px; padding:11px; border-radius:10px; background:#0e1930;
+    border:1px solid #22406a; color:#cfe0ff; line-height:1.6;}
+  .formule b{color:#fff;}
+  .pied{margin-top:auto; font-size:10.5px; letter-spacing:1px; color:#5a6b86; text-transform:uppercase;}
+  /* Scène */
+  .stage{flex:1 1 auto; position:relative;}
+  canvas{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none;}
+  .hint{position:absolute; bottom:14px; left:50%; transform:translateX(-50%); font-size:12px; color:#7f92b3;
+    background:rgba(12,20,36,.6); padding:6px 12px; border-radius:20px; backdrop-filter:blur(4px); pointer-events:none;}
+  .avert{position:absolute; inset:0; display:none; align-items:center; justify-content:center; text-align:center;
+    color:var(--mut); padding:30px; font-size:14px;}
+  .concl{position:absolute; left:50%; top:22px; transform:translateX(-50%); max-width:520px; width:calc(100% - 48px);
+    background:rgba(15,24,44,.94); border:1px solid #22406a; border-radius:14px; padding:16px 20px;
+    box-shadow:0 12px 40px rgba(0,0,0,.4); display:none;}
+  .concl h3{margin:0 0 8px; font-size:15px; color:#cfe0ff;}
+  .concl p{margin:0; font-size:13.5px; line-height:1.6; color:var(--txt);}
+  .concl .gros{font-size:17px; text-align:center; margin-top:10px; color:#fff;}
+  @media (max-width:880px){
+    .app{flex-direction:column-reverse;}
+    .panel{width:100%; flex:0 0 auto; max-height:50dvh; border-right:none; border-top:1px solid var(--line);}
+    .stage{flex:1 1 auto; min-height:50dvh;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="panel">
+    <div>
+      <div class="marque">MINESEC · Laboratoire de géométrie</div>
+      <h1>Volume de la pyramide</h1>
+    </div>
+    <p class="lead">On découpe un prisme (un cube) en trois pyramides superposables, puis on les remplit d'eau : trois pyramides emplissent exactement le prisme.</p>
+
+    <div class="etape">
+      <div class="num mono" id="num">ÉTAPE 1 / 11</div>
+      <div class="titre" id="titre">Le prisme</div>
+      <div class="desc" id="desc">Un prisme droit apparaît dans la scène.</div>
+      <div class="barre"><i id="barre"></i></div>
+    </div>
+
+    <div class="btns">
+      <button id="prec">◀ Recommencer</button>
+      <button id="suiv" class="primary">Étape suivante ▶</button>
+    </div>
+    <label class="toggle"><input type="checkbox" id="auto"><span class="sw"></span>Lecture automatique</label>
+
+    <div class="legende">
+      <div class="it"><span class="chip" style="background:var(--vert)"></span>Pyramide 1 — base = face du haut</div>
+      <div class="it"><span class="chip" style="background:var(--rouge)"></span>Pyramide 2 — base = face avant</div>
+      <div class="it"><span class="chip" style="background:var(--bleu)"></span>Pyramide 3 — base = face gauche</div>
+    </div>
+
+    <div class="formule">
+      V<sub>prisme</sub> = 3 × V<sub>pyramide</sub><br>
+      ⟹ <b>V<sub>pyramide</sub> = ⅓ × 𝓑 × h</b>
+    </div>
+
+    <div class="pied">Glissez pour tourner · molette pour zoomer</div>
+  </aside>
+
+  <main class="stage">
+    <canvas id="c"></canvas>
+    <div class="hint" id="hint">Glissez pour tourner · molette pour zoomer</div>
+    <div class="avert" id="avert">WebGL indisponible — ouvrez ce fichier dans un navigateur récent, avec une connexion pour charger Three.js.</div>
+    <div class="concl" id="concl">
+      <h3>Conclusion</h3>
+      <p>Les trois pyramides sont <b>identiques</b> (même volume) et remplissent <b>exactement</b> le prisme. Donc le volume du prisme vaut trois fois celui d'une pyramide.</p>
+      <p class="gros">V<sub>pyramide</sub> = ⅓ × V<sub>prisme</sub> = ⅓ × 𝓑 × h</p>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+if (typeof THREE === "undefined") { document.getElementById("avert").style.display = "flex"; }
+else { try { demarrer(); } catch (e) { console.error(e); document.getElementById("avert").style.display = "flex"; } }
+
+function demarrer(){
+  const stage = document.querySelector(".stage");
+  const canvas = document.getElementById("c");
+
+  /* ══════════════════════════════════════════════════════════════════
+     SOCLE — rendu, caméra, lumières, orbite  (doctrine studios MINESEC)
+     ══════════════════════════════════════════════════════════════════ */
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const scene  = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  const CAM = { r:8.4, lookY:1.35 };
+  camera.position.set(0, CAM.lookY, CAM.r);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.82));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.7); dir.position.set(4, 6, 5); scene.add(dir);
+  const monde = new THREE.Group(); scene.add(monde);
+
+  const PAL = {
+    prisme:0x9fb2d4, prismeAr:0xcbd5e1,
+    neutre:0x8aa0c4, neutreAr:0xb9c6dc,
+    eau:0x39bdf8, lame:0xdbe6f4, lameAr:0xffffff, lueur:0xf6b03a
+  };
+  const COUL = [
+    { f:0x74c46a, a:0x3f7d33 },  // verte
+    { f:0xe5735f, a:0x9e3b2c },  // rouge
+    { f:0x5b9bd5, a:0x2f5f96 }   // bleue
+  ];
+
+  /* ══════════════════════════════════════════════════════════════════
+     MODULE A — FIGURES 3D   (« le code de la figure 3D »)
+       prop = Group( Mesh faces translucides + LineSegments arêtes )
+       prisme = cube ;  pyramide = « yangma » canonique (sommet sur un coin)
+     ══════════════════════════════════════════════════════════════════ */
+  function makeProp(geo, faceHex, op, edgeHex){
+    const fm = new THREE.MeshStandardMaterial({ color:faceHex, transparent:true, opacity:op,
+      roughness:.55, metalness:0, emissive:0x000000, side:THREE.DoubleSide, depthWrite:false });
+    const em = new THREE.LineBasicMaterial({ color:edgeHex, transparent:true, opacity:1 });
+    const g  = new THREE.Group();
+    const mesh = new THREE.Mesh(geo, fm); g.add(mesh);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 18), em); g.add(edges);
+    g.userData = { fm, em, mesh, edges };
+    return g;
+  }
+  const H = 0.9, S = 2 * H;                 // demi-arête et arête du cube
+
+  // pyramide canonique : sommet a=(0,0,0) ; base carrée (côté S) dans le plan y=-S,
+  // avec le coin sous le sommet en q=(0,-S,0). Hauteur S. Volume = S³/3.
+  function yangmaGeo(){
+    const v = [ 0,0,0,  0,-S,0,  S,-S,0,  S,-S,S,  0,-S,S ];
+    const idx = [ 1,2,3, 1,3,4,   0,1,2, 0,2,3, 0,3,4, 0,4,1 ];
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3));
+    g.setIndex(idx); g.computeVertexNormals();
+    return g;
+  }
+  const geoPyr = yangmaGeo();
+
+  // sommets du cube (centré à l'origine)
+  const K = {
+    A:[-H,-H,-H], B:[H,-H,-H], C:[H,H,-H], D:[-H,H,-H],
+    E:[-H,-H,H],  F:[H,-H,H],  G:[H,H,H],  Hs:[-H,H,H]
+  };
+  // repère canonique de la pyramide
+  const u1 = new THREE.Vector3(0,-1,0), u2 = new THREE.Vector3(1,0,0);
+  const u3 = new THREE.Vector3().crossVectors(u1,u2);
+  const Uinv = new THREE.Matrix4().makeBasis(u1,u2,u3).invert();
+
+  // transforme la pyramide canonique pour l'emboîter dans le cube :
+  // sommet -> C ; base -> une face contenant E (haut / avant / gauche)
+  function poseAssemblee(footKey, neighKey){
+    const C = new THREE.Vector3(...K.C);
+    const foot = new THREE.Vector3(...K[footKey]);
+    const neigh = new THREE.Vector3(...K[neighKey]);
+    const v1 = foot.clone().sub(C).normalize();
+    const v2 = neigh.clone().sub(foot).normalize();
+    const v3 = new THREE.Vector3().crossVectors(v1,v2);
+    const R  = new THREE.Matrix4().makeBasis(v1,v2,v3).multiply(Uinv);
+    const q  = new THREE.Quaternion().setFromRotationMatrix(R);
+    return { q, pos:C.clone() };
+  }
+  const ASSEMB = [
+    poseAssemblee("G","F"),   // verte  : base EFGH (haut)
+    poseAssemblee("B","F"),   // rouge  : base ABFE (avant)
+    poseAssemblee("D","A")    // bleue  : base ADHE (gauche)
+  ];
+
+  // le prisme (cube) + son eau
+  const OPRISME_F = 0.12, OPRISME_A = 1.0;
+  const prisme = makeProp(new THREE.BoxGeometry(S,S,S), PAL.prisme, OPRISME_F, PAL.prismeAr);
+  monde.add(prisme);
+  const geoEau = new THREE.BoxGeometry(S*0.96, S, S*0.96); geoEau.translate(0, H, 0); // base à y=0
+  const eauPrisme = new THREE.Mesh(geoEau, new THREE.MeshStandardMaterial({
+    color:PAL.eau, transparent:true, opacity:0.55, roughness:.3, metalness:0, depthWrite:false }));
+  eauPrisme.position.y = -H; eauPrisme.scale.y = 0.0001; monde.add(eauPrisme);
+
+  // les 3 pyramides (chacune : coque + eau intérieure)
+  const P = [];
+  const idQuat = new THREE.Quaternion();
+  const downQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), Math.PI);
+  const slotX = [-2.35, 0, 2.35], SLOT_Y = 3.0, CUP_Y = 1.55;
+  for (let i=0;i<3;i++){
+    const g = makeProp(geoPyr, PAL.neutre, 0.0, PAL.neutreAr);
+    const eau = new THREE.Mesh(geoPyr, new THREE.MeshStandardMaterial({
+      color:PAL.eau, transparent:true, opacity:0.62, roughness:.3, metalness:0, depthWrite:false }));
+    eau.scale.setScalar(0.0001); g.add(eau);
+    g.position.copy(ASSEMB[i].pos); g.quaternion.copy(ASSEMB[i].q);
+    monde.add(g);
+    P.push({ g, eau, ass:ASSEMB[i], coul:COUL[i], slot:new THREE.Vector3(slotX[i],SLOT_Y,0) });
+  }
+  function colorer(p){ p.g.userData.fm.color.setHex(p.coul.f); p.g.userData.em.color.setHex(p.coul.a); }
+
+  // MODULE A (suite) — l'OUTIL DE COUPE (lame tenue perpendiculaire à l'écran)
+  const lame = makeProp(new THREE.BoxGeometry(0.05, S*1.5, S*1.5), PAL.lame, 0.16, PAL.lameAr);
+  lame.userData.fm.emissive.setHex(PAL.lueur); lame.userData.fm.emissiveIntensity = 0;
+  lame.visible = false; monde.add(lame);
+
+  // un filet d'eau (transvasement)
+  const filet = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.02,1,10),
+    new THREE.MeshStandardMaterial({ color:PAL.eau, transparent:true, opacity:0, roughness:.2, depthWrite:false }));
+  filet.visible = false; monde.add(filet);
+
+  /* ══════════════════════════════════════════════════════════════════
+     PETIT MOTEUR DE TWEENS  (esprit Anim3D / Comp3D)
+     ══════════════════════════════════════════════════════════════════ */
+  const clk = () => performance.now()/1000;
+  const eOut   = p => 1 - Math.pow(1-p,3);
+  const eInOut = p => p<.5 ? 2*p*p : 1 - Math.pow(-2*p+2,2)/2;
+  let jobs = [];
+  function job(dur, upd, done){ jobs.push({ t0:clk(), dur, upd, done }); }
+  function delai(sec, fn){ job(sec, ()=>{}, fn); }
+  function majJobs(){
+    const t = clk();
+    for (let i=jobs.length-1;i>=0;i--){
+      const j = jobs[i], e = Math.min((t-j.t0)/j.dur, 1);
+      if (j.upd) j.upd(e);
+      if (e>=1){ if (j.done) j.done(); jobs.splice(i,1); }
+    }
+  }
+  // helpers d'animation
+  function deplacer(g, pos, quat, dur, ease){
+    const p0=g.position.clone(), q0=g.quaternion.clone(), ez=ease||eInOut;
+    job(dur, e=>{ const k=ez(e); g.position.lerpVectors(p0,pos,k); g.quaternion.copy(q0).slerp(quat,k); });
+  }
+  function fondre(g, fo, eo, dur){
+    const fm=g.userData.fm, em=g.userData.em, f0=fm.opacity, e0=em.opacity;
+    job(dur, e=>{ fm.opacity=f0+(fo-f0)*e; em.opacity=e0+(eo-e0)*e; });
+  }
+  function grossir(mesh, to, dur){ const s0=mesh.scale.x; job(dur, e=>{ const s=s0+(to-s0)*eInOut(e); mesh.scale.setScalar(Math.max(0.0001,s)); }); }
+  function monterY(mesh, to, dur){ const s0=mesh.scale.y; job(dur, e=>{ mesh.scale.y = Math.max(0.0001, s0+(to-s0)*eInOut(e)); }); }
+  function opacite(mesh, to, dur){ const o0=mesh.material.opacity; job(dur, e=>{ mesh.material.opacity=o0+(to-o0)*e; }); }
+  function echelleProp(g, to, dur){ const s0=g.scale.x; job(dur, e=>{ const s=s0+(to-s0)*eOut(e); g.scale.setScalar(Math.max(0.0001,s)); }); }
+
+  // lueur pulsée sur la pièce sélectionnée (comme Anim3D.halo)
+  let selPiece = null;
+  function boucleLueur(){
+    const t = clk();
+    P.forEach(p=>{ if (p!==selPiece) p.g.userData.fm.emissiveIntensity = 0; });
+    if (selPiece){ selPiece.g.userData.fm.emissive.setHex(PAL.lueur);
+      selPiece.g.userData.fm.emissiveIntensity = 0.25*(0.5+0.5*Math.sin(t*3.2)); }
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     MODULE B — MOUVEMENT : se détacher     (« le code du mouvement »)
+       illumine une pièce, la lame balaie, la pièce prend sa couleur
+       et monte se ranger au-dessus du prisme.
+     ══════════════════════════════════════════════════════════════════ */
+  function balayerLame(dur){
+    lame.visible = true;
+    lame.position.set(-1.9, H, 0); lame.quaternion.copy(idQuat);
+    lame.userData.fm.opacity = 0.16; lame.userData.em.opacity = 1; lame.userData.fm.emissiveIntensity = 0.5;
+    const p0 = new THREE.Vector3(-1.9,H,0), p1 = new THREE.Vector3(1.9,H,0);
+    job(dur, e=>{ lame.position.lerpVectors(p0,p1,eInOut(e)); });
+    delai(dur, ()=>{ fondre(lame, 0, 0, 0.35); delai(0.36, ()=>{ lame.visible=false; }); });
+  }
+  function detacher(i){
+    const p = P[i];
+    selPiece = p;                                   // illumination
+    balayerLame(0.9);
+    delai(0.95, ()=>{
+      selPiece = null; p.g.userData.fm.emissiveIntensity = 0;
+      colorer(p);                                   // prend sa couleur
+      deplacer(p.g, p.slot, idQuat, 1.5, eOut);     // monte, sommet en haut
+      fondre(p.g, 0.20, 1, 1.0);
+    });
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     MODULE E — FUSION : comparer les pyramides
+       les trois (géométrie identique) se superposent exactement.
+     ══════════════════════════════════════════════════════════════════ */
+  function comparer(){
+    const centre = new THREE.Vector3(0, SLOT_Y, 0);
+    P.forEach(p=> deplacer(p.g, centre, idQuat, 1.2, eInOut));   // superposition parfaite
+    delai(1.25, ()=>{ P.forEach(p=>{ p.g.userData.fm.emissive.setHex(0x66e0a0); p.g.userData.fm.emissiveIntensity = 0.5; }); });
+    delai(2.05, ()=>{ P.forEach(p=> p.g.userData.fm.emissiveIntensity = 0); });
+    delai(2.15, ()=>{ P.forEach(p=> deplacer(p.g, p.slot, idQuat, 1.1, eInOut)); });  // se séparent
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     MODULE C — VERSER : remplir une pyramide d'eau
+       la pyramide bascule « pointe en bas » (godet) et l'eau monte
+       depuis le sommet (volume ∝ s³, exact).
+     ══════════════════════════════════════════════════════════════════ */
+  function remplirPyramides(){
+    P.forEach(p=>{
+      const pos = new THREE.Vector3(p.slot.x, CUP_Y, 0);
+      deplacer(p.g, pos, downQuat, 0.8, eInOut);        // pointe en bas
+    });
+    delai(0.85, ()=>{ P.forEach(p=> grossir(p.eau, 0.985, 1.2)); });  // l'eau monte
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     MODULE D — REVERSER + REMPLISSAGE DU PRISME
+       chaque pyramide se vide dans le prisme ; le niveau du prisme
+       monte d'un tiers ; plein exactement à la 3ᵉ versée.
+     ══════════════════════════════════════════════════════════════════ */
+  function verserDansPrisme(i, niveauCible){
+    const p = P[i];
+    const dessus = new THREE.Vector3(0, CUP_Y, 0);
+    deplacer(p.g, dessus, downQuat, 0.8, eInOut);       // amène la pyramide au-dessus du prisme
+    delai(0.85, ()=>{
+      filet.visible = true; filet.position.set(0, (CUP_Y+H)/2, 0);
+      filet.scale.y = (CUP_Y - H); opacite(filet, 0.6, 0.2);
+      grossir(p.eau, 0.0001, 1.2);                      // la pyramide se vide
+      monterY(eauPrisme, niveauCible, 1.2);             // le prisme se remplit
+    });
+    delai(2.1, ()=>{ opacite(filet, 0, 0.25); delai(0.26, ()=>{ filet.visible=false; }); });
+    delai(2.15, ()=>{ deplacer(p.g, new THREE.Vector3(p.slot.x, CUP_Y, 0), downQuat, 0.7, eInOut); });
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     MODULE F — SCÉNARIO   (orchestration, 11 étapes)
+     ══════════════════════════════════════════════════════════════════ */
+  function reinitScene(){
+    jobs = []; selPiece = null;
+    fondre(prisme, OPRISME_F, OPRISME_A, 0.01);
+    eauPrisme.scale.y = 0.0001;
+    lame.visible = false; filet.visible = false;
+    P.forEach(p=>{
+      p.g.position.copy(p.ass.pos); p.g.quaternion.copy(p.ass.q);
+      p.g.scale.setScalar(1);
+      p.g.userData.fm.color.setHex(PAL.neutre); p.g.userData.em.color.setHex(PAL.neutreAr);
+      p.g.userData.fm.opacity = 0; p.g.userData.em.opacity = 0; p.g.userData.fm.emissiveIntensity = 0;
+      p.eau.scale.setScalar(0.0001);
+    });
+    document.getElementById("concl").style.display = "none";
+  }
+
+  const ETAPES = [
+    { t:"Le prisme", d:"Un prisme droit (ici un cube) apparaît dans la scène.",
+      go:()=>{ prisme.scale.setScalar(0.4); echelleProp(prisme, 1, 0.7); fondre(prisme, OPRISME_F, OPRISME_A, 0.6); }, ms:1100 },
+    { t:"La découpe cachée", d:"À l'intérieur, le prisme est fait de trois pyramides. On les fait apparaître, prêtes à être détachées.",
+      go:()=>{ P.forEach(p=> fondre(p.g, 0.14, 0.9, 0.8)); fondre(prisme, 0.04, 0.35, 0.8); }, ms:1200 },
+    { t:"Détacher la pyramide verte", d:"Prends l'outil de coupe : la lame balaie la partie illuminée, la pyramide sort et monte se ranger.",
+      go:()=> detacher(0), ms:2700 },
+    { t:"Détacher la pyramide rouge", d:"Même geste sur la deuxième pyramide illuminée.",
+      go:()=> detacher(1), ms:2700 },
+    { t:"Détacher la pyramide bleue", d:"La troisième sort à son tour : le prisme est maintenant vide.",
+      go:()=> detacher(2), ms:2700 },
+    { t:"Les comparer : elles sont identiques", d:"On rapproche les trois pyramides : elles se superposent parfaitement — elles sont superposables, donc de même volume.",
+      go:()=> comparer(), ms:3400 },
+    { t:"Remplir les pyramides d'eau", d:"On retourne les pyramides en godets et on verse de l'eau dans chacune.",
+      go:()=> remplirPyramides(), ms:2200 },
+    { t:"Verser la 1re dans le prisme", d:"On transvase la première pyramide : le prisme se remplit d'un tiers.",
+      go:()=> verserDansPrisme(0, 1/3), ms:2900 },
+    { t:"Verser la 2e dans le prisme", d:"Deuxième versée : le prisme est aux deux tiers.",
+      go:()=> verserDansPrisme(1, 2/3), ms:2900 },
+    { t:"Verser la 3e — le prisme est plein", d:"La troisième versée remplit exactement le prisme : trois pyramides = un prisme.",
+      go:()=>{ verserDansPrisme(2, 0.999);
+        delai(2.2, ()=>{ prisme.userData.fm.emissive.setHex(0x66e0a0); prisme.userData.fm.emissiveIntensity = 0.4; fondre(prisme, 0.12, 0.9, 0.6); }); }, ms:3100 },
+    { t:"Conclusion", d:"Le volume du prisme est la somme des trois volumes égaux : le volume d'une pyramide est le tiers de celui du prisme.",
+      go:()=>{ document.getElementById("concl").style.display = "block"; }, ms:600 }
+  ];
+
+  const elNum=document.getElementById("num"), elTitre=document.getElementById("titre"),
+        elDesc=document.getElementById("desc"), elBarre=document.getElementById("barre"),
+        btSuiv=document.getElementById("suiv"), btPrec=document.getElementById("prec"),
+        cbAuto=document.getElementById("auto");
+  let idx = -1, busyT = 0;
+
+  function afficher(i){
+    const e = ETAPES[i];
+    elNum.textContent = "ÉTAPE " + (i+1) + " / " + ETAPES.length;
+    elTitre.textContent = e.t; elDesc.textContent = e.d;
+    elBarre.style.width = Math.round((i+1)/ETAPES.length*100) + "%";
+    btSuiv.textContent = (i>=ETAPES.length-1) ? "Terminé" : "Étape suivante ▶";
+  }
+  function lancer(i){
+    idx = i; const e = ETAPES[i]; afficher(i); e.go();
+    btSuiv.disabled = true; busyT = clk() + e.ms/1000;
+  }
+  function suivant(){ if (idx < ETAPES.length-1) lancer(idx+1); }
+  function recommencer(){ reinitScene(); lancer(0); }
+
+  btSuiv.onclick = suivant;
+  btPrec.onclick = recommencer;
+
+  /* orbite + zoom (molette) */
+  let drag=false, px=0, py=0;
+  canvas.addEventListener("pointerdown", e=>{ drag=true; px=e.clientX; py=e.clientY; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener("pointermove", e=>{ if(!drag) return;
+    monde.rotation.y += (e.clientX-px)*0.006;
+    monde.rotation.x = Math.max(-0.7, Math.min(0.7, monde.rotation.x + (e.clientY-py)*0.006));
+    px=e.clientX; py=e.clientY; });
+  canvas.addEventListener("pointerup", ()=>drag=false);
+  canvas.addEventListener("pointercancel", ()=>drag=false);
+  canvas.addEventListener("wheel", e=>{ e.preventDefault();
+    CAM.r = Math.max(5, Math.min(13, CAM.r * (e.deltaY<0?0.93:1.075)));
+    camera.position.z = CAM.r; }, { passive:false });
+
+  function taille(){ const w=stage.clientWidth, h=stage.clientHeight||1;
+    renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  window.addEventListener("resize", taille); taille();
+
+  camera.lookAt(0, CAM.lookY, 0);
+  function boucle(){
+    requestAnimationFrame(boucle);
+    majJobs(); boucleLueur();
+    if (btSuiv.disabled && clk() >= busyT){
+      btSuiv.disabled = false;
+      if (cbAuto.checked && idx < ETAPES.length-1) setTimeout(()=>{ if (cbAuto.checked) suivant(); }, 500);
+    }
+    camera.lookAt(0, CAM.lookY, 0);
+    renderer.render(scene, camera);
+  }
+
+  reinitScene(); lancer(0); boucle();
+}
+</script>
+</body>
+</html>

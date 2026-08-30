@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Leçon 2 — Le prop · MINESEC</title>
+<style>
+:root{
+  --bg:#121416; --panel:#1a1d21; --panel2:#25282d; --line:#3f454d;
+  --txt:#e8ebee; --dim:#98a1ab; --accent:#3b82f6; --ok:#22c55e; --saisir:#f59e0b;
+  --f-txt:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; --f-fix:Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--f-txt);background:var(--bg);color:var(--txt);display:flex;flex-direction:column;overflow:hidden}
+button,input{font-family:inherit;font-size:inherit;color:inherit} button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+header.res{background:var(--panel);border-bottom:2px solid var(--line);padding:12px 16px;flex-shrink:0}
+header.res .niveau{font-family:var(--f-fix);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)}
+header.res h1{font-size:clamp(1.1rem,3vw,1.5rem);font-weight:700;margin:2px 0}
+header.res .sous{font-family:var(--f-fix);font-size:.72rem;color:var(--accent)}
+.consigne{background:var(--panel);border-bottom:2px solid var(--line);padding:10px 16px;flex-shrink:0;
+  font-size:.86rem;color:var(--dim);line-height:1.5}
+.consigne b{color:var(--txt)} .consigne code{font-family:var(--f-fix);color:var(--accent)}
+
+main{flex:1;display:flex;min-height:0}
+aside.lecon{width:330px;flex-shrink:0;background:var(--panel);border-right:2px solid var(--line);
+  overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+h2.eb{font-size:.62rem;font-family:var(--f-fix);text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+.parts{display:flex;flex-direction:column;gap:5px}
+.parts button{background:var(--panel2);border:2px solid var(--line);border-radius:6px;padding:8px 10px;font-size:.78rem;text-align:left}
+.parts button:hover{border-color:var(--accent)}
+.parts button.actif{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.parts button.etoile{border-style:dashed}
+pre.code{background:#0d0f11;border:2px solid var(--line);border-radius:6px;padding:10px;
+  font-family:var(--f-fix);font-size:.72rem;line-height:1.7;color:#e8ebee;white-space:pre-wrap;overflow-x:auto}
+pre.code .k{color:#7aa2f7} pre.code .a{color:#f0a35e} pre.code .v{color:#7ee787} pre.code .c{color:#98a1ab}
+pre.code .hl{background:color-mix(in srgb,var(--accent) 30%,transparent);border-radius:3px;padding:1px 2px}
+.desc{font-size:.85rem;color:var(--dim);line-height:1.55} .desc b{color:var(--txt)}
+
+.scene{flex:1;min-width:0;position:relative;background:var(--bg);display:flex}
+.scene svg{width:100%;height:100%;display:block;color:var(--txt)}
+.etiq{font-family:var(--f-fix);font-size:15px;fill:var(--dim);text-anchor:middle}
+.surligne-svg{filter:drop-shadow(0 0 9px var(--accent))}
+
+aside.build{width:230px;flex-shrink:0;background:var(--panel);border-left:2px solid var(--line);padding:12px;
+  overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+aside.build .bloc label{display:block;font-size:.72rem;color:var(--dim);margin-bottom:5px}
+aside.build input[type=text]{width:100%;background:var(--bg);border:2px solid var(--line);border-radius:5px;padding:7px;font-family:var(--f-fix);font-size:.78rem}
+aside.build input[type=range]{width:100%}
+aside.build .val{font-family:var(--f-fix);font-size:.72rem;color:var(--accent)}
+.bt{width:100%;background:var(--panel2);border:2px solid var(--line);border-radius:5px;padding:8px;font-size:.76rem;font-family:var(--f-fix)}
+.bt:hover{border-color:var(--accent)}
+
+.pied{background:var(--panel);border-top:2px solid var(--line);padding:6px;text-align:center;
+  font-size:.6rem;font-family:var(--f-fix);color:var(--dim);letter-spacing:.12em;flex-shrink:0}
+@media (max-width:960px){ main{flex-direction:column} aside.lecon,aside.build{width:100%;border:none;border-top:2px solid var(--line)} .scene{min-height:38vh} }
+</style>
+</head>
+<body>
+
+<header class="res">
+  <div class="niveau">MINESEC · APPRENTISSAGE · LEÇON 2 · 2D</div>
+  <h1>Le prop</h1>
+  <div class="sous">comment un prop est écrit — le lire, et le construire</div>
+</header>
+
+<div class="consigne">
+  À gauche, <b>clique une part</b> du prop : ses lignes s'allument dans le code, l'objet s'allume dans la scène. À droite, <b>construis-le</b> : change une valeur et regarde le code <i>et</i> le prop bouger ensemble. Un prop, c'est un <code>&lt;g class="prop" data-role&gt;</code>.
+</div>
+
+<main>
+  <aside class="lecon">
+    <h2 class="eb">Les parts d'un prop</h2>
+    <div class="parts" id="parts"></div>
+    <h2 class="eb" style="margin-top:6px">Le code du prop</h2>
+    <pre class="code" id="code"></pre>
+    <p class="desc" id="desc"></p>
+  </aside>
+
+  <div class="scene">
+    <svg viewBox="0 0 700 430" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Un prop">
+      <g id="propG" class="prop" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></g>
+      <text id="etiqEl" class="etiq">clé USB</text>
+    </svg>
+  </div>
+
+  <aside class="build">
+    <h2 class="eb">Construis-le</h2>
+    <div class="bloc">
+      <label for="inpRole">data-role</label>
+      <input type="text" id="inpRole" value="cle-usb">
+    </div>
+    <div class="bloc">
+      <label for="rgSW">Épaisseur du trait : <span class="val" id="vSW">4</span></label>
+      <input type="range" id="rgSW" min="1" max="8" step="0.5" value="4">
+    </div>
+    <div class="bloc">
+      <label for="rgX">Position X : <span class="val" id="vX">220</span></label>
+      <input type="range" id="rgX" min="40" max="500" step="1" value="220">
+    </div>
+    <div class="bloc">
+      <button class="bt" id="btFill">remplissage : aucun</button>
+    </div>
+    <div class="bloc">
+      <button class="bt" id="btReset">réinitialiser</button>
+    </div>
+  </aside>
+</main>
+
+<div class="pied">MINESEC — LEÇON 2 · UN PROP = UN &lt;g class="prop" data-role&gt; + DES FORMES + UNE ÉTIQUETTE</div>
+
+<script>
+"use strict";
+const NS="http://www.w3.org/2000/svg";
+const propG=document.getElementById("propG"), etiqEl=document.getElementById("etiqEl");
+const paneCode=document.getElementById("code"), paneDesc=document.getElementById("desc"), boite=document.getElementById("parts");
+
+const base={ role:"cle-usb", sw:4, tx:220, ty:150, filled:false };
+const state={...base};
+
+function formesUSB(sw){
+  const f=Math.max(1,sw-1);
+  return `<rect x="6" y="34" width="88" height="42" rx="8" stroke-width="${sw}"/>`
+       + `<path d="M94 45 h26 v20 h-26" stroke-width="${sw}"/>`
+       + `<rect x="104" y="51" width="12" height="8" stroke-width="${f}"/>`
+       + `<circle cx="22" cy="55" r="6" stroke-width="${f}"/>`;
+}
+function render(){
+  propG.setAttribute("data-role", state.role || "prop");
+  propG.setAttribute("transform", `translate(${state.tx},${state.ty})`);
+  propG.setAttribute("fill", state.filled ? "currentColor" : "none");
+  propG.setAttribute("fill-opacity", state.filled ? "0.22" : "1");
+  propG.innerHTML = formesUSB(state.sw);
+  etiqEl.setAttribute("x", state.tx + 60);
+  etiqEl.setAttribute("y", 340);
+}
+
+function genCode(){
+  const fill = state.filled ? "currentColor" : "none";
+  return (
+`<span class="p-groupe">&lt;<span class="k">g</span> <span class="a">class</span>=<span class="v">"prop"</span> `
++`<span class="p-role"><span class="a">data-role</span>=<span class="v">"${state.role||"prop"}"</span></span>`
++`\n     <span class="p-attrs"><span class="a">fill</span>=<span class="v">"${fill}"</span> <span class="a">stroke</span>=<span class="v">"currentColor"</span> <span class="a">stroke-linecap</span>=<span class="v">"round"</span></span>`
++`\n     <span class="p-transform"><span class="a">transform</span>=<span class="v">"translate(${state.tx},${state.ty})"</span></span>&gt;</span>`
++`\n  <span class="p-formes"><span class="k">&lt;rect</span> <span class="a">x</span>=<span class="v">"6"</span> … <span class="a">stroke-width</span>=<span class="v">"${state.sw}"</span><span class="k">/&gt;</span>`
++`\n  <span class="k">&lt;path</span> <span class="a">d</span>=<span class="v">"M94 45 …"</span><span class="k">/&gt;</span>`
++`\n  <span class="k">&lt;circle</span> <span class="a">cx</span>=<span class="v">"22"</span> …<span class="k">/&gt;</span></span>`
++`\n<span class="p-groupe">&lt;/<span class="k">g</span>&gt;</span>`
++`\n<span class="p-etiq">&lt;<span class="k">text</span> <span class="a">class</span>=<span class="v">"etiq"</span>&gt;clé USB&lt;/<span class="k">text</span>&gt;</span>`
+  );
+}
+
+const CODE3D =
+`<span class="c">// En 3D : PAS de balise — on CONSTRUIT le prop en JavaScript,</span>
+<span class="c">// dans le catalogue. userData.role remplace data-role.</span>
+
+{ <span class="a">role</span>: <span class="v">"cellule"</span>,
+  <span class="a">build</span>: (PAL) => {
+    <span class="k">const</span> g = <span class="k">new</span> THREE.Group();
+    g.add(Moteur3D.corps(<span class="k">new</span> THREE.SphereGeometry(0.95,28,20), 0.09, PAL));
+    <span class="k">const</span> sub = Moteur3D.matiere(...);
+    sub.userData.<span class="a">role</span> = <span class="v">"substance"</span>;   <span class="c">// sous-partie</span>
+    g.add(sub);
+    <span class="k">return</span> g;
+  }
+}`;
+
+const PARTS=[
+ {id:"groupe", nom:'① Le groupe <g class="prop">',
+  desc:`Le prop, c'est un <b>&lt;g&gt;</b> portant <b>class="prop"</b>. Tout ce qui le compose vit à l'intérieur. Repère ce &lt;g&gt; : c'est la frontière du prop.`, render:"prop"},
+ {id:"role", nom:"② Le data-role",
+  desc:`Sa <b>poignée</b> unique. C'est ce que tu cherches pour cibler ce prop, et ce que tu passes à <b>appliquer("…")</b>. Renomme-le à droite pour voir.`, render:"prop"},
+ {id:"attrs", nom:"③ Les attributs de charte",
+  desc:`<b>fill="none"</b> + <b>stroke="currentColor"</b> = trait ouvert, et la couleur suit le thème. Bascule le remplissage à droite pour voir la différence.`, render:"prop"},
+ {id:"transform", nom:"④ Le transform (placement)",
+  desc:`<b>translate(x,y)</b> pose le prop dans la scène. Bouge la position X à droite : le prop se déplace, et le code change avec.`, render:"prop"},
+ {id:"formes", nom:"⑤ Les formes internes",
+  desc:`Le <b>dessin</b> : des &lt;rect&gt;, &lt;path&gt;, &lt;circle&gt; dans une boîte locale (~150). En production, ce tracé vient d'une bibliothèque (Servier) normalisée à la charte.`, render:"prop"},
+ {id:"etiq", nom:"⑥ L'étiquette",
+  desc:`Le <b>nom affiché</b> : un &lt;text class="etiq"&gt; posé <b>hors</b> de l'objet — jamais de texte sur le prop lui-même.`, render:"etiq"},
+ {id:"encart3d", nom:"★ …et en 3D", etoile:true,
+  desc:`En 3D, le prop n'a <b>pas de balise</b>. On le construit en JavaScript dans le catalogue : un <b>THREE.Group</b> + des géométries, et <b>userData.role</b> à la place de data-role. La notion est la même, le geste change.`, code3d:true, render:null}
+];
+
+let courant=null;
+function nettoyerGlow(){ propG.classList.remove("surligne-svg"); etiqEl.classList.remove("surligne-svg"); }
+function surlignerCode(id){ document.querySelectorAll(".p-"+id).forEach(s=>s.classList.add("hl")); }
+function glow(cible){ nettoyerGlow(); if(cible==="prop") propG.classList.add("surligne-svg"); else if(cible==="etiq") etiqEl.classList.add("surligne-svg"); }
+
+function choisir(part, btn){
+  courant=part;
+  if(part.code3d){ paneCode.innerHTML=CODE3D; nettoyerGlow(); }
+  else { paneCode.innerHTML=genCode(); surlignerCode(part.id); glow(part.render); }
+  paneDesc.innerHTML=part.desc;
+  [...boite.children].forEach(b=>b.classList.toggle("actif", b===btn));
+}
+function rafraichir(){
+  render();
+  if(courant && !courant.code3d){ paneCode.innerHTML=genCode(); surlignerCode(courant.id); }
+}
+
+/* contrôles */
+const inpRole=document.getElementById("inpRole"), rgSW=document.getElementById("rgSW"),
+      rgX=document.getElementById("rgX"), vSW=document.getElementById("vSW"), vX=document.getElementById("vX"),
+      btFill=document.getElementById("btFill"), btReset=document.getElementById("btReset");
+inpRole.oninput=()=>{ state.role=inpRole.value.trim()||"prop"; rafraichir(); };
+rgSW.oninput=()=>{ state.sw=+rgSW.value; vSW.textContent=rgSW.value; rafraichir(); };
+rgX.oninput=()=>{ state.tx=+rgX.value; vX.textContent=rgX.value; rafraichir(); };
+btFill.onclick=()=>{ state.filled=!state.filled; btFill.textContent="remplissage : "+(state.filled?"plein":"aucun"); rafraichir(); };
+btReset.onclick=()=>{ Object.assign(state, base); inpRole.value=base.role; rgSW.value=base.sw; vSW.textContent=base.sw;
+  rgX.value=base.tx; vX.textContent=base.tx; btFill.textContent="remplissage : aucun"; rafraichir(); };
+
+/* parts */
+PARTS.forEach((p,i)=>{ const b=document.createElement("button"); b.innerHTML=p.nom;
+  if(p.etoile) b.classList.add("etoile"); b.onclick=()=>choisir(p,b); boite.appendChild(b);
+  if(i===0){ render(); choisir(p,b); } });
+</script>
+</body>
+</html>

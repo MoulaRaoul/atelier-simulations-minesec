@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulation : Volume Pyramide vs Prisme</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Personnalisation du slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 3px;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Animation de pulsation pour les boutons actifs */
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+        }
+        .btn-active {
+            animation: pulse-glow 2s infinite;
+        }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row h-screen bg-slate-900 text-slate-100 overflow-hidden">
+
+    <!-- Panneau de contrôle latéral -->
+    <aside class="w-full md:w-96 glass-panel flex flex-col z-10 shadow-2xl transition-all duration-300 overflow-y-auto">
+        <div class="p-6 border-b border-slate-700/50">
+            <h1 class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500">
+                L'Énigme des Volumes
+            </h1>
+            <p class="text-sm text-slate-400 mt-2">Niveau : 4ème - Géométrie dans l'espace</p>
+        </div>
+
+        <div class="p-6 flex-1 flex flex-col gap-6">
+            <!-- Etape 1 : Paramètres -->
+            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4"><i class="fas fa-sliders-h mr-2"></i>1. Paramètres</h2>
+                
+                <div class="mb-4">
+                    <label class="block text-sm text-slate-400 mb-2">Forme de la base</label>
+                    <div class="relative">
+                        <select id="baseSelect" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 appearance-none focus:outline-none focus:border-sky-500 transition-colors">
+                            <option value="3">Triangle (Base triangulaire)</option>
+                            <option value="4" selected>Carré (Base carrée)</option>
+                            <option value="5">Pentagone (5 côtés)</option>
+                            <option value="6">Hexagone (6 côtés)</option>
+                            <option value="32">Cercle (Cône & Cylindre)</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-4 top-4 text-slate-400 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm text-slate-400 mb-2 flex justify-between">
+                        <span>Hauteur des solides</span>
+                        <span id="heightValue" class="text-sky-400 font-bold">4 cm</span>
+                    </label>
+                    <input type="range" id="heightSlider" min="3" max="8" step="1" value="4">
+                </div>
+            </div>
+
+            <!-- Etape 2 : Expérimentation -->
+            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 flex-1 flex flex-col">
+                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4"><i class="fas fa-flask mr-2"></i>2. Expérimentation</h2>
+                
+                <div class="text-sm text-slate-400 mb-4 text-center">
+                    Combien de pyramides remplies d'eau faut-il pour remplir entièrement le prisme de même base et hauteur ?
+                </div>
+
+                <div class="flex flex-col gap-3 mt-auto">
+                    <button id="btnFill" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 btn-active">
+                        <i class="fas fa-tint"></i> Remplir la pyramide
+                    </button>
+                    
+                    <button id="btnPour" disabled class="bg-amber-600 hover:bg-amber-500 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg flex items-center justify-center gap-2">
+                        <i class="fas fa-arrow-right"></i> Verser dans le prisme
+                    </button>
+                </div>
+
+                <!-- Indicateur de versements -->
+                <div class="mt-6 flex flex-col items-center">
+                    <span class="text-xs text-slate-400 uppercase tracking-wider mb-2">Versements effectués</span>
+                    <div class="flex gap-3" id="pourIndicators">
+                        <div class="w-6 h-6 rounded-full border-2 border-slate-600 flex items-center justify-center transition-all duration-500" data-index="1"></div>
+                        <div class="w-6 h-6 rounded-full border-2 border-slate-600 flex items-center justify-center transition-all duration-500" data-index="2"></div>
+                        <div class="w-6 h-6 rounded-full border-2 border-slate-600 flex items-center justify-center transition-all duration-500" data-index="3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Zone Canvas 3D -->
+    <main class="flex-1 relative cursor-move" id="canvas-container">
+        <!-- Instructions superposées -->
+        <div class="absolute top-6 right-6 bg-slate-900/60 backdrop-blur-md px-4 py-2 rounded-lg border border-slate-700 text-sm text-slate-300 pointer-events-none flex items-center gap-2">
+            <i class="fas fa-mouse text-slate-400"></i> Maintenir le clic pour tourner autour
+        </div>
+    </main>
+
+    <!-- Modale de Conclusion -->
+    <div id="conclusionModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500 p-4">
+        <div class="bg-slate-800 border border-slate-600 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden transform scale-95 transition-transform duration-500" id="modalContent">
+            
+            <div class="p-8 text-center">
+                <div class="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
+                    <i class="fas fa-check"></i>
+                </div>
+                
+                <h2 class="text-3xl font-bold text-white mb-2">Le prisme est plein !</h2>
+                <p class="text-slate-400 mb-8 text-lg">Tu as eu besoin d'exactement <span class="text-white font-bold bg-slate-700 px-2 py-1 rounded">3</span> versements.</p>
+                
+                <div class="bg-slate-900 p-6 rounded-xl border border-slate-700 text-left mb-8">
+                    <h3 class="text-sky-400 font-bold mb-4 uppercase tracking-wider text-sm"><i class="fas fa-lightbulb mr-2"></i>Bilan Mathématique</h3>
+                    <p class="text-slate-300 mb-4 leading-relaxed">
+                        Puisque le prisme et la pyramide ont la <strong>même base</strong> et la <strong>même hauteur</strong>, on vient de prouver qu'il faut 3 pyramides pour faire 1 prisme.
+                    </p>
+                    <p class="text-slate-300 mb-4 leading-relaxed">
+                        Le volume de la pyramide est donc <strong>3 fois plus petit</strong> que celui du prisme correspondant !
+                    </p>
+                    
+                    <div class="bg-blue-900/30 border border-blue-500/30 p-4 rounded-lg text-center mt-6">
+                        <p class="text-slate-400 text-sm mb-2">Formule à retenir :</p>
+                        <p class="text-xl md:text-2xl font-mono text-white">
+                            V = <span class="text-sky-300">(Base × Hauteur)</span> ÷ 3
+                        </p>
+                    </div>
+                </div>
+                
+                <button id="btnReset" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg transition-colors w-full md:w-auto">
+                    <i class="fas fa-redo mr-2"></i> Recommencer l'expérience
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts CDN pour Three.js et OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        /* --- MOTEUR D'ANIMATION MAISON (Tween) --- */
+        const tweens = [];
+        function tweenTo(targetObject, property, endValue, duration, onUpdate, onComplete) {
+            const startValue = targetObject[property];
+            const change = endValue - startValue;
+            const startTime = performance.now();
+            
+            tweens.push({
+                update: (time) => {
+                    let elapsed = (time - startTime) / duration;
+                    if (elapsed > 1) elapsed = 1;
+                    
+                    // Fonction d'assouplissement (Ease In Out Quad)
+                    let ease = elapsed < 0.5 ? 2 * elapsed * elapsed : -1 + (4 - 2 * elapsed) * elapsed;
+                    
+                    targetObject[property] = startValue + change * ease;
+                    
+                    if (onUpdate) onUpdate();
+                    
+                    if (elapsed === 1) {
+                        if (onComplete) onComplete();
+                        return true;
+                    }
+                    return false;
+                }
+            });
+        }
+
+        /* --- ÉTAT DE L'APPLICATION --- */
+        const state = {
+            baseSides: 4,
+            height: 4,
+            radius: 3, 
+            pours: 0,
+            waterPyrLevel: 0,
+            waterPrismLevel: 0,
+            isAnimating: false,
+            pyramidFull: false,
+            isPouring: false // Nouveau flag pour l'animation des particules
+        };
+
+        /* --- INITIALISATION THREE.JS --- */
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color('#0f172a'); 
+
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 + 0.1;
+        controls.minDistance = 5;
+        controls.maxDistance = 40;
+
+        /* --- ÉCLAIRAGE --- */
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 15, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+
+        const backLight = new THREE.DirectionalLight(0xa5f3fc, 0.5);
+        backLight.position.set(-10, 5, -10);
+        scene.add(backLight);
+
+        /* --- DÉCOR (Table) --- */
+        const floorGeo = new THREE.PlaneGeometry(100, 100);
+        const floorMat = new THREE.MeshStandardMaterial({ 
+            color: 0x1e293b, 
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        const gridHelper = new THREE.GridHelper(40, 40, 0x334155, 0x1e293b);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+
+        /* --- MATÉRIAUX --- */
+        const glassMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            metalness: 0.1,
+            roughness: 0.1,
+            transmission: 0.85,
+            ior: 1.5,
+            opacity: 1,
+            transparent: true,
+            side: THREE.DoubleSide,
+            depthWrite: false 
+        });
+
+        const waterMat = new THREE.MeshPhysicalMaterial({
+            color: 0x0ea5e9,
+            metalness: 0.1,
+            roughness: 0.2,
+            transmission: 0.5,
+            opacity: 0.9,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+
+        // Groupes
+        const pyramidGroup = new THREE.Group();
+        pyramidGroup.position.x = -4.5;
+        scene.add(pyramidGroup);
+
+        const prismGroup = new THREE.Group();
+        prismGroup.position.x = 4.5;
+        scene.add(prismGroup);
+
+        let prismGlass, pyramidGlass, prismWater, pyramidWater;
+        
+        // Système de particules pour l'eau
+        let waterStream;
+        const particles = [];
+
+        /* --- FONCTIONS DE GÉNÉRATION 3D --- */
+        function createSolids() {
+            if(prismGlass) prismGroup.remove(prismGlass);
+            if(pyramidGlass) pyramidGroup.remove(pyramidGlass);
+            if(prismWater) prismGroup.remove(prismWater);
+            if(pyramidWater) pyramidGroup.remove(pyramidWater);
+
+            const s = state.baseSides;
+            const h = state.height;
+            const r = state.radius;
+
+            // 1. Pyramide
+            const pyrGeo = new THREE.CylinderGeometry(0, r, h, s);
+            pyramidGlass = new THREE.Mesh(pyrGeo, glassMat);
+            pyramidGlass.position.y = h / 2;
+            pyramidGlass.castShadow = true;
+            
+            const edgesPyr = new THREE.LineSegments(
+                new THREE.EdgesGeometry(pyrGeo), 
+                new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 })
+            );
+            pyramidGlass.add(edgesPyr);
+            pyramidGroup.add(pyramidGlass);
+
+            // 2. Prisme
+            const prismGeo = new THREE.CylinderGeometry(r, r, h, s);
+            prismGlass = new THREE.Mesh(prismGeo, glassMat);
+            prismGlass.position.y = h / 2;
+            prismGlass.castShadow = true;
+            
+            const edgesPrism = new THREE.LineSegments(
+                new THREE.EdgesGeometry(prismGeo), 
+                new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 })
+            );
+            prismGlass.add(edgesPrism);
+            prismGroup.add(prismGlass);
+
+            if(s === 4) {
+                pyramidGlass.rotation.y = Math.PI / 4;
+                prismGlass.rotation.y = Math.PI / 4;
+            }
+
+            pyramidWater = new THREE.Mesh(new THREE.BufferGeometry(), waterMat);
+            pyramidGroup.add(pyramidWater);
+            
+            prismWater = new THREE.Mesh(new THREE.BufferGeometry(), waterMat);
+            prismGroup.add(prismWater);
+
+            // Création du filet d'eau central (caché par défaut)
+            if (!waterStream) {
+                waterStream = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1, 16), waterMat);
+                waterStream.visible = false;
+                scene.add(waterStream);
+            }
+
+            updateWaterMeshes();
+
+            camera.position.set(0, h + 6, h + 16);
+            controls.target.set(0, h / 2, 0);
+        }
+
+        function updateWaterMeshes() {
+            const s = state.baseSides;
+            const H = state.height;
+            const r = state.radius;
+
+            if(state.waterPyrLevel > 0.05) {
+                const level = state.waterPyrLevel;
+                const topRadius = r * (1 - level / H);
+                const wPyrGeo = new THREE.CylinderGeometry(topRadius, r, level, s);
+                pyramidWater.geometry.dispose();
+                pyramidWater.geometry = wPyrGeo;
+                pyramidWater.position.y = level / 2;
+                pyramidWater.visible = true;
+                if(s === 4) pyramidWater.rotation.y = Math.PI / 4;
+            } else {
+                pyramidWater.visible = false;
+            }
+
+            if(state.waterPrismLevel > 0.05) {
+                const level = state.waterPrismLevel;
+                const wPrismGeo = new THREE.CylinderGeometry(r, r, level, s);
+                prismWater.geometry.dispose();
+                prismWater.geometry = wPrismGeo;
+                prismWater.position.y = level / 2;
+                prismWater.visible = true;
+                if(s === 4) prismWater.rotation.y = Math.PI / 4;
+            } else {
+                prismWater.visible = false;
+            }
+        }
+
+        /* --- GESTION DE L'UI ET DES INTERACTIONS --- */
+        const baseSelect = document.getElementById('baseSelect');
+        const heightSlider = document.getElementById('heightSlider');
+        const heightValue = document.getElementById('heightValue');
+        const btnFill = document.getElementById('btnFill');
+        const btnPour = document.getElementById('btnPour');
+        const pourIndicators = document.querySelectorAll('#pourIndicators div');
+        const modal = document.getElementById('conclusionModal');
+        const modalContent = document.getElementById('modalContent');
+        const btnReset = document.getElementById('btnReset');
+
+        function updateUIState() {
+            if (state.isAnimating) {
+                btnFill.disabled = true;
+                btnPour.disabled = true;
+                baseSelect.disabled = true;
+                heightSlider.disabled = true;
+                btnFill.classList.remove('btn-active');
+                return;
+            }
+
+            baseSelect.disabled = false;
+            heightSlider.disabled = false;
+
+            if (state.pours === 3) {
+                btnFill.disabled = true;
+                btnPour.disabled = true;
+                btnFill.classList.remove('btn-active');
+            } else if (state.pyramidFull) {
+                btnFill.disabled = true;
+                btnPour.disabled = false;
+                btnFill.classList.remove('btn-active');
+                btnPour.classList.add('btn-active');
+            } else {
+                btnFill.disabled = false;
+                btnPour.disabled = true;
+                btnFill.classList.add('btn-active');
+                btnPour.classList.remove('btn-active');
+            }
+
+            pourIndicators.forEach((dot, idx) => {
+                if (idx < state.pours) {
+                    dot.classList.add('bg-blue-500', 'border-blue-500');
+                    dot.classList.remove('border-slate-600');
+                    dot.innerHTML = '<i class="fas fa-check text-white text-xs"></i>';
+                } else {
+                    dot.classList.remove('bg-blue-500', 'border-blue-500');
+                    dot.classList.add('border-slate-600');
+                    dot.innerHTML = '';
+                }
+            });
+        }
+
+        function resetExperiment() {
+            state.pours = 0;
+            state.waterPyrLevel = 0;
+            state.waterPrismLevel = 0;
+            state.pyramidFull = false;
+            state.isAnimating = false;
+            state.isPouring = false;
+            
+            // Réinitialisation des positions (au cas où on reset pendant l'animation)
+            pyramidGroup.position.set(-4.5, 0, 0);
+            pyramidGroup.rotation.z = 0;
+            if(waterStream) waterStream.visible = false;
+            particles.forEach(p => scene.remove(p));
+            particles.length = 0;
+
+            updateWaterMeshes();
+            updateUIState();
+            
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+        }
+
+        baseSelect.addEventListener('change', (e) => {
+            state.baseSides = parseInt(e.target.value);
+            resetExperiment();
+            createSolids();
+        });
+
+        heightSlider.addEventListener('input', (e) => {
+            state.height = parseInt(e.target.value);
+            heightValue.textContent = state.height + ' cm';
+            resetExperiment();
+            createSolids();
+        });
+
+        btnFill.addEventListener('click', () => {
+            if(state.pyramidFull || state.isAnimating) return;
+            state.isAnimating = true;
+            updateUIState();
+
+            tweenTo(state, 'waterPyrLevel', state.height, 1000, updateWaterMeshes, () => {
+                state.pyramidFull = true;
+                state.isAnimating = false;
+                updateUIState();
+            });
+        });
+
+        btnPour.addEventListener('click', () => {
+            if(!state.pyramidFull || state.isAnimating) return;
+            state.isAnimating = true;
+            btnPour.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Versement...';
+            updateUIState();
+
+            const targetPrismLevel = ((state.pours + 1) * state.height) / 3;
+            
+            // Sauvegarder la position de départ
+            const origX = pyramidGroup.position.x;
+            const origY = pyramidGroup.position.y;
+
+            // Calcul de la position de versement idéale pour que la pointe survole le prisme
+            const angle = -Math.PI * 0.8; // Inclinaison à 144 degrés
+            const pourX = 4.5 - state.height * Math.sin(angle);
+            const pourY = state.height + 1.5 - state.height * Math.cos(angle);
+
+            // Étape 1 : Soulever et pencher la pyramide
+            tweenTo(pyramidGroup.position, 'x', pourX, 1000);
+            tweenTo(pyramidGroup.position, 'y', pourY, 1000);
+            tweenTo(pyramidGroup.rotation, 'z', angle, 1000, null, () => {
+                
+                // Étape 2 : Lancer le filet d'eau et vider la pyramide
+                state.isPouring = true; 
+                
+                tweenTo(state, 'waterPyrLevel', 0, 2000, updateWaterMeshes);
+                tweenTo(state, 'waterPrismLevel', targetPrismLevel, 2000, updateWaterMeshes, () => {
+                    
+                    // Étape 3 : Arrêter l'eau et redresser la pyramide
+                    state.isPouring = false;
+                    
+                    tweenTo(pyramidGroup.position, 'x', origX, 1000);
+                    tweenTo(pyramidGroup.position, 'y', origY, 1000);
+                    tweenTo(pyramidGroup.rotation, 'z', 0, 1000, null, () => {
+                        
+                        // Fin du versement complet
+                        state.pours++;
+                        state.pyramidFull = false;
+                        state.isAnimating = false;
+                        btnPour.innerHTML = '<i class="fas fa-arrow-right"></i> Verser dans le prisme';
+                        updateUIState();
+
+                        if (state.pours === 3) {
+                            setTimeout(() => {
+                                modal.classList.remove('opacity-0', 'pointer-events-none');
+                                modalContent.classList.remove('scale-95');
+                                modalContent.classList.add('scale-100');
+                            }, 500);
+                        }
+                    });
+                });
+            });
+        });
+
+        btnReset.addEventListener('click', resetExperiment);
+
+        /* --- GESTION DES PARTICULES (Éclaboussures) --- */
+        function updateParticles() {
+            if (state.isPouring) {
+                waterStream.visible = true;
+                const dropY = state.waterPrismLevel; 
+                
+                // Calculer la position exacte de la pointe de la pyramide dans le monde
+                const apex = new THREE.Vector3(0, state.height, 0);
+                pyramidGroup.localToWorld(apex);
+                
+                // Dessiner le filet d'eau principal
+                const streamHeight = apex.y - dropY;
+                if (streamHeight > 0) {
+                    waterStream.scale.set(1, streamHeight, 1);
+                    waterStream.position.set(apex.x, dropY + streamHeight / 2, apex.z);
+
+                    // Générer des gouttelettes à l'impact
+                    for(let i = 0; i < 3; i++) {
+                        const drop = new THREE.Mesh(
+                            new THREE.SphereGeometry(Math.random() * 0.12 + 0.04, 8, 8), 
+                            waterMat
+                        );
+                        // Dispersion aléatoire autour de l'impact
+                        drop.position.set(
+                            apex.x + (Math.random() - 0.5) * 0.4, 
+                            dropY, 
+                            apex.z + (Math.random() - 0.5) * 0.4
+                        );
+                        // Vélocité vers le haut pour le rebond
+                        drop.velocity = new THREE.Vector3(
+                            (Math.random() - 0.5) * 2, 
+                            Math.random() * 3 + 1.5, 
+                            (Math.random() - 0.5) * 2
+                        );
+                        drop.life = 1.0;
+                        scene.add(drop);
+                        particles.push(drop);
+                    }
+                }
+            } else {
+                if(waterStream) waterStream.visible = false;
+            }
+
+            // Mettre à jour la physique des gouttes existantes
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.position.addScaledVector(p.velocity, 0.03); // Déplacement (approx dt)
+                p.velocity.y -= 0.25; // Gravité plus prononcée
+                p.life -= 0.035;      // Vieillissement
+                
+                p.scale.setScalar(Math.max(0.001, p.life));
+                
+                // Rebond si la goutte touche la surface de l'eau
+                if (p.position.y <= state.waterPrismLevel && p.velocity.y < 0) {
+                    p.position.y = state.waterPrismLevel;
+                    p.velocity.y *= -0.3; // Amortissement du rebond
+                }
+
+                // Disparition
+                if (p.life <= 0) {
+                    scene.remove(p);
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        /* --- BOUCLE DE RENDU --- */
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const time = performance.now();
+            for (let i = tweens.length - 1; i >= 0; i--) {
+                if (tweens[i].update(time)) {
+                    tweens.splice(i, 1);
+                }
+            }
+
+            // Appel du nouveau système de particules
+            updateParticles();
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Lancement
+        createSolids();
+        updateUIState();
+        animate();
+
+    </script>
+</body>
+</html>

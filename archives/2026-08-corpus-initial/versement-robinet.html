@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Du robinet au prisme — pyramide et prisme</title>
+<style>
+  :root{
+    --fond:#05171F; --halo:#0C3242; --point:#86D9EA;
+    --eau:#2FBBDD; --ecume:#BDEEF9; --trait:#F0E7D6; --or:#F2C14E;
+    --sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--fond);color:var(--trait);font-family:var(--sans);
+       overflow:hidden;-webkit-font-smoothing:antialiased}
+  #scene{position:fixed;inset:0;display:block}
+
+  .entete{position:fixed;top:0;left:0;padding:20px 22px;pointer-events:none;z-index:2}
+  .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.5;margin:0 0 6px}
+  .entete h1{font-size:15px;font-weight:600;margin:0;opacity:.9}
+  .entete p{font-size:13px;margin:6px 0 0;opacity:.55;max-width:32ch;line-height:1.45}
+
+  .barre{position:fixed;left:0;right:0;bottom:0;z-index:3;padding:16px 22px;
+         display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .agir{padding:11px 20px;font-size:14px;font-weight:600;color:#05171F;background:var(--eau);
+        border:none;border-radius:8px;cursor:pointer;transition:filter .18s}
+  .agir:hover:not(:disabled){filter:brightness(1.12)}
+  .agir:disabled{opacity:.32;cursor:default}
+  .fantome{padding:10px 14px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+           text-transform:uppercase;color:var(--trait);background:rgba(255,255,255,.05);
+           border:1px solid rgba(255,255,255,.12);border-radius:8px;cursor:pointer}
+  .fantome:hover{background:rgba(255,255,255,.12)}
+  .bascule{display:flex;align-items:center;gap:8px;font-size:12.5px;opacity:.8;cursor:pointer}
+  .bascule input{accent-color:var(--eau);width:15px;height:15px;cursor:pointer}
+  .segments{display:flex;gap:4px;margin-left:auto}
+  .segments button{width:38px;padding:9px 0;font-family:var(--mono);font-size:12px;color:var(--trait);
+        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:6px;cursor:pointer}
+  .segments button[aria-pressed="true"]{background:var(--trait);border-color:var(--trait);color:#05171F;font-weight:700}
+  button:focus-visible,input:focus-visible{outline:2px solid var(--point);outline-offset:2px}
+  .compte{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.6}
+  .compte b{color:var(--or);font-weight:600}
+
+  .verdict{position:fixed;left:50%;top:13%;transform:translateX(-50%);z-index:3;text-align:center;
+           pointer-events:none;opacity:0;transition:opacity .5s}
+  .verdict.on{opacity:1}
+  .verdict strong{display:block;font-size:20px;font-weight:600}
+  .verdict span{display:block;margin-top:6px;font-size:13.5px;opacity:.6}
+
+  @media (max-width:680px){
+    .entete p{display:none}
+    .barre{gap:8px;padding:12px}
+    .segments{margin-left:0;width:100%}
+    .segments button{flex:1;width:auto}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="scene" aria-label="Une pyramide se remplit au robinet puis verse son eau dans un prisme de même base et de même hauteur"></canvas>
+
+<div class="entete">
+  <p class="eyebrow">Même base · même hauteur</p>
+  <h1>Combien de pyramides pour remplir le prisme ?</h1>
+  <p>Le niveau suit le volume, image par image. Rien n'est truqué.</p>
+</div>
+
+<div class="verdict" id="verdict">
+  <strong>Trois versements, exactement.</strong>
+  <span>La pyramide contient le tiers du prisme.</span>
+</div>
+
+<div class="barre">
+  <button class="agir" id="verser">Aller au robinet</button>
+  <button class="fantome" id="reprendre">Recommencer</button>
+  <label class="bascule"><input type="checkbox" id="robinet" checked> Montrer le robinet</label>
+  <span class="compte">Versements <b id="compte">0</b> / 3</span>
+  <div class="segments" id="bases">
+    <button data-n="3" aria-pressed="false">3</button>
+    <button data-n="4" aria-pressed="true">4</button>
+    <button data-n="5" aria-pressed="false">5</button>
+    <button data-n="6" aria-pressed="false">6</button>
+    <button data-n="0" aria-pressed="false">◯</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const C={fond:"#05171F",halo:"#0C3242",point:"#86D9EA",eau:"#2FBBDD",
+           ecume:"#BDEEF9",trait:"#F0E7D6",or:"#F2C14E"};
+  function rgba(hex,a){const v=parseInt(hex.slice(1),16);
+    return "rgba("+((v>>16)&255)+","+((v>>8)&255)+","+(v&255)+","+a+")";}
+  function melange(A,B,t){const a=parseInt(A.slice(1),16),b=parseInt(B.slice(1),16);
+    const r=[(a>>16)&255,(a>>8)&255,a&255],s=[(b>>16)&255,(b>>8)&255,b&255];
+    return "rgb("+Math.round(r[0]+(s[0]-r[0])*t)+","+Math.round(r[1]+(s[1]-r[1])*t)+","+Math.round(r[2]+(s[2]-r[2])*t)+")";}
+
+  /* ============ géométrie (validée hors ligne) ============ */
+  const ELEV=22*Math.PI/180, SE=Math.sin(ELEV), CE=Math.cos(ELEV), K=44;
+  function proj(p,ox,oy){ return [ox+p[0], oy+p[1]*SE-p[2]*CE]; }
+
+  function anneau(n,R,z){
+    const m=n===0?24:n, pts=[];
+    for(let i=0;i<m;i++){ const a=Math.PI+i*2*Math.PI/m;
+      pts.push([R*Math.cos(a),R*Math.sin(a),z]); }
+    return pts;
+  }
+  function rotY(p,phi,cz){
+    const c=Math.cos(phi),s=Math.sin(phi),x=p[0],z=p[2]-cz;
+    return [x*c+z*s, p[1], cz-x*s+z*c];
+  }
+  function enveloppe(pts){
+    const p=pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+    if(p.length<3) return p;
+    const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+    const bas=[],haut=[];
+    for(const q of p){ while(bas.length>=2&&cr(bas[bas.length-2],bas[bas.length-1],q)<=0)bas.pop(); bas.push(q); }
+    for(let i=p.length-1;i>=0;i--){ const q=p[i];
+      while(haut.length>=2&&cr(haut[haut.length-2],haut[haut.length-1],q)<=0)haut.pop(); haut.push(q); }
+    bas.pop(); haut.pop(); return bas.concat(haut);
+  }
+  function listeAretes(rim,apex){
+    const e=[];
+    for(let i=0;i<rim.length;i++){ e.push([rim[i],rim[(i+1)%rim.length]]); e.push([rim[i],apex]); }
+    return e;
+  }
+  function section(edges,z){
+    const pts=[];
+    for(const a of edges){
+      const p=a[0],q=a[1],z1=p[2],z2=q[2];
+      if((z1-z)*(z2-z)>0) continue;
+      if(Math.abs(z2-z1)<1e-9){ pts.push([p[0],p[1]]); pts.push([q[0],q[1]]); continue; }
+      const t=(z-z1)/(z2-z1);
+      if(t<-1e-9||t>1+1e-9) continue;
+      pts.push([p[0]+(q[0]-p[0])*t, p[1]+(q[1]-p[1])*t]);
+    }
+    return pts.length>=3?enveloppe(pts):[];
+  }
+  function aire(poly){
+    if(poly.length<3) return 0;
+    let s=0;
+    for(let i=0;i<poly.length;i++){ const a=poly[i],b=poly[(i+1)%poly.length]; s+=a[0]*b[1]-b[0]*a[1]; }
+    return Math.abs(s)/2;
+  }
+  function table(rim,apex){
+    const edges=listeAretes(rim,apex);
+    let zmin=apex[2],zmax=apex[2];
+    for(const p of rim){ if(p[2]<zmin)zmin=p[2]; if(p[2]>zmax)zmax=p[2]; }
+    const dz=(zmax-zmin)/K, zs=[], vs=[];
+    let cum=0, prev=0;
+    for(let k=0;k<=K;k++){
+      const z=zmin+dz*k, A=aire(section(edges,z));
+      if(k>0) cum+=(prev+A)/2*dz;
+      zs.push(z); vs.push(cum); prev=A;
+    }
+    return {zmin:zmin,zmax:zmax,zs:zs,vs:vs,total:cum||1,edges:edges};
+  }
+  function fractionAu(T,z){
+    if(z<=T.zmin) return 0; if(z>=T.zmax) return 1;
+    const dz=(T.zmax-T.zmin)/K, k=Math.min(K-1,Math.floor((z-T.zmin)/dz));
+    return (T.vs[k]+(T.vs[k+1]-T.vs[k])*((z-T.zs[k])/dz))/T.total;
+  }
+  function niveauPour(T,f){
+    if(f<=0) return T.zmin; if(f>=1) return T.zmax;
+    const cible=f*T.total; let k=0;
+    while(k<K&&T.vs[k+1]<cible) k++;
+    const d=T.vs[k+1]-T.vs[k];
+    return T.zs[k]+(T.zs[k+1]-T.zs[k])*(d>1e-12?(cible-T.vs[k])/d:0);
+  }
+
+  /* ============ scène ============ */
+  const cv=document.getElementById("scene");
+  const ctx=cv.getContext("2d",{alpha:false});
+  const reduit=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W=0,H=0,dpr=1,R=0,h=0,gy=0,d=0,xTap=0,xRepos=0,xPrisme=0,panMax=0,perf=0;
+
+  function mesures(){
+    const u=Math.min(W*0.155,H*0.19,124);
+    R=u; h=u*2.05; gy=H*0.68;
+    d=Math.min(W*0.21,190);
+    xRepos=-d*0.85; xPrisme=d*0.85; xTap=-d*2.15;
+    panMax=Math.max(0,W/2-R-26-(xPrisme+W/2)+W/2-W/2);
+    panMax=Math.max(0,(W/2-R-26)-xPrisme);
+  }
+
+  const S={ n:4, phase:"attente", t0:0, versements:0, robinet:true,
+            f:0, phi:0, tau:0, fPri:0, ox:0, oy:0, cam:0, camCible:0,
+            remous:0, debit:0, flash:0, marque:-1 };
+
+  const DUR={ versLeRobinet:1200, remplissage:1500, versLePrisme:1150,
+              versement:2200, egouttage:520, retour:950, repos:650 };
+  const DUR_COURT={ versLeRobinet:600, remplissage:900, versLePrisme:500,
+              versement:2200, egouttage:520, retour:950, repos:650 };
+  function duree(p){ return (S.robinet?DUR:DUR_COURT)[p]||500; }
+  const TAUMAX=0.48*Math.PI;
+
+  /* fond */
+  let grains=[],angle=0;
+  function semer(){ grains=[];
+    for(let i=0;i<60;i++) grains.push({r:0.06+Math.random()*0.72,a:Math.random()*6.283,
+      z:0.25+Math.random()*0.75,ph:Math.random()*6.283,vph:0.15+Math.random()*0.35,va:0.6+Math.random()*0.8}); }
+  function fond(){
+    const cx=W/2,cy=H/2,eclat=0.55+S.fPri*0.45;
+    ctx.fillStyle=C.fond; ctx.fillRect(0,0,W,H);
+    const g=ctx.createRadialGradient(cx,cy*1.06,0,cx,cy*1.06,Math.max(W,H)*0.72);
+    g.addColorStop(0,melange(C.fond,C.halo,0.92*eclat));
+    g.addColorStop(0.45,melange(C.fond,C.halo,0.34*eclat));
+    g.addColorStop(1,C.fond);
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  }
+  function poussiere(t,calme){
+    const cx=W/2,cy=H/2,ech=Math.max(W,H)*0.62,att=1-calme*0.62;
+    for(const q of grains){
+      const a=q.a+angle*q.va, rr=(q.r+Math.sin(t*q.vph+q.ph)*0.022)/q.z;
+      const x=cx+Math.cos(a)*rr*ech, y=cy+Math.sin(a)*rr*ech*0.66;
+      if(x<-40||x>W+40||y<-40||y>H+40) continue;
+      ctx.beginPath(); ctx.arc(x,y,(2.4/q.z)*0.5,0,6.283);
+      ctx.fillStyle=rgba(C.point,Math.max((0.40-q.z*0.26)*att,0.03)); ctx.fill();
+    }
+  }
+
+  function chemin(p){ ctx.beginPath(); ctx.moveTo(p[0][0],p[0][1]);
+    for(let i=1;i<p.length;i++) ctx.lineTo(p[i][0],p[i][1]); ctx.closePath(); }
+  function remplirEnv(p,st){ ctx.fillStyle=st; chemin(enveloppe(p)); ctx.fill(); }
+  function aretesRing(ring,ox,oy,devant,st,ep){
+    ctx.strokeStyle=st; ctx.lineWidth=ep; ctx.beginPath();
+    for(let i=0;i<ring.length;i++){
+      const a=ring[i],b=ring[(i+1)%ring.length];
+      if((((a[1]+b[1])/2)<0)!==devant) continue;
+      const pa=proj(a,ox,oy),pb=proj(b,ox,oy);
+      ctx.moveTo(pa[0],pa[1]); ctx.lineTo(pb[0],pb[1]);
+    }
+    ctx.stroke();
+  }
+
+  /* table mise en cache tant que l'inclinaison ne bouge pas */
+  let cache={cle:"",T:null,rim:null,apex:null};
+  function vase(){
+    const cle=S.n+"|"+(Math.round(S.phi*400)/400);
+    if(cache.cle!==cle){
+      const cz=h/2;
+      const rim=anneau(S.n,R,0).map(p=>rotY(p,S.phi,cz));
+      const apex=rotY([0,0,h],S.phi,cz);
+      cache={cle:cle,T:table(rim,apex),rim:rim,apex:apex};
+    }
+    return cache;
+  }
+
+  function dessinerPyramide(){
+    const v=vase(), ox=S.ox, oy=S.oy;
+    const P=a=>a.map(p=>proj(p,ox,oy));
+    const pApex=proj(v.apex,ox,oy);
+    remplirEnv(P(v.rim).concat([pApex]), rgba(C.trait,0.05));
+
+    let nappe=null;
+    if(S.f>0.0015){
+      const c=niveauPour(v.T,S.f);
+      const sous=v.rim.filter(p=>p[2]<c).map(p=>proj(p,ox,oy));
+      if(v.apex[2]<c) sous.push(pApex);
+      const sec=section(v.T.edges,c);
+      const pSec=sec.map(p=>proj([p[0],p[1],c],ox,oy));
+      if(sous.length+pSec.length>=3) remplirEnv(sous.concat(pSec), rgba(C.eau,0.42));
+      if(pSec.length>=3){
+        nappe=pSec;
+        ctx.fillStyle=rgba(C.eau,0.78); chemin(pSec); ctx.fill();
+        ctx.strokeStyle=rgba(C.ecume,0.8); ctx.lineWidth=1.2; ctx.stroke();
+      }
+    }
+
+    aretesRing(v.rim,ox,oy,false,rgba(C.trait,0.18),1.1);
+    ctx.strokeStyle=rgba(C.trait,0.5); ctx.lineWidth=1.1; ctx.beginPath();
+    let mi=0,ma=0;
+    for(let i=1;i<v.rim.length;i++){
+      if(proj(v.rim[i],ox,oy)[0]<proj(v.rim[mi],ox,oy)[0]) mi=i;
+      if(proj(v.rim[i],ox,oy)[0]>proj(v.rim[ma],ox,oy)[0]) ma=i;
+    }
+    for(let i=0;i<v.rim.length;i++){
+      if(S.n===0&&i!==mi&&i!==ma) continue;
+      const a=proj(v.rim[i],ox,oy);
+      ctx.moveTo(a[0],a[1]); ctx.lineTo(pApex[0],pApex[1]);
+    }
+    ctx.stroke();
+    aretesRing(v.rim,ox,oy,true,rgba(C.trait,0.78),1.2);
+    return {nappe:nappe, bec:proj(v.rim[0],ox,oy)};
+  }
+
+  function dessinerPrisme(){
+    const ox=W/2+xPrisme+S.cam, oy=gy, f=S.fPri;
+    const base=anneau(S.n,R,0), haut=anneau(S.n,R,h);
+    const P=a=>a.map(p=>proj(p,ox,oy));
+    remplirEnv(P(base).concat(P(haut)), rgba(C.trait,0.05));
+    let nappe=null;
+    if(f>0.0015){
+      const bob=Math.sin(perf*0.006)*S.remous*1.5;
+      const r1=anneau(S.n,R,f*h);
+      remplirEnv(P(base).concat(P(r1)), rgba(C.eau,0.42));
+      nappe=P(r1).map(p=>[p[0],p[1]+bob]);
+      ctx.fillStyle=rgba(C.eau,0.78); chemin(nappe); ctx.fill();
+      ondes(ondesPri,nappe,ox);
+      ctx.strokeStyle=rgba(C.ecume,0.9); ctx.lineWidth=1.3; chemin(nappe); ctx.stroke();
+    }
+    aretesRing(base,ox,oy,false,rgba(C.trait,0.18),1.1);
+    aretesRing(haut,ox,oy,false,rgba(C.trait,0.18),1.1);
+    ctx.strokeStyle=rgba(C.trait,0.5); ctx.lineWidth=1.1; ctx.beginPath();
+    let mi=0,ma=0;
+    for(let i=1;i<base.length;i++){
+      if(proj(base[i],ox,oy)[0]<proj(base[mi],ox,oy)[0]) mi=i;
+      if(proj(base[i],ox,oy)[0]>proj(base[ma],ox,oy)[0]) ma=i;
+    }
+    for(let i=0;i<base.length;i++){
+      if(S.n===0&&i!==mi&&i!==ma) continue;
+      const a=proj(base[i],ox,oy),b=proj(haut[i],ox,oy);
+      ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]);
+    }
+    ctx.stroke();
+    aretesRing(base,ox,oy,true,rgba(C.trait,0.78),1.2);
+    aretesRing(haut,ox,oy,true,rgba(C.trait,0.78),1.2);
+    return {ox:ox, nappe:nappe};
+  }
+
+  function graduations(ox){
+    ctx.save(); ctx.setLineDash([4,5]); ctx.lineWidth=1;
+    ctx.font="10px "+getComputedStyle(document.body).getPropertyValue("--mono");
+    ctx.textBaseline="middle";
+    for(const k of [1,2]){
+      const y=gy-(k/3)*h*CE, vif=(S.marque===k)?S.flash:0;
+      ctx.strokeStyle=vif>0?rgba(C.or,0.35+vif*0.6):rgba(C.trait,0.26);
+      ctx.beginPath(); ctx.moveTo(ox-R-16,y); ctx.lineTo(ox+R+10,y); ctx.stroke();
+      ctx.fillStyle=vif>0?rgba(C.or,0.6+vif*0.4):rgba(C.trait,0.4);
+      ctx.fillText(k+"/3",ox+R+15,y);
+    }
+    ctx.restore();
+  }
+
+  /* robinet */
+  function ecranTap(){ return W/2+xTap+S.cam; }
+  function hauteurBec(){ return gy-h*CE-72; }
+  function dessinerRobinet(){
+    const x=ecranTap(), yb=hauteurBec();
+    ctx.strokeStyle=rgba(C.trait,0.55); ctx.lineWidth=3; ctx.lineCap="round";
+    ctx.beginPath();
+    ctx.moveTo(x-96,-10); ctx.lineTo(x-96,yb-46);
+    ctx.lineTo(x-8,yb-46); ctx.stroke();
+    ctx.lineWidth=6; ctx.beginPath();
+    ctx.moveTo(x-10,yb-46); ctx.lineTo(x,yb-46); ctx.lineTo(x,yb); ctx.stroke();
+    ctx.lineWidth=2.4; ctx.beginPath();
+    ctx.moveTo(x-96,yb-72); ctx.lineTo(x-96,yb-58); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(x-96,yb-78,13,4.5,0,0,6.283);
+    ctx.strokeStyle=rgba(C.trait,0.45); ctx.lineWidth=2.4; ctx.stroke();
+    ctx.lineCap="butt";
+  }
+
+  /* jets, gouttes, ondes */
+  const gouttes=[], ondesPri=[], ondesPyr=[];
+  function goutte(x,y,vx,vy,r){ if(gouttes.length<40) gouttes.push({x:x,y:y,vx:vx,vy:vy,r:r,v:1}); }
+  function onde(tab,x,y){ if(tab.length<5) tab.push({r:2,v:1}); }
+  function majParticules(dt){
+    for(let i=gouttes.length-1;i>=0;i--){ const g=gouttes[i];
+      g.vy+=340*dt; g.x+=g.vx*dt; g.y+=g.vy*dt; g.v-=dt*2.1;
+      if(g.v<=0) gouttes.splice(i,1); }
+    for(const tab of [ondesPri,ondesPyr])
+      for(let i=tab.length-1;i>=0;i--){ const c=tab[i]; c.r+=dt*R*1.5; c.v-=dt*1.5;
+        if(c.v<=0||c.r>R*1.05) tab.splice(i,1); }
+  }
+  function dessinerGouttes(){
+    for(const g of gouttes){ ctx.beginPath(); ctx.arc(g.x,g.y,g.r,0,6.283);
+      ctx.fillStyle=rgba(C.ecume,Math.max(g.v,0)*0.8); ctx.fill(); }
+  }
+  function ondes(tab,nappe,cx){
+    if(!tab.length||!nappe) return;
+    ctx.save(); chemin(nappe); ctx.clip();
+    const cy=nappe.reduce((s,p)=>s+p[1],0)/nappe.length;
+    for(const c of tab){ ctx.beginPath(); ctx.ellipse(cx,cy,c.r,c.r*SE,0,0,6.283);
+      ctx.strokeStyle=rgba(C.ecume,Math.max(c.v,0)*0.5); ctx.lineWidth=1.4; ctx.stroke(); }
+    ctx.restore();
+  }
+  function jet(x0,y0,x1,y1,force){
+    if(force<=0.02||y1-y0<=2) return;
+    const N=16,L=y1-y0;
+    const g=ctx.createLinearGradient(0,y0,0,y1);
+    g.addColorStop(0,rgba(C.ecume,0.9)); g.addColorStop(1,rgba(C.eau,0.85));
+    const G=[],D=[];
+    for(let i=0;i<=N;i++){
+      const s=i/N, y=y0+L*s, x=x0+(x1-x0)*s+Math.sin(perf*0.006-s*2.4)*1.5;
+      const w=(6.4-2.9*s)*force+Math.sin(perf*0.02-s*5)*0.5*force;
+      G.push([x-w/2,y]); D.push([x+w/2,y]);
+    }
+    ctx.beginPath(); ctx.moveTo(G[0][0],G[0][1]);
+    for(const p of G) ctx.lineTo(p[0],p[1]);
+    for(let i=D.length-1;i>=0;i--) ctx.lineTo(D[i][0],D[i][1]);
+    ctx.closePath(); ctx.fillStyle=g; ctx.fill();
+  }
+
+  /* positions */
+  function origineRepos(){ return [W/2+xRepos+S.cam, gy]; }
+  function origineTap(){ return [ecranTap(), gy]; }
+  function origineVerse(){
+    const v=vase(), cible=[W/2+xPrisme+S.cam, gy-h*CE-38], b=v.rim[0];
+    return [ cible[0]-b[0], cible[1]-(b[1]*SE-b[2]*CE) ];
+  }
+  function facile(u){ return u<0.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2; }
+  function lerp(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t]; }
+
+  /* ============ déroulé ============ */
+  function horloge(dt){
+    const p=S.phase;
+    S.cam+=(S.camCible-S.cam)*Math.min(dt*3.2,1);
+    S.flash=Math.max(0,S.flash-dt*1.6);
+    S.debit=Math.max(0,S.debit-dt*3);
+
+    if(p==="attente"||p==="fini"){
+      const o=origineRepos(); S.ox=o[0]; S.oy=o[1];
+      S.remous+=(0-S.remous)*Math.min(dt*3,1);
+      return;
+    }
+    const u=Math.min((perf-S.t0)/duree(p),1);
+
+    if(p==="versLeRobinet"){
+      const e=facile(u);
+      S.phi=Math.PI*e;
+      const o=lerp(origineRepos(),S.robinet?origineTap():origineRepos(),e);
+      S.ox=o[0]; S.oy=o[1];
+      if(u>=1){ S.phase="remplissage"; S.t0=perf; }
+    }
+    else if(p==="remplissage"){
+      const o=S.robinet?origineTap():origineRepos(); S.ox=o[0]; S.oy=o[1];
+      S.f=u; S.debit=1;
+      if(Math.random()<dt*6) onde(ondesPyr);
+      if(u>=1){ S.f=1; S.camCible=0; S.phase="versLePrisme"; S.t0=perf; }
+    }
+    else if(p==="versLePrisme"){
+      const e=facile(u);
+      const dep=S.robinet?origineTap():origineRepos();
+      const o=lerp(dep,origineVerse(),e); S.ox=o[0]; S.oy=o[1];
+      if(u>=1){ S.phase="versement"; S.t0=perf; S.tau=0; }
+    }
+    else if(p==="versement"){
+      const e=u*u*(3-2*u);
+      S.tau=TAUMAX*e; S.phi=Math.PI+S.tau;
+      const o=origineVerse(); S.ox=o[0]; S.oy=o[1];
+      const v=vase();
+      let zlip=Infinity; for(const q of v.rim) if(q[2]<zlip) zlip=q[2];
+      const avant=S.f;
+      S.f=Math.min(S.f, fractionAu(v.T,zlip));
+      const sorti=Math.max(0,avant-S.f);
+      S.debit=Math.min(1,sorti/Math.max(dt,1e-3)*1.6);
+      S.fPri=(S.versements+(1-S.f))/3;
+      S.remous=Math.min(1,S.remous+dt*4)*Math.max(S.debit,0.12);
+      const ypr=gy-S.fPri*h*CE, xpr=W/2+xPrisme+S.cam;
+      if(Math.random()<dt*26*S.debit)
+        goutte(xpr+(Math.random()-0.5)*12, ypr, (Math.random()-0.5)*80, -55-Math.random()*65, 1+Math.random());
+      if(Math.random()<dt*7*S.debit) onde(ondesPri);
+      for(const k of [1,2]) if(Math.abs(S.fPri-k/3)<0.012){ S.marque=k; S.flash=1; }
+      if(u>=1){ S.f=0; S.fPri=(S.versements+1)/3; S.phase="egouttage"; S.t0=perf; }
+    }
+    else if(p==="egouttage"){
+      const o=origineVerse(); S.ox=o[0]; S.oy=o[1];
+      S.remous+=(0.22-S.remous)*Math.min(dt*2.4,1);
+      if(Math.random()<dt*5){ const v=vase(), b=proj(v.rim[0],S.ox,S.oy);
+        goutte(b[0]+(Math.random()-0.5)*4,b[1]+3,0,26,1.4); }
+      if(u>=1){ S.phase="retour"; S.t0=perf; }
+    }
+    else if(p==="retour"){
+      const e=facile(u);
+      S.phi=Math.PI+TAUMAX+(2*Math.PI-Math.PI-TAUMAX)*e;
+      const o=lerp(origineVerse(),origineRepos(),e); S.ox=o[0]; S.oy=o[1];
+      S.remous+=(0.06-S.remous)*Math.min(dt*2,1);
+      if(u>=1){ S.phi=0; S.phase="repos"; S.t0=perf; }
+    }
+    else if(p==="repos"){
+      const o=origineRepos(); S.ox=o[0]; S.oy=o[1];
+      S.remous+=(0-S.remous)*Math.min(dt*3,1);
+      if(u>=1){
+        S.versements++; S.fPri=S.versements/3; S.remous=0;
+        S.phase=S.versements>=3?"fini":"attente";
+        if(S.versements===1&&S.robinet){ S.robinet=false; caseRobinet.checked=false; }
+        maj();
+      }
+    }
+  }
+
+  function boucle(now){
+    const dt=Math.min((now-dernier)/1000,0.05); dernier=now; perf=now;
+    horloge(dt); majParticules(dt);
+    const calme=(S.phase==="versement"||S.phase==="egouttage")?1:0;
+    if(!reduit) angle+=dt*0.030*(1-calme*0.88);
+
+    fond();
+    poussiere(reduit?0:now/1000*(1-calme*0.88),calme);
+    if(S.robinet&&S.cam>1) dessinerRobinet();
+
+    const pri=dessinerPrisme();
+    graduations(pri.ox);
+    const pyr=dessinerPyramide();
+
+    if(S.phase==="remplissage"){
+      const x=S.robinet?ecranTap():S.ox, yb=S.robinet?hauteurBec():-10;
+      const cible=pyr.nappe
+        ? pyr.nappe.reduce((s,p)=>s+p[1],0)/pyr.nappe.length
+        : S.oy-h*CE;
+      jet(x,yb,S.ox,cible,1);
+    }
+    if(S.phase==="versement"&&S.debit>0.02){
+      const ypr=gy-S.fPri*h*CE;
+      jet(pyr.bec[0],pyr.bec[1],W/2+xPrisme+S.cam,ypr,Math.min(1,S.debit));
+    }
+    dessinerGouttes();
+    raf=requestAnimationFrame(boucle);
+  }
+
+  /* ============ interface ============ */
+  const bVerser=document.getElementById("verser");
+  const bCompte=document.getElementById("compte");
+  const verdict=document.getElementById("verdict");
+  const caseRobinet=document.getElementById("robinet");
+  let dernier=0,raf=null;
+
+  function maj(){
+    bCompte.textContent=S.versements;
+    bVerser.disabled=(S.phase!=="attente")||S.versements>=3;
+    bVerser.textContent=S.robinet?"Aller au robinet":(S.versements===0?"Remplir puis verser":"Verser à nouveau");
+    verdict.classList.toggle("on",S.phase==="fini");
+  }
+  function lancer(){
+    if(S.phase!=="attente"||S.versements>=3) return;
+    S.phase="versLeRobinet"; S.t0=perf; S.f=0;
+    S.camCible=S.robinet?Math.min(1.35*d,panMax):0;
+    maj();
+  }
+  function reset(){
+    S.phase="attente"; S.versements=0; S.f=0; S.fPri=0; S.phi=0; S.tau=0;
+    S.cam=0; S.camCible=0; S.remous=0; S.debit=0; S.flash=0;
+    gouttes.length=0; ondesPri.length=0; ondesPyr.length=0;
+    cache.cle=""; maj();
+  }
+  bVerser.addEventListener("click",lancer);
+  document.getElementById("reprendre").addEventListener("click",function(){ S.robinet=caseRobinet.checked; reset(); });
+  caseRobinet.addEventListener("change",function(){ if(S.phase==="attente"){ S.robinet=this.checked; maj(); } });
+  document.getElementById("bases").addEventListener("click",function(e){
+    const b=e.target.closest("button"); if(!b) return;
+    this.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+    S.n=parseInt(b.dataset.n,10); S.robinet=caseRobinet.checked; reset();
+  });
+
+  function dimensionner(){
+    dpr=Math.min(window.devicePixelRatio||1,2);
+    W=window.innerWidth; H=window.innerHeight;
+    cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+    cv.style.width=W+"px"; cv.style.height=H+"px";
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    mesures(); cache.cle="";
+  }
+  window.addEventListener("resize",dimensionner);
+  document.addEventListener("visibilitychange",function(){
+    if(document.hidden){ if(raf){cancelAnimationFrame(raf);raf=null;} }
+    else if(!raf){ dernier=performance.now(); raf=requestAnimationFrame(boucle); }
+  });
+
+  dimensionner(); semer(); maj();
+  const o=origineRepos(); S.ox=o[0]; S.oy=o[1];
+  dernier=performance.now(); perf=dernier; raf=requestAnimationFrame(boucle);
+})();
+</script>
+</body>
+</html>

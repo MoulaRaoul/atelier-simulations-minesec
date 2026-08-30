@@ -1,0 +1,34 @@
+# --- Fichiers créés automatiquement par Windows et macOS ---
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# --- Éditeurs de texte et environnements de développement ---
+.vscode/
+.idea/
+*.swp
+*~
+
+# --- Dépendances installées (se réinstallent, ne se versionnent pas) ---
+node_modules/
+
+# --- Livrables fabriqués par les scripts de outils/ ---
+# Ils se régénèrent à partir des sources : inutile de les mémoriser.
+dist/
+build/
+hors-ligne/
+
+# --- Journaux et fichiers temporaires ---
+*.log
+npm-debug.log*
+*.tmp
+*.bak
+
+# --- Fichiers locaux propres à une machine (jamais partagés) ---
+.env
+*.local
+
+# --- Exception : les .gitkeep gardent les dossiers vides, on les conserve ---
+!.gitkeep

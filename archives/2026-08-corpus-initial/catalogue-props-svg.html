@@ -1,0 +1,1720 @@
+<!--
+================================================================================
+BIBLIOTHEQUE DE PROPS — MATERIEL DU PROGRAMME
+Banque de simulations MINESEC — pièce soumise à validation
+
+CE QUE CONTIENT CE FICHIER
+  Toutes les pièces de matériel dessinées à ce jour, dans un seul fichier, à
+  une seule échelle, sous une seule charte. Chaque pièce se copie séparément.
+
+D'OU VIENNENT LES CATEGORIES
+  Du manuel de sixième, leçon 3, « Classification des composants de base d'un
+  micro-ordinateur », qui range le matériel en trois familles — entrée,
+  traitement, sortie — et ajoute les unités de stockage. Ce sont ses mots :
+    entrée    : le clavier, la souris, le microphone, le scanner, la webcam
+    sortie    : l'écran, l'imprimante, les haut-parleurs, le casque multimédia
+    traitement: l'unité centrale
+    stockage  : CD/DVD, disque dur, clé USB
+  L'onduleur ne figure pas dans cette leçon ; il apparaît dans le tableau de
+  matériel du manuel de cinquième. Il est donc rangé à part, en « énergie ».
+
+L'ECHELLE
+  Une unité de dessin vaut un millimètre, pour toutes les pièces. Les
+  dimensions employées sont réelles. L'unité centrale, héritée du prop
+  d'origine, mesure 240 sur 400 : c'est un petit boîtier — un moyen tour fait
+  plutôt 200 sur 430. Ce point reste à trancher ; tant qu'il ne l'est pas,
+  les pièces posées côte à côte présentent cet écart.
+
+L'ANGLE
+  Elévation orthogonale, sans perspective, une face à la fois. Le clavier, la
+  souris, le scanner et la clé USB sont vus de dessus, qui est leur face
+  principale. Aucune fuite, aucun raccourci : les pièces se posent côte à
+  côte sans se contredire.
+
+CE QUI N'EST PAS ENCORE DESSINE
+  Le microphone et le casque multimédia, que la leçon 3 nomme pourtant. La
+  disquette, le disque dur externe, le lecteur CD/DVD séparé, le
+  vidéoprojecteur et le modem, que les manuels citent plus rarement. La liste
+  figure en bas de page.
+================================================================================
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bibliothèque de props — matériel du programme</title>
+<style>
+:root{
+  --bg:#121416; --panel:#1a1d21; --panel2:#25282d; --line:#3f454d;
+  --txt:#e8ebee; --dim:#98a1ab; --accent:#3b82f6; --ok:#22c55e; --fs:16px;
+  --f-txt:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-fix:Consolas,"Courier New",monospace;
+}
+body.light{--bg:#f4f5f7;--panel:#fff;--panel2:#eceef1;--line:#b9bec6;--txt:#16181d;
+  --dim:#5b6270;--accent:#1d4ed8;--ok:#15803d}
+body.hc{--bg:#000;--panel:#000;--panel2:#000;--line:#fff;--txt:#fff;--dim:#fff;--accent:#ff0;--ok:#0f0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--f-txt);font-size:var(--fs);background:var(--bg);color:var(--txt);
+  display:flex;flex-direction:column;overflow:hidden}
+button{font-family:inherit;font-size:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+header{background:var(--panel);border-bottom:2px solid var(--line);
+  padding:.55rem .9rem;display:flex;align-items:center;gap:.6rem;flex-shrink:0;flex-wrap:wrap}
+.brand{flex:1;min-width:200px}
+.brand .lvl{font-size:.66rem;color:var(--dim);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.06em}
+.brand h1{font-size:1.15rem;font-weight:700}
+.bt{background:var(--panel2);border:2px solid var(--line);border-radius:5px;
+  padding:.42rem .8rem;font-size:.76rem;font-weight:700;font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.04em}
+.bt:hover{border-color:var(--accent);color:var(--accent)}
+.bt.primary{background:var(--accent);color:#07131f;border-color:var(--accent)}
+.bt.ok{border-color:var(--ok);color:var(--ok)}
+.ech{display:flex;border:2px solid var(--line);border-radius:5px;overflow:hidden;height:40px}
+.ech button{background:var(--panel2);border:none;padding:0 .6rem;font-size:.72rem;
+  font-weight:700;font-family:var(--f-fix)}
+.ech button[aria-pressed="true"]{background:var(--accent);color:#07131f}
+.ic{background:var(--panel2);border:2px solid var(--line);border-radius:5px;
+  width:40px;height:40px;display:flex;align-items:center;justify-content:center;padding:0}
+.ic svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+
+.filtres{background:var(--panel2);border-bottom:2px solid var(--line);
+  padding:.45rem .9rem;display:flex;gap:.35rem;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.filtres .fl{font-size:.62rem;color:var(--dim);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.08em;margin-right:.3rem}
+.filtres button{background:var(--panel);border:2px solid var(--line);border-radius:5px;
+  padding:.3rem .6rem;font-size:.66rem;font-weight:700;font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.04em;color:var(--dim)}
+.filtres button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+
+main{flex:1;overflow-y:auto;padding:1rem}
+.groupe{margin-bottom:2rem}
+.groupe > h2{font-size:.7rem;color:var(--accent);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.1em;border-bottom:2px solid var(--line);
+  padding-bottom:.35rem;margin-bottom:.35rem}
+.groupe > .def{font-size:.76rem;color:var(--dim);line-height:1.5;margin-bottom:1.1rem;max-width:86ch}
+.scene{display:flex;gap:2.2rem;align-items:flex-start;flex-wrap:wrap}
+.piece{display:flex;flex-direction:column;align-items:center;gap:.55rem}
+.piece h3{font-size:.68rem;color:var(--txt);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.06em;text-align:center}
+.piece .dim{font-size:.6rem;color:var(--dim);font-family:var(--f-fix);letter-spacing:.06em}
+.piece .cadre{background:var(--panel);border:2px solid var(--line);padding:1rem;color:var(--txt);
+  display:flex;align-items:center;justify-content:center}
+.piece .sous{font-size:.7rem;color:var(--dim);text-align:center;max-width:30ch;line-height:1.45}
+.piece .bts{display:flex;gap:.4rem;flex-wrap:wrap;justify-content:center}
+
+.notes{max-width:76ch;margin:1rem auto 0;background:var(--panel);border:2px solid var(--line);
+  padding:1rem 1.2rem}
+.notes h3{font-size:.72rem;color:var(--accent);font-family:var(--f-fix);
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;margin-top:1.1rem}
+.notes h3:first-child{margin-top:0}
+.notes p,.notes li{font-size:.84rem;line-height:1.6;margin-bottom:.4rem}
+.notes ul{margin-left:1.2rem}
+.notes code{font-family:var(--f-fix);font-size:.92em;background:var(--panel2);padding:.05rem .3rem}
+
+.pied{background:var(--panel);border-top:2px solid var(--line);padding:.3rem;
+  text-align:center;font-size:.62rem;font-family:var(--f-fix);color:var(--dim);
+  letter-spacing:.14em;flex-shrink:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ─── ouverture : créer une famille, ajouter une pièce ─── */
+.filtres .plus{background:var(--accent);color:#07131f;border-color:var(--accent);font-weight:700}
+.filtres .bt-exp{background:transparent;border:2px solid var(--ok);color:var(--ok);
+  font-family:var(--f-fix);font-size:.7rem;padding:.22rem .6rem;text-transform:uppercase;
+  letter-spacing:.04em}
+.dlg{position:fixed;inset:0;background:rgba(0,0,0,.86);display:none;align-items:center;
+  justify-content:center;padding:14px;z-index:200}
+.dlg.on{display:flex}
+.dlg .boite{background:var(--panel);border:2px solid var(--line);max-width:720px;width:100%;
+  max-height:90vh;overflow-y:auto;padding:1.2rem}
+.dlg h2{font-size:1rem;color:var(--accent);margin-bottom:.4rem}
+.dlg .expl{font-size:.8rem;color:var(--dim);line-height:1.55;margin-bottom:.9rem}
+.dlg label{display:block;font-size:.68rem;color:var(--dim);margin:.55rem 0 .18rem;
+  font-family:var(--f-fix);text-transform:uppercase;letter-spacing:.04em}
+.dlg input,.dlg textarea,.dlg select{width:100%;background:var(--panel2);border:2px solid var(--line);
+  color:var(--txt);padding:.4rem .55rem;font-size:.84rem;font-family:var(--f-txt)}
+.dlg textarea{font-family:var(--f-fix);font-size:.74rem;min-height:150px;resize:vertical;line-height:1.45}
+.dlg input:focus,.dlg textarea:focus,.dlg select:focus{outline:none;border-color:var(--accent)}
+.dlg .duo{display:flex;gap:.6rem}
+.dlg .duo>div{flex:1}
+.dlg .apercu{background:var(--panel2);border:2px solid var(--line);min-height:130px;
+  display:flex;align-items:center;justify-content:center;margin-top:.3rem;padding:.6rem;color:var(--txt)}
+.dlg .apercu .vide{font-size:.76rem;color:var(--dim)}
+.dlg .pied{display:flex;gap:.5rem;margin-top:1rem}
+.dlg .pied .bt{flex:1}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="lvl">MINESEC · BANQUE DE SIMULATIONS · BIBLIOTHEQUE DE PROPS</div>
+    <h1>Matériel du programme</h1>
+  </div>
+  <div class="ech" role="group" aria-label="Échelle d'aperçu">
+    <button data-e=".6" onclick="P.ech(.6)">60 %</button>
+    <button data-e="1" aria-pressed="true" onclick="P.ech(1)">100 %</button>
+    <button data-e="1.4" onclick="P.ech(1.4)">140 %</button>
+  </div>
+  <button class="ic" onclick="P.theme()" title="Contraste" aria-label="Contraste">
+    <svg id="icTh" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  </button>
+</header>
+
+<div class="filtres" id="filtres" role="group" aria-label="Familles"></div>
+
+<main>
+  <div id="catalogue"></div>
+
+  <div class="notes">
+    <h3>Ce que dit le manuel, et d'où viennent ces familles</h3>
+    <p>Le manuel de sixième, leçon 3, écrit : les composants d'entrée « permettent de faire entrer les informations » — <i>le clavier, la souris, le microphone, le scanner, la webcam</i> ; les composants de sortie « permettent de faire sortir ou d'afficher les informations » — <i>l'écran, l'imprimante, les haut-parleurs, le casque multimédia</i> ; le composant de traitement, c'est <i>l'unité centrale</i>. Il ajoute que les informations traitées « sont ensuite sauvegardées dans les unités de stockage : CD/DVD, disque dur, clé USB ». Les cinq familles de cette page sont les siennes, à une réserve près : l'onduleur n'apparaît pas dans cette leçon mais dans le tableau de matériel du manuel de cinquième, d'où sa famille à part.</p>
+
+    <h3>Ce qui reste à dessiner</h3>
+    <ul>
+      <li><b>Le microphone et le casque multimédia.</b> La leçon 3 les nomme explicitement : leur absence est une lacune, pas un choix.</li>
+      <li><b>Le disque dur externe et la disquette.</b> Cités comme unités de stockage. La disquette n'apparaît qu'une fois en sixième mais huit fois en cinquième et en quatrième.</li>
+      <li><b>Le vidéoprojecteur et le modem.</b> Présents surtout en cinquième.</li>
+      <li><b>Les câbles.</b> Le manuel de sixième décrit le branchement pas à pas et nomme le câble d'alimentation, le câble vidéo VGA, HDMI ou DVI. Aucun n'est dessiné : la connectique n'existe pour l'instant que sous forme de ports, sur les plaques arrière.</li>
+    </ul>
+
+    <h3>Ce qui reste à trancher</h3>
+    <ul>
+      <li><b>L'échelle de l'unité centrale.</b> Toutes les autres pièces emploient des dimensions réelles au millimètre. L'unité centrale, à 240 sur 400, est trop large et trop courte pour un moyen tour. Tant que ce n'est pas arbitré, une scène qui les réunit montre un boîtier trapu à côté d'un moniteur juste.</li>
+      <li><b>AZERTY ou QWERTY.</b> Le clavier bascule, légendes des modificateurs comprises. Faut-il que la bascule suive la langue de la ressource ?</li>
+      <li><b>Les étiquettes de la souris et de la webcam.</b> Leurs parties sont plus rapprochées que la largeur des étiquettes : celles-ci sont donc plus écartées que ce qu'elles désignent.</li>
+      <li><b>Le vocabulaire.</b> J'écris « moniteur » et « écran » selon les pièces, « pied », « bac papier », « bandeau de commande ». Les manuels emploient « écran » et « moniteur » indifféremment ; les autres termes ne sont pas attestés dans le texte que j'ai lu.</li>
+    </ul>
+
+    <h3>Ce que le fichier garantit</h3>
+    <p>Aucune ressource extérieure : ni police distante, ni CDN, ni image. Tout est du SVG écrit dans le fichier. Les définitions de l'unité centrale conservent leur préfixe <code>uc-</code> d'origine, celles des autres pièces portent <code>pf-</code> : les deux jeux coexistent sans se recouvrir, et le code copié pour une pièce emporte les définitions dont il a besoin.</p>
+  </div>
+</main>
+
+<div class="dlg" id="dlg-fam" role="dialog" aria-modal="true" aria-labelledby="t-fam">
+  <div class="boite">
+    <h2 id="t-fam">Créer une famille</h2>
+    <p class="expl">Une famille regroupe des pièces d'un même ensemble : le mobilier, les composants internes, les objets d'une leçon particulière. Elle apparaît aussitôt dans la barre des familles.</p>
+    <label for="fam-nom">Nom de la famille</label>
+    <input type="text" id="fam-nom" placeholder="ex. Réseau et connexions">
+    <label for="fam-def">À quoi elle sert, et d'où elle vient</label>
+    <textarea id="fam-def" style="min-height:80px"
+      placeholder="ex. Servie par la ressource 39, quatrième, module 2. Vocabulaire du manuel."></textarea>
+    <div class="pied">
+      <button class="bt" onclick="P.fermer('dlg-fam')">Annuler</button>
+      <button class="bt primary" onclick="P.creerFamille()">Créer la famille</button>
+    </div>
+  </div>
+</div>
+
+<div class="dlg" id="dlg-pie" role="dialog" aria-modal="true" aria-labelledby="t-pie">
+  <div class="boite">
+    <h2 id="t-pie">Ajouter une pièce</h2>
+    <p class="expl">Collez le code SVG de la pièce, le contenu seul, sans la balise englobante. Les dégradés et les ombres du fichier sont disponibles : url(#pf-corps), url(#pf-ombre), url(#pf-creux). Écrivez les étiquettes en clair, avec une balise text.</p>
+    <div class="duo">
+      <div><label for="pie-nom">Nom</label><input type="text" id="pie-nom" placeholder="ex. Routeur"></div>
+      <div><label for="pie-fam">Famille</label><select id="pie-fam"></select></div>
+    </div>
+    <div class="duo">
+      <div><label for="pie-dim">Dimensions réelles</label><input type="text" id="pie-dim" placeholder="ex. 200 x 130"></div>
+      <div><label for="pie-w">Largeur de la vue</label><input type="number" id="pie-w" value="240" oninput="P.apercu()"></div>
+      <div><label for="pie-h">Hauteur de la vue</label><input type="number" id="pie-h" value="180" oninput="P.apercu()"></div>
+    </div>
+    <label for="pie-sous">Une ligne d'explication</label>
+    <input type="text" id="pie-sous" placeholder="ex. Les antennes le distinguent du commutateur.">
+    <label for="pie-svg">Code SVG de la pièce</label>
+    <textarea id="pie-svg" spellcheck="false" oninput="P.apercu()"></textarea>
+    <label>Aperçu</label>
+    <div class="apercu" id="pie-vue"><span class="vide">L'aperçu s'affichera ici.</span></div>
+    <div class="pied">
+      <button class="bt" onclick="P.fermer('dlg-pie')">Annuler</button>
+      <button class="bt primary" onclick="P.creerPiece()">Ajouter la pièce</button>
+    </div>
+  </div>
+</div>
+
+<div class="sr" id="live" aria-live="polite" aria-atomic="true"></div>
+
+<div class="pied">MINESEC — LAB</div>
+<div class="sr" id="live" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+const DEFS_UC = `
+  <defs>
+    <linearGradient id="uc-corps" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4a5568"/><stop offset="100%" stop-color="#2d3748"/>
+    </linearGradient>
+    <radialGradient id="uc-bouton" cx="35%" cy="30%">
+      <stop offset="0%" stop-color="#a0aec0"/><stop offset="100%" stop-color="#4a5568"/>
+    </radialGradient>
+    <filter id="uc-ombre" x="-25%" y="-15%" width="150%" height="140%">
+      <feDropShadow dx="7" dy="8" stdDeviation="9" flood-color="#000" flood-opacity=".38"/>
+    </filter>
+    <filter id="uc-halo" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="2.6" result="f"/>
+      <feMerge><feMergeNode in="f"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="uc-creux" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#000" stop-opacity=".55"/>
+      <stop offset="100%" stop-color="#000" stop-opacity=".15"/>
+    </linearGradient>
+  </defs>`;
+
+const DEFS_PF = `
+  <defs>
+    <linearGradient id="pf-corps" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4a5568"/><stop offset="100%" stop-color="#2d3748"/>
+    </linearGradient>
+    <radialGradient id="pf-bouton" cx="35%" cy="30%">
+      <stop offset="0%" stop-color="#a0aec0"/><stop offset="100%" stop-color="#4a5568"/>
+    </radialGradient>
+    <filter id="pf-ombre" x="-25%" y="-15%" width="150%" height="140%">
+      <feDropShadow dx="7" dy="8" stdDeviation="9" flood-color="#000" flood-opacity=".38"/>
+    </filter>
+    <filter id="pf-halo" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="2.6" result="f"/>
+      <feMerge><feMergeNode in="f"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="pf-creux" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#000" stop-opacity=".55"/>
+      <stop offset="100%" stop-color="#000" stop-opacity=".15"/>
+    </linearGradient>
+    <linearGradient id="pf-dalle" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#2b5b86"/><stop offset="100%" stop-color="#12314b"/>
+    </linearGradient>
+  </defs>`;
+
+const DEFS = DEFS_UC + DEFS_PF;
+
+const AVANT = `
+  <!-- corps du boitier -->
+  <g filter="url(#uc-ombre)">
+    <rect x="10" y="10" width="240" height="400" rx="14"
+          fill="url(#uc-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="16" y="16" width="228" height="388" rx="10"
+          fill="url(#uc-creux)" opacity=".35"/>
+  </g>
+
+  <!-- lecteur CD/DVD : rien n'est ecrit dessus, comme sur un vrai boitier.
+       On y voit la fente, le bouton d'ejection et le voyant d'activite.
+       L'etiquette se pose dessous, selon la regle de la charte. -->
+  <rect x="36" y="40" width="188" height="32" rx="4" fill="#1a202c" stroke="#0f141b"/>
+  <rect x="48" y="53" width="118" height="5" rx="1" fill="#05070a"/>
+  <rect x="196" y="52" width="14" height="6" rx="1.5" fill="#4a5568"/>
+  <circle id="uc-led" cx="180" cy="55" r="2.6" fill="#3a4351"/>
+  <text x="130" y="88" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="rgba(255,255,255,.7)">Lecteur CD/DVD</text>
+
+  <!-- baie libre : l'emplacement d'un second lecteur, non equipe -->
+  <rect x="36" y="98" width="188" height="32" rx="4" fill="#232a34" stroke="#0f141b"/>
+  <text x="130" y="146" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="rgba(255,255,255,.42)">Baie libre</text>
+
+  <!-- bouton de mise en marche.
+       Le manuel decrit le symbole : un cercle ouvert avec une ligne
+       verticale a l'interieur. L'ouverture est donc en haut, et le
+       temoin est ETEINT tant que la machine n'a pas demarre. -->
+  <circle cx="130" cy="184" r="23" fill="url(#uc-bouton)" stroke="#2d3748" stroke-width="2"/>
+  <g id="uc-temoin" stroke="#3f4855" stroke-width="3" fill="none" stroke-linecap="round">
+    <path d="M136.3 174.99 A 11 11 0 1 1 123.7 174.99"/>
+    <path d="M130 169 L 130 183"/>
+  </g>
+  <text x="130" y="224" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="rgba(255,255,255,.62)">MARCHE / ARRÊT</text>
+
+  <!-- panneau de connecteurs de façade -->
+  <rect x="46" y="240" width="168" height="140" rx="8"
+        fill="#2d3748" stroke="#4a5568" stroke-width="1.5"/>
+
+  <!-- USB -->
+  <rect x="66" y="262" width="38" height="13" fill="#1a1a1a" stroke="#cbd5e0" stroke-width="2"/>
+  <rect x="70" y="266" width="26" height="4" fill="#cbd5e0"/>
+  <text x="85" y="288" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="rgba(255,255,255,.7)">USB</text>
+
+  <rect x="66" y="306" width="38" height="13" fill="#1a1a1a" stroke="#cbd5e0" stroke-width="2"/>
+  <rect x="70" y="310" width="26" height="4" fill="#cbd5e0"/>
+  <text x="85" y="332" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="rgba(255,255,255,.7)">USB</text>
+
+  <!-- jack casque : vert, sortie audio -->
+  <circle cx="176" cy="268" r="9" fill="#48bb78" stroke="#111" stroke-width="3"/>
+  <text x="176" y="288" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="rgba(255,255,255,.7)">Casque</text>
+
+  <!-- jack micro : rose -->
+  <circle cx="176" cy="312" r="9" fill="#ed64a6" stroke="#111" stroke-width="3"/>
+  <text x="176" y="332" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="rgba(255,255,255,.7)">Micro</text>`;
+
+const ARRIERE = `
+  <!-- tôle du panneau arrière -->
+  <g filter="url(#uc-ombre)">
+    <rect x="10" y="10" width="240" height="400" rx="14"
+          fill="#a0aec0" stroke="#718096" stroke-width="4"/>
+  </g>
+
+  <!-- bloc d'alimentation -->
+  <rect x="28" y="30" width="204" height="80" rx="4"
+        fill="#e2e8f0" stroke="#4a5568" stroke-width="2"/>
+  <!-- prise d'alimentation -->
+  <path d="M46 56 h50 l4 30 h-58 z" fill="#111" stroke="#8a929c" stroke-width="1.5"/>
+  <rect x="56" y="64" width="4" height="12" fill="silver"/>
+  <rect x="69" y="64" width="4" height="12" fill="silver"/>
+  <rect x="82" y="64" width="4" height="12" fill="silver"/>
+  <text x="70" y="100" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="#2d3748">Alimentation</text>
+  <!-- grille du ventilateur -->
+  <circle cx="188" cy="68" r="30" fill="none" stroke="#718096" stroke-width="2" stroke-dasharray="5 4"/>
+  <circle cx="188" cy="68" r="19" fill="none" stroke="#718096" stroke-width="1.5" stroke-dasharray="4 4"/>
+  <circle cx="188" cy="68" r="7"  fill="none" stroke="#718096" stroke-width="1.5"/>
+
+  <!-- plaque des connecteurs -->
+  <rect x="30" y="126" width="200" height="270" rx="4"
+        fill="#cbd5e0" stroke="#4a5568" stroke-width="2"/>
+
+  <!-- PS/2 : violet clavier, vert souris -->
+  <circle cx="64" cy="158" r="12" fill="#111" stroke="#9f7aea" stroke-width="4"/>
+  <text x="64" y="182" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="#2d3748">PS/2 Clavier</text>
+  <circle cx="128" cy="158" r="12" fill="#111" stroke="#48bb78" stroke-width="4"/>
+  <text x="128" y="182" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="#2d3748">PS/2 Souris</text>
+
+  <!-- quatre USB -->
+  <rect x="46" y="200" width="38" height="13" fill="#1a1a1a" stroke="#cbd5e0" stroke-width="2"/>
+  <rect x="50" y="204" width="26" height="4" fill="#cbd5e0"/>
+  <rect x="46" y="222" width="38" height="13" fill="#1a1a1a" stroke="#cbd5e0" stroke-width="2"/>
+  <rect x="50" y="226" width="26" height="4" fill="#cbd5e0"/>
+  <text x="65" y="248" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="#2d3748">USB</text>
+  <rect x="98" y="200" width="38" height="13" fill="#1a1a1a" stroke="#cbd5e0" stroke-width="2"/>
+  <rect x="102" y="204" width="26" height="4" fill="#cbd5e0"/>
+  <rect x="98" y="222" width="38" height="13" fill="#1a1a1a" stroke="#cbd5e0" stroke-width="2"/>
+  <rect x="102" y="226" width="26" height="4" fill="#cbd5e0"/>
+  <text x="117" y="248" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="#2d3748">USB</text>
+
+  <!-- réseau RJ45 : l'ergot de verrouillage forme la saillie -->
+  <path d="M46 264 h34 v20 a4 4 0 0 1 -4 4 h-7 v6 h-12 v-6 h-7 a4 4 0 0 1 -4 -4 z"
+        fill="#1a1a1a" stroke="#cbd5e0" stroke-width="2"/>
+  <text x="63" y="308" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="#2d3748">Réseau RJ45</text>
+
+  <!-- VGA : HD-15, quinze broches sur trois rangées -->
+  <path d="M44 322 h62 l-5 24 h-52 z" fill="#3182ce" stroke="silver" stroke-width="2"/>
+  <g fill="#0a0a0a">
+    <circle cx="55" cy="329" r="1.7"/><circle cx="65" cy="329" r="1.7"/><circle cx="75" cy="329" r="1.7"/>
+    <circle cx="85" cy="329" r="1.7"/><circle cx="95" cy="329" r="1.7"/>
+    <circle cx="57" cy="335" r="1.7"/><circle cx="66" cy="335" r="1.7"/><circle cx="75" cy="335" r="1.7"/>
+    <circle cx="84" cy="335" r="1.7"/><circle cx="93" cy="335" r="1.7"/>
+    <circle cx="59" cy="341" r="1.7"/><circle cx="67" cy="341" r="1.7"/><circle cx="75" cy="341" r="1.7"/>
+    <circle cx="83" cy="341" r="1.7"/><circle cx="91" cy="341" r="1.7"/>
+  </g>
+  <text x="75" y="359" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="#2d3748">VGA (Vidéo)</text>
+
+  <!-- HDMI -->
+  <path d="M120 322 h50 l-4 16 h-42 z" fill="#111" stroke="#8a929c" stroke-width="2"/>
+  <rect x="130" y="328" width="30" height="4" fill="#8a929c"/>
+  <text x="145" y="352" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="#2d3748">HDMI</text>
+
+  <!-- série DB-9 : neuf broches sur deux rangées, à ne pas confondre avec le VGA -->
+  <path d="M120 264 h52 l-4 20 h-44 z" fill="#2d3748" stroke="silver" stroke-width="2"/>
+  <g fill="#0a0a0a">
+    <circle cx="131" cy="271" r="1.6"/><circle cx="140" cy="271" r="1.6"/><circle cx="149" cy="271" r="1.6"/>
+    <circle cx="158" cy="271" r="1.6"/><circle cx="167" cy="271" r="1.6"/>
+    <circle cx="135" cy="278" r="1.6"/><circle cx="144" cy="278" r="1.6"/><circle cx="153" cy="278" r="1.6"/>
+    <circle cx="162" cy="278" r="1.6"/>
+  </g>
+  <text x="146" y="298" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="#2d3748">Série</text>
+
+  <!-- jacks audio : bleu entrée ligne, vert sortie, rose micro -->
+  <circle cx="194" cy="160" r="9" fill="#4299e1" stroke="#111" stroke-width="3"/>
+  <text x="194" y="180" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">Entrée ligne</text>
+  <circle cx="194" cy="212" r="9" fill="#48bb78" stroke="#111" stroke-width="3"/>
+  <text x="194" y="232" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">Sortie audio</text>
+  <circle cx="194" cy="264" r="9" fill="#ed64a6" stroke="#111" stroke-width="3"/>
+  <text x="194" y="284" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">Micro</text>`;
+
+const ARRIERE_COMPLETE = `
+  <!-- tôle du panneau arrière -->
+  <g filter="url(#uc-ombre)">
+    <rect x="10" y="10" width="240" height="400" rx="14"
+          fill="#a0aec0" stroke="#718096" stroke-width="4"/>
+  </g>
+
+  <!-- bloc d'alimentation, resserré pour libérer la plaque -->
+  <rect x="28" y="26" width="204" height="66" rx="4"
+        fill="#e2e8f0" stroke="#4a5568" stroke-width="2"/>
+  <path d="M44 44 h46 l4 26 h-54 z" fill="#111" stroke="#8a929c" stroke-width="1.5"/>
+  <rect x="53" y="51" width="4" height="11" fill="silver"/>
+  <rect x="65" y="51" width="4" height="11" fill="silver"/>
+  <rect x="77" y="51" width="4" height="11" fill="silver"/>
+  <text x="67" y="84" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">Alimentation</text>
+  <circle cx="186" cy="56" r="25" fill="none" stroke="#718096" stroke-width="2" stroke-dasharray="5 4"/>
+  <circle cx="186" cy="56" r="15" fill="none" stroke="#718096" stroke-width="1.5" stroke-dasharray="4 4"/>
+  <circle cx="186" cy="56" r="6"  fill="none" stroke="#718096" stroke-width="1.5"/>
+
+  <!-- plaque des connecteurs -->
+  <rect x="30" y="100" width="200" height="296" rx="4"
+        fill="#cbd5e0" stroke="#4a5568" stroke-width="2"/>
+
+  <!-- PS/2 : violet clavier, vert souris -->
+  <circle cx="60" cy="130" r="11" fill="#111" stroke="#9f7aea" stroke-width="4"/>
+  <text x="60" y="152" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">PS/2 Clavier</text>
+  <circle cx="126" cy="130" r="11" fill="#111" stroke="#48bb78" stroke-width="4"/>
+  <text x="126" y="152" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">PS/2 Souris</text>
+
+  <!-- Série : DB-9, neuf broches sur deux rangées -->
+  <path d="M40 164 h52 l-4 20 h-44 z" fill="#2d3748" stroke="silver" stroke-width="2"/>
+  <g fill="#0a0a0a">
+    <circle cx="51" cy="171" r="1.6"/><circle cx="60" cy="171" r="1.6"/><circle cx="69" cy="171" r="1.6"/>
+    <circle cx="78" cy="171" r="1.6"/><circle cx="87" cy="171" r="1.6"/>
+    <circle cx="55" cy="178" r="1.6"/><circle cx="64" cy="178" r="1.6"/><circle cx="73" cy="178" r="1.6"/>
+    <circle cx="82" cy="178" r="1.6"/>
+  </g>
+  <text x="66" y="196" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">Série</text>
+
+  <!-- DVI : coque claire, grille de broches et lame plate -->
+  <rect x="112" y="163" width="76" height="22" rx="2" fill="#e8ebee" stroke="#8a929c" stroke-width="2"/>
+  <rect x="118" y="168" width="42" height="12" fill="#111"/>
+  <g fill="#5a6472">
+    <circle cx="123" cy="171" r="1.2"/><circle cx="130" cy="171" r="1.2"/><circle cx="137" cy="171" r="1.2"/>
+    <circle cx="144" cy="171" r="1.2"/><circle cx="151" cy="171" r="1.2"/>
+    <circle cx="123" cy="177" r="1.2"/><circle cx="130" cy="177" r="1.2"/><circle cx="137" cy="177" r="1.2"/>
+    <circle cx="144" cy="177" r="1.2"/><circle cx="151" cy="177" r="1.2"/>
+  </g>
+  <rect x="168" y="169" width="14" height="10" fill="#111"/>
+  <text x="150" y="196" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">DVI</text>
+
+  <!-- Parallèle : DB-25, vingt-cinq broches sur deux rangées -->
+  <path d="M40 208 h104 l-5 20 h-94 z" fill="#2d3748" stroke="silver" stroke-width="2"/>
+  <g fill="#0a0a0a">
+    <circle cx="49" cy="215" r="1.3"/><circle cx="56" cy="215" r="1.3"/><circle cx="63" cy="215" r="1.3"/>
+    <circle cx="70" cy="215" r="1.3"/><circle cx="77" cy="215" r="1.3"/><circle cx="84" cy="215" r="1.3"/>
+    <circle cx="91" cy="215" r="1.3"/><circle cx="98" cy="215" r="1.3"/><circle cx="105" cy="215" r="1.3"/>
+    <circle cx="112" cy="215" r="1.3"/><circle cx="119" cy="215" r="1.3"/><circle cx="126" cy="215" r="1.3"/>
+    <circle cx="133" cy="215" r="1.3"/>
+    <circle cx="53" cy="222" r="1.3"/><circle cx="60" cy="222" r="1.3"/><circle cx="67" cy="222" r="1.3"/>
+    <circle cx="74" cy="222" r="1.3"/><circle cx="81" cy="222" r="1.3"/><circle cx="88" cy="222" r="1.3"/>
+    <circle cx="95" cy="222" r="1.3"/><circle cx="102" cy="222" r="1.3"/><circle cx="109" cy="222" r="1.3"/>
+    <circle cx="116" cy="222" r="1.3"/><circle cx="123" cy="222" r="1.3"/><circle cx="130" cy="222" r="1.3"/>
+  </g>
+  <text x="92" y="240" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">Parallèle</text>
+
+  <!-- VGA : HD-15, quinze broches sur trois rangées -->
+  <path d="M40 252 h60 l-5 24 h-50 z" fill="#3182ce" stroke="silver" stroke-width="2"/>
+  <g fill="#0a0a0a">
+    <circle cx="50" cy="259" r="1.6"/><circle cx="60" cy="259" r="1.6"/><circle cx="70" cy="259" r="1.6"/>
+    <circle cx="80" cy="259" r="1.6"/><circle cx="90" cy="259" r="1.6"/>
+    <circle cx="52" cy="265" r="1.6"/><circle cx="61" cy="265" r="1.6"/><circle cx="70" cy="265" r="1.6"/>
+    <circle cx="79" cy="265" r="1.6"/><circle cx="88" cy="265" r="1.6"/>
+    <circle cx="54" cy="271" r="1.6"/><circle cx="62" cy="271" r="1.6"/><circle cx="70" cy="271" r="1.6"/>
+    <circle cx="78" cy="271" r="1.6"/><circle cx="86" cy="271" r="1.6"/>
+  </g>
+  <text x="70" y="288" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">VGA (Vidéo)</text>
+
+  <!-- HDMI -->
+  <path d="M124 254 h50 l-4 16 h-42 z" fill="#111" stroke="#8a929c" stroke-width="2"/>
+  <rect x="134" y="260" width="30" height="4" fill="#8a929c"/>
+  <text x="149" y="288" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">HDMI</text>
+
+  <!-- Réseau RJ45 : l'ergot de verrouillage forme la saillie -->
+  <path d="M42 300 h34 v20 a4 4 0 0 1 -4 4 h-7 v6 h-12 v-6 h-7 a4 4 0 0 1 -4 -4 z"
+        fill="#1a1a1a" stroke="#cbd5e0" stroke-width="2"/>
+  <text x="59" y="344" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">Réseau RJ45</text>
+
+  <!-- quatre USB -->
+  <rect x="96" y="302" width="38" height="13" fill="#1a1a1a" stroke="#cbd5e0" stroke-width="2"/>
+  <rect x="100" y="306" width="26" height="4" fill="#cbd5e0"/>
+  <rect x="96" y="322" width="38" height="13" fill="#1a1a1a" stroke="#cbd5e0" stroke-width="2"/>
+  <rect x="100" y="326" width="26" height="4" fill="#cbd5e0"/>
+  <rect x="146" y="302" width="38" height="13" fill="#1a1a1a" stroke="#cbd5e0" stroke-width="2"/>
+  <rect x="150" y="306" width="26" height="4" fill="#cbd5e0"/>
+  <rect x="146" y="322" width="38" height="13" fill="#1a1a1a" stroke="#cbd5e0" stroke-width="2"/>
+  <rect x="150" y="326" width="26" height="4" fill="#cbd5e0"/>
+  <text x="140" y="348" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">USB</text>
+
+  <!-- jacks audio : bleu entrée ligne, vert sortie, rose micro -->
+  <circle cx="62" cy="366" r="9" fill="#4299e1" stroke="#111" stroke-width="3"/>
+  <text x="62" y="386" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">Entrée ligne</text>
+  <circle cx="130" cy="366" r="9" fill="#48bb78" stroke="#111" stroke-width="3"/>
+  <text x="130" y="386" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">Sortie audio</text>
+  <circle cx="196" cy="366" r="9" fill="#ed64a6" stroke="#111" stroke-width="3"/>
+  <text x="196" y="386" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">Micro</text>`;
+
+const PIED = `
+  <rect x="190" y="374" width="60" height="62" rx="4"
+        fill="url(#pf-corps)" stroke="#1a202c" stroke-width="1.5"/>
+  <path d="M150 436 h140 l24 28 a7 7 0 0 1 -7 9 H133 a7 7 0 0 1 -7 -9 z"
+        fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+  <text x="220" y="462" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="rgba(255,255,255,.62)">Pied</text>`;
+
+/* ---------- MONITEUR, FACE AVANT ----------
+   Coque de 420 sur 364, dalle de 376 sur 282 : format 4:3 exact.
+   Le menton fait 60 pour que le bouton et son étiquette y tiennent,
+   selon la règle de la charte : l'étiquette se pose sous l'élément. */
+const MON_AVANT = `
+  <g filter="url(#pf-ombre)">
+    <rect x="10" y="10" width="420" height="364" rx="14"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="16" y="16" width="408" height="352" rx="10"
+          fill="url(#pf-creux)" opacity=".35"/>
+    ${PIED}
+  </g>
+
+  <!-- dalle : noire à l'arrêt, elle s'éclaire sous tension -->
+  <rect id="mo-dalle" x="32" y="32" width="376" height="282" rx="4"
+        fill="#05070a" stroke="#0f141b" stroke-width="1.5"/>
+
+  <!-- bouton de mise en marche. Même symbole que l'unité centrale :
+       un cercle ouvert vers le haut, une barre verticale à l'intérieur.
+       Le témoin est ÉTEINT tant que le moniteur n'a pas démarré. -->
+  <circle cx="390" cy="336" r="11" fill="url(#pf-bouton)" stroke="#2d3748" stroke-width="2"/>
+  <g id="mo-temoin" stroke="#3f4855" stroke-width="2" fill="none" stroke-linecap="round">
+    <path d="M393.15 331.49 A 5.5 5.5 0 1 1 386.85 331.49"/>
+    <path d="M390 328.5 L 390 335.5"/>
+  </g>
+  <text x="390" y="360" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="rgba(255,255,255,.62)">Marche / Arrêt</text>
+
+  <text x="220" y="360" text-anchor="middle" font-size="8"
+        font-family="Consolas, monospace" fill="rgba(255,255,255,.7)">Écran</text>`;
+
+/* ---------- MONITEUR, FACE ARRIERE ----------
+   La coque reste en plastique sombre, comme dans la réalité ; seul le
+   renfoncement des connecteurs est une plaque claire, ce qui permet d'y
+   poser les étiquettes sombres, exactement comme sur la tôle arrière de
+   l'unité centrale. */
+const MON_ARRIERE = `
+  <g filter="url(#pf-ombre)">
+    <rect x="10" y="10" width="420" height="364" rx="14"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="16" y="16" width="408" height="352" rx="10"
+          fill="url(#pf-creux)" opacity=".35"/>
+    ${PIED}
+  </g>
+
+  <!-- fentes d'aération : élément réel du boîtier, sans étiquette -->
+  <g fill="#1a202c">
+    <rect x="60" y="52" width="300" height="6" rx="3"/>
+    <rect x="60" y="68" width="300" height="6" rx="3"/>
+    <rect x="60" y="84" width="300" height="6" rx="3"/>
+    <rect x="60" y="100" width="300" height="6" rx="3"/>
+  </g>
+
+  <!-- renfoncement des connecteurs -->
+  <rect x="120" y="250" width="200" height="104" rx="4"
+        fill="#cbd5e0" stroke="#4a5568" stroke-width="2"/>
+
+  <!-- prise d'alimentation -->
+  <path d="M136 272 h48 l4 28 h-56 z" fill="#111" stroke="#8a929c" stroke-width="1.5"/>
+  <rect x="148" y="280" width="4" height="12" fill="silver"/>
+  <rect x="158" y="280" width="4" height="12" fill="silver"/>
+  <rect x="168" y="280" width="4" height="12" fill="silver"/>
+  <text x="160" y="322" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">Alimentation</text>
+
+  <!-- VGA : HD-15, quinze broches sur trois rangées -->
+  <path d="M200 274 h56 l-5 22 h-46 z" fill="#3182ce" stroke="silver" stroke-width="2"/>
+  <g fill="#0a0a0a">
+    <circle cx="210" cy="280" r="1.6"/><circle cx="219" cy="280" r="1.6"/><circle cx="228" cy="280" r="1.6"/>
+    <circle cx="237" cy="280" r="1.6"/><circle cx="246" cy="280" r="1.6"/>
+    <circle cx="212" cy="286" r="1.6"/><circle cx="220" cy="286" r="1.6"/><circle cx="228" cy="286" r="1.6"/>
+    <circle cx="236" cy="286" r="1.6"/><circle cx="244" cy="286" r="1.6"/>
+    <circle cx="214" cy="292" r="1.6"/><circle cx="221" cy="292" r="1.6"/><circle cx="228" cy="292" r="1.6"/>
+    <circle cx="235" cy="292" r="1.6"/><circle cx="242" cy="292" r="1.6"/>
+  </g>
+  <text x="228" y="322" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">VGA (Vidéo)</text>
+
+  <!-- HDMI -->
+  <path d="M272 276 h44 l-4 15 h-36 z" fill="#111" stroke="#8a929c" stroke-width="2"/>
+  <rect x="280" y="281" width="26" height="4" fill="#8a929c"/>
+  <text x="294" y="322" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="#2d3748">HDMI</text>`;
+
+/* ---------- SOURIS, VUE DE DESSUS ----------
+   115 sur 62, dimensions réelles. Le fil sort par l'avant. */
+const SOURIS = `
+  <g filter="url(#pf-ombre)">
+    <path d="M85 30 C 72 30 60 40 57 55 C 55 62 54 68 54 74 V116
+             C54 132 68 145 85 145 C102 145 116 132 116 116 V74
+             C116 68 115 62 113 55 C110 40 98 30 85 30 Z"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+  </g>
+
+  <!-- le fil -->
+  <path d="M85 30 C 85 20 82 13 77 7" fill="none" stroke="#2d3748"
+        stroke-width="5" stroke-linecap="round"/>
+
+  <!-- séparation des deux boutons -->
+  <path d="M85 31 V 84" stroke="#232a34" stroke-width="2" fill="none"/>
+  <path d="M57 84 H 113" stroke="#232a34" stroke-width="1.5" fill="none" opacity=".55"/>
+
+  <!-- molette -->
+  <rect x="79" y="44" width="12" height="24" rx="6" fill="#1a202c" stroke="#0f141b" stroke-width="1.5"/>
+  <g stroke="#4a5568" stroke-width="1">
+    <path d="M80.5 51 H89.5"/><path d="M80.5 56 H89.5"/><path d="M80.5 61 H89.5"/>
+  </g>
+
+  <text x="40" y="162" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="rgba(255,255,255,.7)">Bouton gauche</text>
+  <text x="85" y="178" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="rgba(255,255,255,.7)">Molette</text>
+  <text x="132" y="162" text-anchor="middle" font-size="7"
+        font-family="Consolas, monospace" fill="rgba(255,255,255,.7)">Bouton droit</text>`;
+
+/* ═══════════════════════════════════════════════════════════════
+   CLAVIER
+   Le clavier est le seul prop qui ne s'écrit pas à la main : cent-cinq
+   touches poseraient mille lignes illisibles. Il est donc engendré à
+   partir d'un tableau de rangées, une ligne par rangée, que l'on relit
+   sans peine. Le code copié, lui, est du SVG littéral.
+
+   Pas de touche : 19 unités, comme sur un clavier réel.
+   Bloc principal 15 pas, bloc de direction 3, pavé numérique 4 : 23 pas,
+   soit 437 unités, dans une coque de 450.
+   ═══════════════════════════════════════════════════════════════ */
+const U = 19, BX = 16.5;
+const NX = BX + 15*U + 0.5*U;     /* bloc de direction  */
+const PX = NX +  3*U + 0.5*U;     /* pavé numérique     */
+
+/* Une touche. x et y en unités de dessin, l en pas. */
+function K(x, y, l, txt, petit){
+  const w = l*U - 3, h = U - 3;
+  const t = txt === undefined ? "" : txt;
+  const fs = petit ? 5.2 : 6.6;
+  return `<rect x="${x+1.5}" y="${y+1.5}" width="${w}" height="${h}" rx="2.5"
+            fill="#3d4756" stroke="#232a34" stroke-width="1"/>`
+       + (t ? `<text x="${x+l*U/2}" y="${y+U/2+fs*0.36}" text-anchor="middle" font-size="${fs}"
+            font-family="Consolas, monospace" fill="rgba(255,255,255,.82)">${t}</text>` : "");
+}
+/* Une rangée décrite par une suite de [libellé, largeur, petit]. */
+function RANG(x, y, cles){
+  let s = "", cx = x;
+  cles.forEach(c=>{
+    if(c[0] === null){ cx += c[1]*U; return; }      /* espace vide */
+    s += K(cx, y, c[1], c[0], c[2]);
+    cx += c[1]*U;
+  });
+  return s;
+}
+
+const LETTRES = {
+  azerty:{
+    r1:["²","&amp;","é","&quot;","'","(","-","è","_","ç","à",")","="],
+    r2:["A","Z","E","R","T","Y","U","I","O","P","^","$"],
+    r3:["Q","S","D","F","G","H","J","K","L","M","ù","*"],
+    r4:["&lt;","W","X","C","V","B","N",",",";",":","!"]
+  },
+  qwerty:{
+    r1:["`","1","2","3","4","5","6","7","8","9","0","-","="],
+    r2:["Q","W","E","R","T","Y","U","I","O","P","[","]"],
+    r3:["A","S","D","F","G","H","J","K","L",";","'","#"],
+    r4:["\\","Z","X","C","V","B","N","M",",",".","/"]
+  }
+};
+
+const MODS = {
+  azerty:{esc:"Échap", ret:"Retour", tab:"Tab", caps:"Verr.Maj", maj:"Maj",
+          ctrl:"Ctrl", win:"Win", alt:"Alt", altgr:"AltGr", menu:"Menu",
+          esp:"Espace", ent:"Entrée", impr:"Impr", defil:"Défil", pause:"Pause",
+          ins:"Insér", debut:"Début", pgup:"Pg↑", suppr:"Suppr", fin:"Fin",
+          pgdn:"Pg↓", verr:"Verr"},
+  qwerty:{esc:"Esc", ret:"Backspace", tab:"Tab", caps:"Caps Lock", maj:"Shift",
+          ctrl:"Ctrl", win:"Win", alt:"Alt", altgr:"Alt Gr", menu:"Menu",
+          esp:"Space", ent:"Enter", impr:"PrtSc", defil:"ScrLk", pause:"Pause",
+          ins:"Ins", debut:"Home", pgup:"PgUp", suppr:"Del", fin:"End",
+          pgdn:"PgDn", verr:"Num"}
+};
+
+/* Les six rangées du bloc principal, du bloc de direction et du pavé. */
+function TOUCHES(disp, y0, ecart){
+  const L = LETTRES[disp], M = MODS[disp];
+  const yF = y0;                    /* rangée des touches de fonction */
+  const y1 = y0 + U + ecart;
+  const y2 = y1 + U, y3 = y2 + U, y4 = y3 + U, y5 = y4 + U;
+  let s = "";
+
+  /* rangée de fonction */
+  s += RANG(BX, yF, [[M.esc,1,true],[null,1],
+        ["F1",1],["F2",1],["F3",1],["F4",1],[null,.5],
+        ["F5",1],["F6",1],["F7",1],["F8",1],[null,.5],
+        ["F9",1],["F10",1],["F11",1],["F12",1]]);
+  s += RANG(NX, yF, [[M.impr,1,true],[M.defil,1,true],[M.pause,1,true]]);
+
+  /* bloc principal */
+  s += RANG(BX, y1, L.r1.map(c=>[c,1]).concat([[M.ret,2,true]]));
+  s += RANG(BX, y2, [[M.tab,1.5,true]].concat(L.r2.map(c=>[c,1])));
+  s += RANG(BX, y3, [[M.caps,1.75,true]].concat(L.r3.map(c=>[c,1])));
+  s += RANG(BX, y4, [[M.maj,1.25,true]].concat(L.r4.map(c=>[c,1])).concat([[M.maj,2.75,true]]));
+  s += RANG(BX, y5, [[M.ctrl,1.25,true],[M.win,1.25,true],[M.alt,1.25,true],
+        [null,6.25],[M.altgr,1.25,true],[M.win,1.25,true],[M.menu,1.25,true],[M.ctrl,1.25,true]]);
+  /* barre d'espace, posée à part pour être nommée */
+  s += K(BX + 3.75*U, y5, 6.25, M.esp, true);
+
+  /* Entrée en L, propre au clavier ISO : elle occupe 1,5 pas sur la
+     rangée du haut et 1,25 sur celle du bas, décalé de 0,25. */
+  const ex1 = BX + 13.5*U, ex2 = BX + 13.75*U;
+  s += `<path d="M${ex1+1.5} ${y2+1.5} H${BX+15*U-1.5} V${y3+U-1.5} H${ex2+1.5} V${y3+1.5} H${ex1+1.5} Z"
+          fill="#3d4756" stroke="#232a34" stroke-width="1" stroke-linejoin="round"/>
+        <text x="${ex1+22}" y="${y2+13}" text-anchor="middle" font-size="5.2"
+          font-family="Consolas, monospace" fill="rgba(255,255,255,.82)">${M.ent}</text>`;
+
+  /* bloc de direction */
+  s += RANG(NX, y1, [[M.ins,1,true],[M.debut,1,true],[M.pgup,1,true]]);
+  s += RANG(NX, y2, [[M.suppr,1,true],[M.fin,1,true],[M.pgdn,1,true]]);
+  s += K(NX + U, y4, 1, "↑");
+  s += RANG(NX, y5, [["←",1],["↓",1],["→",1]]);
+
+  /* pavé numérique */
+  s += RANG(PX, y1, [[M.verr,1,true],["/",1],["*",1],["−",1]]);
+  s += RANG(PX, y2, [["7",1],["8",1],["9",1]]);
+  s += RANG(PX, y3, [["4",1],["5",1],["6",1]]);
+  s += RANG(PX, y4, [["1",1],["2",1],["3",1]]);
+  s += RANG(PX, y5, [["0",2],[".",1]]);
+  /* le plus et l'entrée du pavé occupent deux rangées */
+  s += `<rect x="${PX+3*U+1.5}" y="${y2+1.5}" width="${U-3}" height="${2*U-3}" rx="2.5"
+          fill="#3d4756" stroke="#232a34" stroke-width="1"/>
+        <text x="${PX+3.5*U}" y="${y2+U}" text-anchor="middle" font-size="6.6"
+          font-family="Consolas, monospace" fill="rgba(255,255,255,.82)">+</text>
+        <rect x="${PX+3*U+1.5}" y="${y4+1.5}" width="${U-3}" height="${2*U-3}" rx="2.5"
+          fill="#3d4756" stroke="#232a34" stroke-width="1"/>
+        <text x="${PX+3.5*U}" y="${y4+U}" text-anchor="middle" font-size="4.6"
+          font-family="Consolas, monospace" fill="rgba(255,255,255,.82)">${M.ent}</text>`;
+  return s;
+}
+
+/* Clavier courant : coque de 450 sur 155, aucune étiquette. */
+function CLAVIER(disp){
+  return `
+  <g filter="url(#pf-ombre)">
+    <rect x="10" y="10" width="450" height="155" rx="10"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="16" y="16" width="438" height="143" rx="7"
+          fill="url(#pf-creux)" opacity=".35"/>
+  </g>
+  ${TOUCHES(disp, 26, 9)}`;
+}
+
+/* Clavier annoté : la coque est allongée pour que chaque zone porte son
+   nom juste en dessous, sans que les étiquettes sortent de la pièce. */
+function CLAVIER_ZONES(disp){
+  const cadre = (x,y,w,h)=>
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" fill="none"
+       stroke="#a0aec0" stroke-width="1.5" stroke-dasharray="5 4" opacity=".85"/>`;
+  const nom = (x,y,t,fs)=>
+    `<text x="${x}" y="${y}" text-anchor="middle" font-size="${fs||7}"
+       font-family="Consolas, monospace" fill="rgba(255,255,255,.78)">${t}</text>`;
+  return `
+  <g filter="url(#pf-ombre)">
+    <rect x="10" y="10" width="450" height="195" rx="10"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="16" y="16" width="438" height="183" rx="7"
+          fill="url(#pf-creux)" opacity=".35"/>
+  </g>
+  ${TOUCHES(disp, 26, 31)}
+
+  ${cadre(14.5, 22, 290.5, 27)}   ${nom(160, 62, "Touches de fonction")}
+  ${cadre(307, 22, 63, 27)}       ${nom(338, 62, "Touches spéciales", 6.4)}
+  ${cadre(14.5, 72, 288.5, 103)}  ${nom(159, 190, "Touches alphanumériques")}
+  ${cadre(309, 72, 61, 103)}      ${nom(339, 190, "Touches de direction", 6.4)}
+  ${cadre(375.5, 72, 79.5, 103)}  ${nom(415, 190, "Pavé numérique", 6.4)}`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PIECES NOUVELLES
+   Mêmes dégradés, même ombre, mêmes étiquettes que les précédentes.
+   Dimensions réelles, une unité pour un millimètre.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Le symbole de mise en marche du manuel : un cercle ouvert vers le haut,
+   une barre verticale à l'intérieur. Construction de l'unité centrale,
+   simplement mise à l'échelle autour du centre donné. */
+function MARCHE(cx, cy, r, id){
+  const k = r/11, dx = 6.3*k, dy = 9.017*k;
+  return `<g id="${id}" stroke="#3f4855" stroke-width="${(3*k).toFixed(2)}" fill="none" stroke-linecap="round">
+      <path d="M${(cx+dx).toFixed(2)} ${(cy-dy).toFixed(2)} A ${r} ${r} 0 1 1 ${(cx-dx).toFixed(2)} ${(cy-dy).toFixed(2)}"/>
+      <path d="M${cx} ${(cy-15*k).toFixed(2)} L ${cx} ${(cy-1*k).toFixed(2)}"/>
+    </g>`;
+}
+const ET = (x,y,t,fs)=>`<text x="${x}" y="${y}" text-anchor="middle" font-size="${fs||8}"
+  font-family="Consolas, monospace" fill="rgba(255,255,255,.7)">${t}</text>`;
+const EN = (x,y,t,fs)=>`<text x="${x}" y="${y}" text-anchor="middle" font-size="${fs||7}"
+  font-family="Consolas, monospace" fill="#2d3748">${t}</text>`;
+
+/* ET  : etiquette posee SUR le corps sombre d'un appareil -> toujours claire.
+   EN  : etiquette posee sur une tole claire              -> toujours sombre.
+   ETH : etiquette posee HORS de l'objet, sur le fond de la scene.
+         Elle suit le theme : sans cela elle disparait sur fond clair. */
+const ETH = (x,y,t,fs)=>`<text x="${x}" y="${y}" text-anchor="middle" font-size="${fs||7}"
+  font-family="Consolas, monospace" fill="currentColor" opacity=".72">${t}</text>`;
+
+/* ---------- IMPRIMANTE — 440 sur 190, bac papier compris ---------- */
+const IMPRIMANTE = `
+  <g filter="url(#pf-ombre)">
+    <path d="M100 60 L130 14 H380 L410 60 Z" fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="10" y="60" width="440" height="190" rx="8"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="16" y="66" width="428" height="178" rx="5"
+          fill="url(#pf-creux)" opacity=".35"/>
+  </g>
+
+  <!-- feuilles dans le bac -->
+  <path d="M142 24 H370 L382 50 H130 Z" fill="#e2e8f0" stroke="#a0aec0" stroke-width="1.5"/>
+  ${EN(256, 44, "Bac papier")}
+
+  <!-- bouton de mise en marche -->
+  <circle cx="262" cy="100" r="11" fill="url(#pf-bouton)" stroke="#2d3748" stroke-width="2"/>
+  ${MARCHE(262, 100, 5.5, "im-temoin")}
+  ${ET(262, 134, "Marche / Arrêt", 7)}
+
+  <!-- bandeau de commande -->
+  <rect x="300" y="82" width="120" height="36" rx="4" fill="#2d3748" stroke="#4a5568" stroke-width="1.5"/>
+  <rect x="310" y="90" width="46" height="20" rx="2" fill="#1a202c"/>
+  <circle cx="374" cy="100" r="5" fill="url(#pf-bouton)"/>
+  <circle cx="394" cy="100" r="5" fill="url(#pf-bouton)"/>
+  ${ET(360, 134, "Bandeau de commande", 7)}
+
+  <!-- sortie du papier -->
+  <rect x="40" y="178" width="380" height="24" rx="3" fill="#1a202c" stroke="#0f141b" stroke-width="1.5"/>
+  ${ET(230, 220, "Sortie papier", 8)}`;
+
+/* ---------- SCANNER A PLAT — 460 sur 300, vu de dessus ---------- */
+const SCANNER = `
+  <g filter="url(#pf-ombre)">
+    <rect x="10" y="10" width="460" height="300" rx="8"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="16" y="16" width="448" height="288" rx="5"
+          fill="url(#pf-creux)" opacity=".35"/>
+  </g>
+
+  <!-- couvercle : on le voit fermé, la vitre est dessous -->
+  <rect x="24" y="24" width="432" height="222" rx="6"
+        fill="#3d4756" stroke="#232a34" stroke-width="2"/>
+  <rect x="150" y="26" width="70" height="7" rx="3" fill="#232a34"/>
+  <rect x="260" y="26" width="70" height="7" rx="3" fill="#232a34"/>
+  <rect x="216" y="236" width="48" height="10" rx="4" fill="#232a34"/>
+  ${ET(240, 224, "Couvercle", 8)}
+
+  <!-- bandeau avant -->
+  <circle cx="70" cy="272" r="12" fill="url(#pf-bouton)" stroke="#2d3748" stroke-width="2"/>
+  ${MARCHE(70, 272, 6, "sc-temoin")}
+  ${ET(70, 298, "Marche / Arrêt", 7)}
+  <rect x="150" y="262" width="46" height="20" rx="3" fill="#2d3748" stroke="#4a5568" stroke-width="1.5"/>
+  ${ET(173, 298, "Numériser", 7)}`;
+
+/* ---------- HAUT-PARLEURS — deux enceintes de 90 sur 160 ---------- */
+const HP = `
+  <g filter="url(#pf-ombre)">
+    <rect x="10" y="10" width="90" height="160" rx="6"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="120" y="10" width="90" height="160" rx="6"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="15" y="15" width="80" height="150" rx="4" fill="url(#pf-creux)" opacity=".3"/>
+    <rect x="125" y="15" width="80" height="150" rx="4" fill="url(#pf-creux)" opacity=".3"/>
+  </g>
+
+  <!-- le fil qui relie les deux enceintes -->
+  <path d="M100 118 H120" stroke="#2d3748" stroke-width="4" stroke-linecap="round" fill="none"/>
+
+  <!-- aigus et graves -->
+  <circle cx="55" cy="46" r="13" fill="#1a202c" stroke="#4a5568" stroke-width="2"/>
+  <circle cx="55" cy="46" r="5" fill="#4a5568"/>
+  <circle cx="55" cy="100" r="30" fill="#1a202c" stroke="#4a5568" stroke-width="2"/>
+  <circle cx="55" cy="100" r="12" fill="#4a5568"/>
+  <circle cx="165" cy="46" r="13" fill="#1a202c" stroke="#4a5568" stroke-width="2"/>
+  <circle cx="165" cy="46" r="5" fill="#4a5568"/>
+  <circle cx="165" cy="100" r="30" fill="#1a202c" stroke="#4a5568" stroke-width="2"/>
+  <circle cx="165" cy="100" r="12" fill="#4a5568"/>
+
+  <!-- le bouton de volume ne se trouve que sur une enceinte -->
+  <circle cx="165" cy="146" r="10" fill="url(#pf-bouton)" stroke="#2d3748" stroke-width="1.5"/>
+  <path d="M165 140 V146" stroke="#1a202c" stroke-width="2" stroke-linecap="round"/>
+  ${ET(165, 164, "Volume", 6)}
+
+  ${ET(55, 190, "Haut-parleur gauche", 6.6)}
+  ${ET(165, 190, "Haut-parleur droit", 6.6)}`;
+
+/* ---------- CLE USB — 60 sur 20, vue de dessus ---------- */
+const CLE = `
+  <g filter="url(#pf-ombre)">
+    <rect x="12" y="30" width="50" height="24" rx="4"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="1.5"/>
+  </g>
+  <circle cx="20" cy="42" r="4" fill="none" stroke="#1a202c" stroke-width="1.5"/>
+
+  <!-- connecteur : la languette décalée vers le haut est le détrompeur -->
+  <rect x="62" y="34" width="24" height="16" fill="#cbd5e0" stroke="#8a929c" stroke-width="1.5"/>
+  <rect x="65" y="37" width="18" height="4.5" fill="#1a202c"/>
+  ${ET(74, 74, "Connecteur USB", 7)}`;
+
+/* ---------- CD / DVD — disque de 120 de diamètre ---------- */
+const DISQUE = `
+  <g filter="url(#pf-ombre)">
+    <circle cx="70" cy="70" r="60" fill="#cbd5e0" stroke="#8a929c" stroke-width="2"/>
+  </g>
+  <circle cx="70" cy="70" r="52" fill="none" stroke="#a0aec0" stroke-width="1"/>
+  <circle cx="70" cy="70" r="24" fill="#e2e8f0" stroke="#a0aec0" stroke-width="1.5"/>
+  <circle cx="70" cy="70" r="17" fill="#f4f5f7" stroke="#a0aec0" stroke-width="1"/>
+  <circle cx="70" cy="70" r="7.5" fill="#1a1d21" stroke="#8a929c" stroke-width="1.5"/>
+  ${EN(70, 108, "Face imprimée", 7)}`;
+
+/* ---------- ONDULEUR — 300 sur 150 ---------- */
+const ONDULEUR = `
+  <g filter="url(#pf-ombre)">
+    <rect x="10" y="10" width="300" height="150" rx="8"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="16" y="16" width="288" height="138" rx="5"
+          fill="url(#pf-creux)" opacity=".35"/>
+  </g>
+
+  <circle cx="62" cy="70" r="16" fill="url(#pf-bouton)" stroke="#2d3748" stroke-width="2"/>
+  ${MARCHE(62, 70, 8, "on-temoin")}
+  ${ET(62, 106, "Marche / Arrêt", 7)}
+
+  <!-- trois voyants d'état -->
+  <circle cx="135" cy="64" r="6" fill="#48bb78" stroke="#1a202c" stroke-width="1.5"/>
+  <circle cx="172" cy="64" r="6" fill="#3a4351" stroke="#1a202c" stroke-width="1.5"/>
+  <circle cx="209" cy="64" r="6" fill="#3a4351" stroke="#1a202c" stroke-width="1.5"/>
+  ${ET(135, 88, "Secteur", 6)}
+  ${ET(172, 88, "Batterie", 6)}
+  ${ET(209, 88, "Défaut", 6)}
+
+  <!-- prises protégées -->
+  <rect x="230" y="42" width="70" height="88" rx="3" fill="#cbd5e0" stroke="#4a5568" stroke-width="2"/>
+  <circle cx="265" cy="64" r="13" fill="#e2e8f0" stroke="#8a929c" stroke-width="1.5"/>
+  <circle cx="259" cy="64" r="2.6" fill="#1a1a1a"/><circle cx="271" cy="64" r="2.6" fill="#1a1a1a"/>
+  <circle cx="265" cy="94" r="13" fill="#e2e8f0" stroke="#8a929c" stroke-width="1.5"/>
+  <circle cx="259" cy="94" r="2.6" fill="#1a1a1a"/><circle cx="271" cy="94" r="2.6" fill="#1a1a1a"/>
+  ${EN(265, 122, "Prises protégées", 6.4)}`;
+
+/* ---------- WEBCAM — 70 sur 44, avec sa pince ---------- */
+const WEBCAM = `
+  <g filter="url(#pf-ombre)">
+    <rect x="25" y="18" width="70" height="44" rx="20"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <path d="M45 62 H75 V72 H45 Z" fill="url(#pf-corps)" stroke="#1a202c" stroke-width="1.5"/>
+    <path d="M38 72 H82 L86 82 H34 Z" fill="url(#pf-corps)" stroke="#1a202c" stroke-width="1.5"/>
+  </g>
+
+  <!-- le fil -->
+  <path d="M95 40 C108 40 112 30 112 18" fill="none" stroke="#2d3748"
+        stroke-width="4" stroke-linecap="round"/>
+
+  <circle cx="55" cy="40" r="16" fill="#1a202c" stroke="#4a5568" stroke-width="2.5"/>
+  <circle cx="55" cy="40" r="7" fill="#0a1420" stroke="#2d3748" stroke-width="1.5"/>
+  <circle cx="80" cy="30" r="3.2" fill="#3a4351" stroke="#1a202c" stroke-width="1"/>
+  <g fill="#1a202c">
+    <circle cx="34" cy="46" r="1.6"/><circle cx="34" cy="52" r="1.6"/>
+  </g>
+
+  ${ETH(50, 104, "Objectif", 7)}
+  ${ETH(95, 104, "Témoin", 7)}
+  ${ETH(60, 120, "Pince", 7)}`;
+
+/* ═══════════════════════════════════════════════════════════════
+   PIECES NOMMEES PAR LE MANUEL ET NON ENCORE DESSINEES
+   Le microphone et le casque multimédia sont nommés par la leçon 3.
+   L'écran tactile et le modem le sont par le module 2, unité 4, qui
+   emploie une autre classification.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ---------- MICROPHONE — 90 sur 210, pied compris ---------- */
+const MICROPHONE = `
+  <g filter="url(#pf-ombre)">
+    <rect x="30" y="16" width="34" height="70" rx="17"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <g stroke="#1a202c" stroke-width="1.2" opacity=".85">
+      <path d="M34 30 H60 M34 38 H60 M34 46 H60 M34 54 H60 M34 62 H60 M34 70 H60"/>
+    </g>
+    <path d="M20 62 A 27 27 0 0 0 74 62" fill="none" stroke="#4a5568" stroke-width="4"/>
+    <rect x="43" y="96" width="8" height="66" fill="url(#pf-corps)" stroke="#1a202c" stroke-width="1.5"/>
+    <path d="M22 162 H72 L78 178 H16 Z"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+  </g>
+  <rect x="38" y="106" width="18" height="9" rx="2" fill="#232a34" stroke="#1a202c"/>
+  <circle cx="43" cy="110.5" r="2.4" fill="#3a4351"/>
+  <path d="M72 172 C 84 172 88 160 88 146" fill="none" stroke="#2d3748"
+        stroke-width="4" stroke-linecap="round"/>
+  ${ET(47, 100, "Grille", 7)}
+  ${ETH(47, 196, "Socle", 7)}
+  ${ETH(47, 208, "MICROPHONE", 8)}`;
+
+/* ---------- CASQUE MULTIMEDIA — 200 sur 190 ----------
+   La perche et sa capsule en font un casque multimédia, terme exact
+   employé par la leçon 3, et non un simple casque. */
+const CASQUE = `
+  <g filter="url(#pf-ombre)">
+    <path d="M30 106 A 70 70 0 0 1 170 106" fill="none"
+          stroke="#4a5568" stroke-width="16" stroke-linecap="round"/>
+    <rect x="14" y="98" width="34" height="64" rx="16"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="152" y="98" width="34" height="64" rx="16"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <ellipse cx="31" cy="130" rx="11" ry="22" fill="#232a34" stroke="#1a202c" stroke-width="1.2"/>
+    <ellipse cx="169" cy="130" rx="11" ry="22" fill="#232a34" stroke="#1a202c" stroke-width="1.2"/>
+  </g>
+  <path d="M152 146 C 132 168 110 172 96 172" fill="none" stroke="#2d3748"
+        stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="92" cy="172" rx="9" ry="6" fill="#1a202c" stroke="#4a5568" stroke-width="1.5"/>
+  <path d="M22 158 C 14 172 12 180 12 188" fill="none" stroke="#2d3748"
+        stroke-width="4" stroke-linecap="round"/>
+  ${ETH(100, 60, "Arceau", 7)}
+  ${ETH(31, 180, "Écouteur", 7)}
+  ${ETH(92, 192, "Micro", 7)}
+  ${ETH(100, 208, "CASQUE MULTIMÉDIA", 8)}`;
+
+/* ---------- ECRAN TACTILE — 320 sur 240, pied compris ----------
+   Le doigt et l'onde ne sont pas un ornement : c'est le seul moyen
+   de montrer qu'un écran peut être un composant d'entrée. */
+const ECRAN_TACTILE = `
+  <g filter="url(#pf-ombre)">
+    <rect x="14" y="14" width="292" height="184" rx="12"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="26" y="26" width="268" height="150" rx="5"
+          fill="url(#pf-dalle)" stroke="#0f141b" stroke-width="1.5"/>
+  </g>
+  <circle cx="176" cy="98" r="13" fill="none" stroke="#8fc6f0" stroke-width="2" opacity=".85"/>
+  <circle cx="176" cy="98" r="23" fill="none" stroke="#8fc6f0" stroke-width="1.6" opacity=".5"/>
+  <circle cx="176" cy="98" r="33" fill="none" stroke="#8fc6f0" stroke-width="1.2" opacity=".28"/>
+  <path d="M160 150 C 160 128 168 116 172 106 C 174 100 182 100 182 108
+           L 182 122 C 190 120 198 124 198 134 L 198 150 Z"
+        fill="#c9a48a" stroke="#8a6a55" stroke-width="1.6" stroke-linejoin="round"/>
+  <rect x="148" y="198" width="24" height="20" fill="url(#pf-corps)" stroke="#1a202c" stroke-width="1.5"/>
+  <path d="M108 218 H212 L222 234 H98 Z"
+        fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+  ${ET(160, 190, "Dalle tactile", 7)}
+  ${ETH(160, 250, "ÉCRAN TACTILE", 8)}`;
+
+/* ---------- MODEM — 240 sur 130 ---------- */
+const MODEM = `
+  <g filter="url(#pf-ombre)">
+    <rect x="14" y="46" width="212" height="62" rx="10"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="20" y="52" width="200" height="50" rx="7"
+          fill="url(#pf-creux)" opacity=".3"/>
+  </g>
+  <path d="M52 46 V 14" stroke="#2d3748" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="52" cy="12" r="4" fill="#2d3748"/>
+  <path d="M188 46 V 14" stroke="#2d3748" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="188" cy="12" r="4" fill="#2d3748"/>
+  <circle cx="86" cy="70" r="4" fill="#3a4351" stroke="#1a202c" stroke-width="1"/>
+  <circle cx="106" cy="70" r="4" fill="#3a4351" stroke="#1a202c" stroke-width="1"/>
+  <circle cx="126" cy="70" r="4" fill="#3a4351" stroke="#1a202c" stroke-width="1"/>
+  <path d="M162 86 h22 v10 a3 3 0 0 1 -3 3 h-5 v4 h-6 v-4 h-5 a3 3 0 0 1 -3 -3 z"
+        fill="#1a1a1a" stroke="#cbd5e0" stroke-width="1.6"/>
+  <rect x="196" y="86" width="18" height="13" rx="2" fill="#1a1a1a" stroke="#cbd5e0" stroke-width="1.6"/>
+  ${ETH(52, 40, "Antenne", 7)}
+  ${ET(106, 62, "Voyants", 7)}
+  ${ETH(173, 120, "RJ45", 7)}
+  ${ETH(205, 120, "Ligne", 7)}
+  ${ETH(120, 132, "MODEM", 8)}`;
+
+/* ═══════════════════════════════════════════════════════════════
+   COMPOSANTS INTERNES DE L'UNITE CENTRALE
+   Servis par la ressource 35 — quatrième, module 1, unité 1,
+   leçons 1 et 2 — et par la ressource 52 en troisième.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ---------- CARTE MERE — 305 sur 244, format ATX ---------- */
+const CARTE_MERE = `
+  <g filter="url(#pf-ombre)">
+    <rect x="14" y="14" width="305" height="244" rx="4"
+          fill="#243029" stroke="#151d18" stroke-width="2"/>
+  </g>
+  <g fill="none" stroke="#3c4f44" stroke-width="1">
+    <path d="M30 40 H300 M30 60 H300 M30 224 H300 M40 34 V250 M290 34 V250"/>
+  </g>
+  <g fill="#151d18">
+    <circle cx="26" cy="26" r="3"/><circle cx="307" cy="26" r="3"/>
+    <circle cx="26" cy="246" r="3"/><circle cx="307" cy="246" r="3"/>
+  </g>
+  <rect x="120" y="46" width="66" height="66" rx="3" fill="#39414d" stroke="#151d18" stroke-width="2"/>
+  <rect x="130" y="56" width="46" height="46" rx="2" fill="#5a6472" stroke="#2d3748" stroke-width="1.5"/>
+  <path d="M112 60 h8 v44 h-8" fill="none" stroke="#8a929c" stroke-width="3" stroke-linecap="round"/>
+  <g fill="#1a1a1a" stroke="#8a929c" stroke-width="1.5">
+    <rect x="212" y="40" width="10" height="132" rx="2"/>
+    <rect x="230" y="40" width="10" height="132" rx="2"/>
+    <rect x="248" y="40" width="10" height="132" rx="2"/>
+    <rect x="266" y="40" width="10" height="132" rx="2"/>
+  </g>
+  <rect x="286" y="60" width="24" height="52" rx="2" fill="#1a1a1a" stroke="#cbd5e0" stroke-width="1.5"/>
+  <g fill="#1a1a1a" stroke="#8a929c" stroke-width="1.5">
+    <rect x="60" y="150" width="130" height="9" rx="2"/>
+    <rect x="60" y="176" width="90" height="9" rx="2"/>
+    <rect x="60" y="200" width="90" height="9" rx="2"/>
+  </g>
+  <rect x="200" y="196" width="40" height="40" rx="3" fill="#5a6472" stroke="#2d3748" stroke-width="1.5"/>
+  <circle cx="270" cy="206" r="13" fill="#8a929c" stroke="#2d3748" stroke-width="2"/>
+  <path d="M265 202 h10 M270 197 v10" stroke="#2d3748" stroke-width="1.6"/>
+  <g fill="#1a1a1a" stroke="#cbd5e0" stroke-width="1.2">
+    <rect x="290" y="150" width="18" height="10" rx="1.5"/>
+    <rect x="290" y="166" width="18" height="10" rx="1.5"/>
+  </g>
+  ${ET(153, 132, "Socket", 8)}
+  ${ET(244, 188, "Mémoire vive", 8)}
+  ${ET(125, 224, "Extension", 8)}
+  ${ET(270, 232, "Pile", 8)}
+  ${ETH(166, 284, "CARTE MÈRE — format ATX", 9)}`;
+
+/* ---------- PROCESSEUR — 37,5 de côté ---------- */
+const PROCESSEUR = `
+  <g filter="url(#pf-ombre)">
+    <rect x="16" y="16" width="75" height="75" rx="4"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="26" y="26" width="55" height="55" rx="3" fill="#8a929c" stroke="#5a6472" stroke-width="2"/>
+  </g>
+  <path d="M22 22 l11 0 l-11 11 z" fill="#c9a227"/>
+  <path d="M40 48 h27 M40 56 h27 M40 64 h16" stroke="#5a6472" stroke-width="1.4"/>
+  ${ETH(53, 112, "PROCESSEUR", 9)}
+  ${ETH(53, 126, "le repère doré donne le sens", 7)}`;
+
+/* ---------- BARRETTE DE MEMOIRE VIVE — 133 sur 31 ---------- */
+const BARRETTE = `
+  <g filter="url(#pf-ombre)">
+    <rect x="10" y="16" width="133" height="31" rx="2"
+          fill="#243029" stroke="#151d18" stroke-width="2"/>
+  </g>
+  <g fill="#39414d" stroke="#151d18" stroke-width="1">
+    <rect x="20" y="22" width="20" height="13" rx="1.5"/>
+    <rect x="44" y="22" width="20" height="13" rx="1.5"/>
+    <rect x="68" y="22" width="20" height="13" rx="1.5"/>
+    <rect x="92" y="22" width="20" height="13" rx="1.5"/>
+    <rect x="116" y="22" width="20" height="13" rx="1.5"/>
+  </g>
+  <rect x="14" y="41" width="50" height="6" fill="#c9a227"/>
+  <rect x="72" y="41" width="66" height="6" fill="#c9a227"/>
+  <rect x="64" y="39" width="8" height="8" fill="#151d18"/>
+  ${ETH(68, 62, "Détrompeur", 7)}
+  ${ETH(76, 78, "BARRETTE DE MÉMOIRE VIVE", 9)}`;
+
+/* ---------- DISQUE DUR — 147 sur 102, format 3 pouces et demi ---------- */
+const DISQUE_DUR = `
+  <g filter="url(#pf-ombre)">
+    <rect x="14" y="14" width="147" height="102" rx="3"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="24" y="24" width="127" height="82" rx="2" fill="#5a6472" stroke="#39414d" stroke-width="1.5"/>
+  </g>
+  <g fill="#39414d">
+    <circle cx="22" cy="22" r="2.6"/><circle cx="153" cy="22" r="2.6"/>
+    <circle cx="22" cy="108" r="2.6"/><circle cx="153" cy="108" r="2.6"/>
+  </g>
+  <rect x="40" y="40" width="76" height="34" rx="2" fill="#8a929c" stroke="#5a6472" stroke-width="1.2"/>
+  <path d="M48 52 h60 M48 62 h44" stroke="#5a6472" stroke-width="1.6"/>
+  <rect x="60" y="118" width="20" height="9" rx="1.5" fill="#1a1a1a" stroke="#cbd5e0" stroke-width="1.4"/>
+  <rect x="88" y="118" width="30" height="9" rx="1.5" fill="#1a1a1a" stroke="#cbd5e0" stroke-width="1.4"/>
+  ${ETH(70, 140, "Données", 7)}
+  ${ETH(103, 140, "Alimentation", 7)}
+  ${ETH(87, 158, "DISQUE DUR — 3,5 pouces", 9)}`;
+
+/* ---------- BLOC D'ALIMENTATION — 150 sur 86 ---------- */
+const BLOC_ALIM = `
+  <g filter="url(#pf-ombre)">
+    <rect x="24" y="20" width="150" height="86" rx="3"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+  </g>
+  <circle cx="80" cy="63" r="33" fill="none" stroke="#5a6472" stroke-width="2" stroke-dasharray="5 4"/>
+  <circle cx="80" cy="63" r="21" fill="none" stroke="#5a6472" stroke-width="1.6" stroke-dasharray="4 4"/>
+  <circle cx="80" cy="63" r="8" fill="none" stroke="#5a6472" stroke-width="1.6"/>
+  <path d="M130 42 h32 l3 20 h-38 z" fill="#111" stroke="#8a929c" stroke-width="1.5"/>
+  <rect x="136" y="49" width="3" height="8" fill="silver"/>
+  <rect x="144" y="49" width="3" height="8" fill="silver"/>
+  <rect x="152" y="49" width="3" height="8" fill="silver"/>
+  <rect x="134" y="72" width="26" height="14" rx="2" fill="#232a34" stroke="#1a202c" stroke-width="1.4"/>
+  <path d="M141 79 h5 M153 76 v6" stroke="#8a929c" stroke-width="1.6"/>
+  <path d="M24 62 C 12 62 8 76 8 90" fill="none" stroke="#2d3748" stroke-width="6" stroke-linecap="round"/>
+  ${ETH(80, 120, "Ventilateur", 7)}
+  ${ETH(147, 100, "Prise", 7)}
+  ${ETH(99, 138, "BLOC D'ALIMENTATION", 9)}`;
+
+/* ---------- VENTILATEUR DE BOITIER — 120 de côté ---------- */
+const VENTILO = `
+  <g filter="url(#pf-ombre)">
+    <rect x="16" y="16" width="120" height="120" rx="8"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+  </g>
+  <circle cx="76" cy="76" r="54" fill="#1a202c" stroke="#39414d" stroke-width="2"/>
+  <g fill="#4a5568" stroke="#2d3748" stroke-width="1.2">
+    <path d="M76 76 L96 34 A46 46 0 0 1 112 62 Z"/>
+    <path d="M76 76 L118 76 A46 46 0 0 1 104 108 Z"/>
+    <path d="M76 76 L94 116 A46 46 0 0 1 60 120 Z"/>
+    <path d="M76 76 L38 108 A46 46 0 0 1 31 72 Z"/>
+    <path d="M76 76 L40 46 A46 46 0 0 1 70 31 Z"/>
+  </g>
+  <circle cx="76" cy="76" r="17" fill="#5a6472" stroke="#2d3748" stroke-width="2"/>
+  <g fill="#1a202c">
+    <circle cx="26" cy="26" r="3.4"/><circle cx="126" cy="26" r="3.4"/>
+    <circle cx="26" cy="126" r="3.4"/><circle cx="126" cy="126" r="3.4"/>
+  </g>
+  ${ETH(76, 160, "VENTILATEUR DE BOÎTIER", 9)}
+  ${ETH(76, 174, "120 mm", 7)}`;
+
+/* ---------- PILE DE LA CARTE MERE — 20 de diamètre ---------- */
+const PILE = `
+  <g filter="url(#pf-ombre)">
+    <circle cx="45" cy="42" r="30" fill="#8a929c" stroke="#5a6472" stroke-width="2"/>
+    <circle cx="45" cy="42" r="19" fill="#a0aec0" stroke="#718096" stroke-width="1.5"/>
+  </g>
+  <path d="M38 38 h14 M45 31 v14" stroke="#2d3748" stroke-width="2.4" stroke-linecap="round"/>
+  ${ETH(45, 92, "PILE", 9)}
+  ${ETH(45, 106, "conserve l'heure", 7)}`;
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILIER ET SALLE
+   Servis par la ressource 8 — sixième, aménagement d'un laboratoire
+   informatique — et par toute scène qui pose un poste dans une salle.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ---------- TABLE INFORMATIQUE — 1200 sur 750, vue de face ---------- */
+const TABLE = `
+  <g filter="url(#pf-ombre)">
+    <rect x="20" y="30" width="1200" height="34" rx="4"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="52" y="64" width="30" height="686" fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="1158" y="64" width="30" height="686" fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="82" y="560" width="1076" height="22" rx="3"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+  </g>
+  <path d="M20 750 H1220" stroke="#1a202c" stroke-width="3"/>
+  ${ETH(620, 20, "Plateau", 11)}
+  ${ETH(620, 552, "Tablette basse", 11)}
+  ${ETH(620, 786, "TABLE INFORMATIQUE — 1200 × 750", 13)}`;
+
+/* ---------- CHAISE — 450 sur 900, vue de profil ---------- */
+const CHAISE = `
+  <g filter="url(#pf-ombre)">
+    <rect x="60" y="40" width="34" height="330" rx="12"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="60" y="370" width="360" height="34" rx="10"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="76" y="404" width="24" height="456" fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="380" y="404" width="24" height="456" fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+    <rect x="88" y="640" width="304" height="18" rx="4"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+  </g>
+  <path d="M40 860 H440" stroke="#1a202c" stroke-width="3"/>
+  ${ETH(77, 26, "Dossier", 10)}
+  ${ETH(240, 358, "Assise", 10)}
+  ${ETH(240, 898, "CHAISE — 450 × 900", 12)}`;
+
+/* ---------- PRISE MURALE — 80 de côté ---------- */
+const PRISE_MURALE = `
+  <g filter="url(#pf-ombre)">
+    <rect x="16" y="16" width="80" height="80" rx="8"
+          fill="#e2e8f0" stroke="#8a929c" stroke-width="2"/>
+    <circle cx="56" cy="56" r="27" fill="#cbd5e0" stroke="#8a929c" stroke-width="1.5"/>
+  </g>
+  <circle cx="44" cy="52" r="6" fill="#111"/>
+  <circle cx="68" cy="52" r="6" fill="#111"/>
+  <rect x="52" y="70" width="8" height="10" rx="2" fill="#8a929c" stroke="#5a6472" stroke-width="1.2"/>
+  ${ETH(56, 122, "PRISE MURALE", 9)}
+  ${ETH(56, 136, "broche de terre en bas", 7)}`;
+
+/* ---------- MULTIPRISE — 250 sur 55 ---------- */
+const MULTIPRISE = `
+  <g filter="url(#pf-ombre)">
+    <rect x="26" y="24" width="250" height="55" rx="8"
+          fill="url(#pf-corps)" stroke="#1a202c" stroke-width="2"/>
+  </g>
+  <g>
+    <circle cx="86" cy="51" r="17" fill="#232a34" stroke="#1a202c" stroke-width="1.5"/>
+    <circle cx="80" cy="48" r="4" fill="#111"/><circle cx="92" cy="48" r="4" fill="#111"/>
+    <circle cx="138" cy="51" r="17" fill="#232a34" stroke="#1a202c" stroke-width="1.5"/>
+    <circle cx="132" cy="48" r="4" fill="#111"/><circle cx="144" cy="48" r="4" fill="#111"/>
+    <circle cx="190" cy="51" r="17" fill="#232a34" stroke="#1a202c" stroke-width="1.5"/>
+    <circle cx="184" cy="48" r="4" fill="#111"/><circle cx="196" cy="48" r="4" fill="#111"/>
+    <circle cx="242" cy="51" r="17" fill="#232a34" stroke="#1a202c" stroke-width="1.5"/>
+    <circle cx="236" cy="48" r="4" fill="#111"/><circle cx="248" cy="48" r="4" fill="#111"/>
+  </g>
+  <rect x="36" y="42" width="24" height="18" rx="3" fill="#232a34" stroke="#1a202c" stroke-width="1.4"/>
+  <circle cx="48" cy="51" r="4" fill="#3a4351"/>
+  <path d="M26 51 C 14 51 10 66 10 80" fill="none" stroke="#2d3748" stroke-width="6" stroke-linecap="round"/>
+  ${ETH(48, 100, "Interrupteur", 7)}
+  ${ETH(164, 100, "Quatre prises", 7)}
+  ${ETH(151, 118, "MULTIPRISE", 9)}`;
+
+/* ---------- EXTINCTEUR — 150 sur 550 ----------
+   Type dioxyde de carbone : c'est celui qui convient aux feux
+   d'origine électrique, et le seul admis près d'un poste sous tension. */
+const EXTINCTEUR = `
+  <g filter="url(#pf-ombre)">
+    <rect x="30" y="120" width="150" height="400" rx="26"
+          fill="#b03a3a" stroke="#7a2626" stroke-width="2.5"/>
+    <rect x="82" y="74" width="46" height="46" rx="6"
+          fill="#5a6472" stroke="#39414d" stroke-width="2"/>
+    <path d="M62 78 h86 v14 h-86 z" fill="#39414d" stroke="#232a34" stroke-width="2"/>
+    <path d="M70 66 h60" stroke="#8a929c" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <path d="M148 96 C 200 110 206 180 186 230" fill="none" stroke="#2d3748"
+        stroke-width="9" stroke-linecap="round"/>
+  <path d="M186 230 L214 268 L166 292 L172 246 Z" fill="#39414d" stroke="#232a34" stroke-width="2"/>
+  <rect x="52" y="220" width="106" height="120" rx="4" fill="#e2e8f0" stroke="#8a929c" stroke-width="1.5"/>
+  <path d="M64 244 h82 M64 262 h82 M64 280 h60" stroke="#8a929c" stroke-width="2"/>
+  <circle cx="105" cy="312" r="16" fill="none" stroke="#7a2626" stroke-width="3"/>
+  <path d="M105 302 v20 M97 312 h16" stroke="#7a2626" stroke-width="2.6"/>
+  ${ETH(105, 46, "Poignée", 8)}
+  ${ETH(216, 302, "Diffuseur", 8)}
+  ${ETH(105, 562, "EXTINCTEUR À CO₂", 10)}
+  ${ETH(105, 580, "le seul admis près d'un poste sous tension", 7)}`;
+
+/* ═══════════════════════════════════════════════════════════════
+   CATALOGUE
+   Les familles sont celles du manuel de sixième, leçon 3.
+   ═══════════════════════════════════════════════════════════════ */
+const FAMILLES = [
+  {id:"entree", nom:"Entrée",
+   def:"« Les composants d'entrée permettent de faire entrer les informations dans le micro-ordinateur. » — manuel de 6e, leçon 3."},
+  {id:"traitement", nom:"Traitement",
+   def:"« Le composant de traitement permet de traiter les informations. » Le manuel n'en cite qu'un : l'unité centrale."},
+  {id:"sortie", nom:"Sortie",
+   def:"« Les composants de sortie permettent de faire sortir ou d'afficher les informations du micro-ordinateur. »"},
+  {id:"stockage", nom:"Stockage",
+   def:"« Les informations traitées sont ensuite sauvegardées dans les unités de stockage. »"},
+  {id:"entree-sortie", nom:"Entrée / Sortie",
+   def:"Cette catégorie ne vient pas de la leçon 3 mais du module 2, unité 4, du même manuel, qui classe autrement : « composants d'entrée/sortie : disque dur, CD/DVD, écran tactile, modem, clé USB ». Le manuel porte donc deux classifications, servant deux leçons différentes. Une ressource emploie celle de la leçon qu'elle sert, et ne les mêle pas."},
+  {id:"interne", nom:"Composants internes",
+   def:"À l'intérieur de l'unité centrale. Servis par la ressource 35 — quatrième, module 1, unité 1, leçons 1 et 2 — et par la ressource 52 en troisième."},
+  {id:"mobilier", nom:"Mobilier et salle",
+   def:"Le décor du poste et du laboratoire. Servis par la ressource 8 — sixième, aménagement d'un laboratoire informatique — et par toute scène qui pose un poste dans une salle."},
+  {id:"energie", nom:"Énergie",
+   def:"Hors de la classification de la leçon 3. L'onduleur figure dans le tableau de matériel du manuel de 5e."}
+];
+
+const AJOUTS = { familles: [], pieces: [] };
+
+const PIECES = [
+  {id:"cla", fam:"entree", nom:"Clavier", dim:"450 × 155",
+   vue:[480,185], sous:"Pour les ressources où le clavier n'est qu'un décor.",
+   f:()=>CLAVIER(P.disp), bt:{txt:()=>P.disp==="azerty"?"Passer en QWERTY":"Passer en AZERTY", act:"disposition"}},
+  {id:"clz", fam:"entree", nom:"Clavier — zones nommées", dim:"450 × 195",
+   vue:[480,225], sous:"Les cinq zones que la leçon demande de distinguer.",
+   f:()=>CLAVIER_ZONES(P.disp)},
+  {id:"sou", fam:"entree", nom:"Souris", dim:"115 × 62",
+   vue:[170,190], sous:"Deux boutons et une molette.", f:()=>SOURIS},
+  {id:"scan", fam:"entree", nom:"Scanner à plat", dim:"460 × 300",
+   vue:[490,330], sous:"Vu de dessus, couvercle fermé.", f:()=>SCANNER},
+  {id:"mic", fam:"entree", nom:"Microphone", dim:"90 × 210",
+   vue:[95,215], sous:"Nommé par la leçon 3 parmi les composants d'entrée.", f:()=>MICROPHONE},
+  {id:"web", fam:"entree", nom:"Webcam", dim:"70 × 44",
+   vue:[130,135], sous:"Sur sa pince, telle qu'on la pose sur un écran.", f:()=>WEBCAM},
+
+  {id:"av", fam:"traitement", nom:"Unité centrale — face avant", dim:"240 × 400",
+   vue:[260,420], sous:"Le témoin est éteint tant que la machine n'a pas démarré.",
+   f:()=>AVANT, etat:true, bt:{txt:()=>P.sousTension?"Éteindre":"Allumer", act:"allumer"}},
+  {id:"ar", fam:"traitement", nom:"Unité centrale — arrière, plaque courante", dim:"240 × 400",
+   vue:[260,420], sous:"Pour les ressources où l'unité centrale est un décor.", f:()=>ARRIERE},
+  {id:"co", fam:"traitement", nom:"Unité centrale — arrière, plaque complète", dim:"240 × 400",
+   vue:[260,420], sous:"Les huit ports que le manuel de 6e demande d'identifier.", f:()=>ARRIERE_COMPLETE},
+
+  {id:"mav", fam:"sortie", nom:"Moniteur — face avant", dim:"420 × 364 + pied",
+   vue:[450,505], sous:"Dalle 19 pouces, format 4:3.",
+   f:()=>MON_AVANT, etatMon:true, bt:{txt:()=>P.allume?"Éteindre":"Allumer", act:"allumerEcran"}},
+  {id:"mar", fam:"sortie", nom:"Moniteur — face arrière", dim:"420 × 364 + pied",
+   vue:[450,505], sous:"Alimentation, VGA, HDMI.", f:()=>MON_ARRIERE},
+  {id:"imp", fam:"sortie", nom:"Imprimante", dim:"440 × 190",
+   vue:[460,280], sous:"Bac papier relevé, sortie en façade.", f:()=>IMPRIMANTE},
+  {id:"hp", fam:"sortie", nom:"Haut-parleurs", dim:"2 × 90 × 160",
+   vue:[230,205], sous:"Le bouton de volume ne se trouve que sur une enceinte.", f:()=>HP},
+  {id:"cas", fam:"sortie", nom:"Casque multimédia", dim:"200 × 190",
+   vue:[200,215], sous:"La perche et sa capsule en font un casque multimédia, terme du manuel, et non un simple casque.", f:()=>CASQUE},
+
+  {id:"cle", fam:"stockage", nom:"Clé USB", dim:"60 × 20",
+   vue:[110,90], sous:"La languette décalée du connecteur est son détrompeur.", f:()=>CLE},
+  {id:"cd", fam:"stockage", nom:"CD / DVD", dim:"120 de diamètre",
+   vue:[140,145], sous:"Le disque seul ; le lecteur est en façade de l'unité centrale.", f:()=>DISQUE},
+
+  {id:"tac", fam:"entree-sortie", nom:"Écran tactile", dim:"320 × 240",
+   vue:[320,262], sous:"Il affiche et il reçoit : c'est ce qui le range en entrée/sortie.", f:()=>ECRAN_TACTILE},
+  {id:"mod", fam:"entree-sortie", nom:"Modem", dim:"240 × 130",
+   vue:[240,142], sous:"Il reçoit et il émet. Prise réseau vers l'unité centrale, prise de ligne entrante.", f:()=>MODEM},
+
+  {id:"cm",  fam:"interne", nom:"Carte mère", dim:"305 × 244",
+   vue:[333,296], sous:"Socket, emplacements mémoire, connecteurs d'extension, pile.", f:()=>CARTE_MERE},
+  {id:"cpu", fam:"interne", nom:"Processeur", dim:"37,5 × 37,5",
+   vue:[106,136], sous:"Le repère doré marque le sens d'insertion : c'est un détrompeur.", f:()=>PROCESSEUR},
+  {id:"ram", fam:"interne", nom:"Barrette de mémoire vive", dim:"133 × 31",
+   vue:[153,88], sous:"L'encoche des contacts empêche de la poser à l'envers.", f:()=>BARRETTE},
+  {id:"dd",  fam:"interne", nom:"Disque dur", dim:"147 × 102",
+   vue:[175,168], sous:"Connecteur de données à gauche, d'alimentation à droite.", f:()=>DISQUE_DUR},
+  {id:"psu", fam:"interne", nom:"Bloc d'alimentation", dim:"150 × 86",
+   vue:[190,148], sous:"Ventilateur, prise secteur, interrupteur, faisceau de câbles.", f:()=>BLOC_ALIM},
+  {id:"fan", fam:"interne", nom:"Ventilateur de boîtier", dim:"120 × 120",
+   vue:[152,184], sous:"Cinq pales et quatre trous de fixation.", f:()=>VENTILO},
+  {id:"pil", fam:"interne", nom:"Pile de la carte mère", dim:"20 de diamètre",
+   vue:[90,116], sous:"Elle conserve l'heure et les réglages quand la machine est éteinte.", f:()=>PILE},
+
+  {id:"tab", fam:"mobilier", nom:"Table informatique", dim:"1200 × 750",
+   vue:[1240,800], sous:"Vue de face. Plateau et tablette basse.", f:()=>TABLE},
+  {id:"cha", fam:"mobilier", nom:"Chaise", dim:"450 × 900",
+   vue:[460,912], sous:"Vue de profil, la seule qui montre le dossier et l'assise ensemble.", f:()=>CHAISE},
+  {id:"pri", fam:"mobilier", nom:"Prise murale", dim:"80 × 80",
+   vue:[112,146], sous:"Broche de terre en bas : c'est ce qui la distingue d'une prise sans terre.", f:()=>PRISE_MURALE},
+  {id:"mul", fam:"mobilier", nom:"Multiprise", dim:"250 × 55",
+   vue:[292,128], sous:"Quatre prises et un interrupteur. Le câble sort à gauche.", f:()=>MULTIPRISE},
+  {id:"ext", fam:"mobilier", nom:"Extincteur à CO₂", dim:"150 × 550",
+   vue:[240,592], sous:"Les feux d'origine électrique ne s'éteignent pas à l'eau : c'est le seul type admis près d'un poste sous tension.", f:()=>EXTINCTEUR},
+
+  {id:"ond", fam:"energie", nom:"Onduleur", dim:"300 × 150",
+   vue:[330,180], sous:"Trois voyants d'état et deux prises protégées.", f:()=>ONDULEUR}
+];
+
+const P = {
+  e:1, sousTension:false, allume:false, disp:"azerty", filtre:"tout",
+
+  init(){ this.filtres(); this.batir(); },
+
+  filtres(){
+    const b = document.getElementById("filtres");
+    let s = `<span class="fl">Famille</span>
+      <button data-f="tout" aria-pressed="true" onclick="P.filtrer('tout')">Tout</button>`;
+    FAMILLES.forEach(f=>
+      s += `<button data-f="${f.id}" aria-pressed="false" onclick="P.filtrer('${f.id}')">${f.nom}</button>`);
+    s += `<button class="plus" title="Créer une famille" aria-label="Créer une famille"
+            onclick="P.ouvrirFamille()">+</button>
+          <button class="plus" title="Ajouter une pièce" aria-label="Ajouter une pièce"
+            onclick="P.ouvrirPiece()">+ pièce</button>`;
+    if(AJOUTS.familles.length || AJOUTS.pieces.length)
+      s += `<button class="bt-exp" onclick="P.exporter()">Exporter les ajouts</button>`;
+    b.innerHTML = s;
+  },
+  filtrer(f){
+    this.filtre = f;
+    document.querySelectorAll("#filtres button").forEach(b=>
+      b.setAttribute("aria-pressed", String(b.dataset.f === f)));
+    this.batir();
+  },
+
+  /* ═══════════════════════════════════════════════════════════
+     OUVERTURE — créer une famille, y ajouter des pièces
+
+     Les ajouts vivent en mémoire tant qu'ils ne sont pas versés
+     dans le fichier. Le bouton « Exporter les ajouts » produit le
+     code exact à coller : le fichier reste la seule source de
+     vérité, et rien n'est écrit à l'insu de l'utilisateur.
+     ═══════════════════════════════════════════════════════════ */
+  ouvrirFamille(){
+    document.getElementById("dlg-fam").classList.add("on");
+    document.getElementById("fam-nom").focus();
+  },
+  creerFamille(){
+    const nom = document.getElementById("fam-nom").value.trim();
+    const def = document.getElementById("fam-def").value.trim();
+    if(!nom){ this.dire("Donnez un nom à la famille."); return; }
+    const id = nom.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+                  .replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+    if(FAMILLES.some(f=>f.id===id)){ this.dire("Cette famille existe déjà."); return; }
+    const fam = {id, nom, def: def || "Famille ajoutée depuis l'interface."};
+    FAMILLES.push(fam); AJOUTS.familles.push(fam);
+    document.getElementById("fam-nom").value = "";
+    document.getElementById("fam-def").value = "";
+    this.fermer("dlg-fam"); this.filtres(); this.batir();
+    this.dire("Famille « " + nom + " » créée.");
+  },
+
+  ouvrirPiece(){
+    const sel = document.getElementById("pie-fam");
+    sel.innerHTML = FAMILLES.map(f=>`<option value="${f.id}">${f.nom}</option>`).join("");
+    document.getElementById("dlg-pie").classList.add("on");
+    document.getElementById("pie-nom").focus();
+    this.apercu();
+  },
+  apercu(){
+    const code = document.getElementById("pie-svg").value;
+    const w = +document.getElementById("pie-w").value || 200;
+    const h = +document.getElementById("pie-h").value || 200;
+    const z = document.getElementById("pie-vue");
+    z.innerHTML = code.trim()
+      ? `<svg viewBox="0 0 ${w} ${h}" width="${Math.min(w,240)}" height="${Math.min(w,240)*h/w}"
+              xmlns="http://www.w3.org/2000/svg">${DEFS}${code}</svg>`
+      : `<span class="vide">L'aperçu s'affichera ici.</span>`;
+  },
+  creerPiece(){
+    const nom = document.getElementById("pie-nom").value.trim();
+    const code = document.getElementById("pie-svg").value.trim();
+    if(!nom || !code){ this.dire("Le nom et le code SVG sont requis."); return; }
+    const base = nom.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+                    .replace(/[^a-z0-9]/g,"").slice(0,4) || "px";
+    let id = base, k = 2;
+    while(PIECES.some(p=>p.id===id)) id = base + (k++);
+    const piece = {
+      id, fam: document.getElementById("pie-fam").value,
+      nom, dim: document.getElementById("pie-dim").value.trim() || "—",
+      vue: [+document.getElementById("pie-w").value || 200,
+            +document.getElementById("pie-h").value || 200],
+      sous: document.getElementById("pie-sous").value.trim() || "",
+      svg: code
+    };
+    PIECES.push(piece); AJOUTS.pieces.push(piece);
+    ["pie-nom","pie-dim","pie-sous","pie-svg"].forEach(i=>document.getElementById(i).value="");
+    this.fermer("dlg-pie"); this.filtres(); this.batir();
+    this.dire("Pièce « " + nom + " » ajoutée à la famille.");
+  },
+
+  /* Le code à coller dans le fichier, pour que l'ajout devienne permanent. */
+  exporter(){
+    let t = "AJOUTS A VERSER DANS prop-materiel.html\n";
+    t += "=".repeat(58) + "\n\n";
+    if(AJOUTS.familles.length){
+      t += "1. DANS LE TABLEAU FAMILLES, avant la dernière accolade :\n\n";
+      AJOUTS.familles.forEach(f=>{
+        t += `  {id:"${f.id}", nom:"${f.nom}",\n   def:"${f.def.replace(/"/g,'\\"')}"},\n`;
+      });
+      t += "\n";
+    }
+    if(AJOUTS.pieces.length){
+      t += "2. AVANT LE BLOC CATALOGUE, une constante par pièce :\n\n";
+      AJOUTS.pieces.forEach(p=>{
+        const c = p.id.toUpperCase().replace(/[^A-Z0-9]/g,"_");
+        t += `const ${c} = \`\n${p.svg}\`;\n\n`;
+      });
+      t += "3. DANS LE TABLEAU PIECES :\n\n";
+      AJOUTS.pieces.forEach(p=>{
+        const c = p.id.toUpperCase().replace(/[^A-Z0-9]/g,"_");
+        t += `  {id:"${p.id}", fam:"${p.fam}", nom:"${p.nom}", dim:"${p.dim}",\n`;
+        t += `   vue:[${p.vue[0]},${p.vue[1]}], sous:"${p.sous.replace(/"/g,'\\"')}", f:()=>${c}},\n`;
+      });
+    }
+    t += "\n" + "=".repeat(58) + "\n";
+    t += "Tant que ce code n'est pas collé dans le fichier, les ajouts\n";
+    t += "disparaissent à la fermeture : rien n'est écrit sur le poste.\n";
+    const b = new Blob([t], {type:"text/plain;charset=utf-8"});
+    const u = URL.createObjectURL(b), a = document.createElement("a");
+    a.href = u; a.download = "ajouts-props.txt";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(u), 1500);
+    this.dire("Code des ajouts exporté.");
+  },
+
+  fermer(id){ document.getElementById(id).classList.remove("on"); },
+  dire(m){ const r = document.getElementById("live"); if(r) r.textContent = m; },
+
+  batir(){
+    const c = document.getElementById("catalogue");
+    let s = "";
+    FAMILLES.forEach(fam=>{
+      if(this.filtre !== "tout" && this.filtre !== fam.id) return;
+      const lot = PIECES.filter(p=> p.fam === fam.id);
+      if(!lot.length) return;
+      s += `<div class="groupe"><h2>${fam.nom} — ${lot.length} pièce${lot.length>1?"s":""}</h2>
+            <p class="def">${fam.def}</p><div class="scene">`;
+      lot.forEach(p=>{
+        s += `<div class="piece">
+                <h3>${p.nom}</h3>
+                <span class="dim">${p.dim}</span>
+                <div class="cadre" id="cadre-${p.id}"></div>
+                <p class="sous">${p.sous}</p>
+                <div class="bts">`;
+        if(p.bt) s += `<button class="bt" id="bt-${p.id}" onclick="P.${p.bt.act}()">${p.bt.txt()}</button>`;
+        s += `<button class="bt primary" id="cp-${p.id}" onclick="P.copier('${p.id}')">Copier le code</button>
+              </div></div>`;
+      });
+      s += `</div></div>`;
+    });
+    c.innerHTML = s;
+    this.rendre();
+  },
+
+  vue(p){ return `viewBox="0 0 ${p.vue[0]} ${p.vue[1]}" xmlns="http://www.w3.org/2000/svg"`; },
+
+  /* L'état sous tension est commandé par la ressource, pas par le prop. */
+  etatUC(){
+    if(!this.sousTension) return "";
+    return `<style>#uc-temoin{stroke:#48bb78 !important;filter:url(#uc-halo)}#uc-led{fill:#f59e0b}</style>`;
+  },
+  etatMon(){
+    if(!this.allume) return "";
+    return `<style>#mo-temoin{stroke:#48bb78 !important;filter:url(#pf-halo)}#mo-dalle{fill:url(#pf-dalle)}</style>`;
+  },
+
+  corps(p){
+    const e = p.etat ? this.etatUC() : p.etatMon ? this.etatMon() : "";
+    /* Une pièce du fichier porte une fonction ; une pièce ajoutée depuis
+       l'interface porte son code directement. Les deux se rendent ici. */
+    return e + (typeof p.f === "function" ? p.f() : (p.svg || ""));
+  },
+
+  rendre(){
+    PIECES.forEach(p=>{
+      const el = document.getElementById("cadre-"+p.id);
+      if(!el) return;
+      el.innerHTML = `<svg width="${Math.round(p.vue[0]*this.e)}" height="${Math.round(p.vue[1]*this.e)}"
+        ${this.vue(p)}>${DEFS}${this.corps(p)}</svg>`;
+    });
+  },
+
+  allumer(){ this.sousTension = !this.sousTension; this.majBt("av"); this.rendre(); },
+  allumerEcran(){ this.allume = !this.allume; this.majBt("mav"); this.rendre(); },
+  disposition(){
+    this.disp = this.disp === "azerty" ? "qwerty" : "azerty";
+    this.majBt("cla"); this.rendre();
+  },
+  majBt(id){
+    const p = PIECES.find(x=> x.id === id), b = document.getElementById("bt-"+id);
+    if(p && p.bt && b) b.textContent = p.bt.txt();
+  },
+
+  ech(e){
+    this.e = e;
+    document.querySelectorAll(".ech button").forEach(b=>
+      b.setAttribute("aria-pressed", String(parseFloat(b.dataset.e) === e)));
+    this.rendre();
+  },
+
+  copier(id){
+    const p = PIECES.find(x=> x.id === id);
+    const txt = `<svg ${this.vue(p)}>${DEFS}\n${this.corps(p)}\n</svg>`;
+    const t = document.createElement("textarea");
+    t.value = txt; t.style.position = "fixed"; t.style.opacity = "0";
+    document.body.appendChild(t); t.select();
+    let fait = false; try{ fait = document.execCommand("copy"); }catch(e){}
+    document.body.removeChild(t);
+    if(!fait && navigator.clipboard) navigator.clipboard.writeText(txt).catch(()=>{});
+    const b = document.getElementById("cp-"+id);
+    b.textContent = "Copié"; b.classList.add("ok");
+    setTimeout(()=>{ b.textContent = "Copier le code"; b.classList.remove("ok"); }, 1500);
+  },
+
+  theme(){
+    const b = document.body;
+    if(b.classList.contains("light")){ b.classList.remove("light"); b.classList.add("hc"); }
+    else if(b.classList.contains("hc")){ b.classList.remove("hc"); }
+    else { b.classList.add("light"); }
+    document.getElementById("icTh").innerHTML = b.classList.contains("light")
+      ? '<path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/>'
+      : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  }
+};
+
+window.addEventListener("load", ()=> P.init());
+</script>
+</body>
+</html>
