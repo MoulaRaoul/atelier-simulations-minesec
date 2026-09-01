@@ -1,4 +1,4 @@
-# 4e — Volume de la pyramide · Le prisme et ses 3 pyramides
+# 4e — Volume de la pyramide · Prisme, cube et cône
 
 Première simulation « nouvelle génération » : elle n'écrit que ce qui lui est
 propre et importe le reste de `bibliotheque/`.
@@ -91,8 +91,43 @@ troisième — elle se gagne.
 Vérifié : 33,3 % → 66,7 % → 100,0 % exactement, le quatrième versement refusé,
 la pyramide revenue au repos, et le retour en Géométrie reconstruit sa scène.
 
-**Reste pour l'étape D** : le cas du cône et son renvoi scénarisé vers ce mode,
-la montée 3 → 32 côtés sur bouton, et la question de sortie ci-dessous.
+## Le cas 3 — le cône, et le renvoi au robinet
+
+Ajouté en étape D (30/08/2026). Le cône n'est pas un cas raté : **c'est celui
+qui justifie le mode Versement.**
+
+Aucun découpage fini ne partage le cône en pyramides — une réunion finie de
+polyèdres est un polyèdre, et le cône n'en est pas un. Le rapport ⅓ tient
+pourtant. La géométrie bute, l'expérience tranche.
+
+Le pupitre **retire** l'écartement et « Décomposer » sur ce cas plutôt que de
+les laisser sans effet : une commande qui ne fait rien est une commande qui ment.
+
+**La montée 3 → 32 côtés est offerte, jamais imposée** — un bouton, onze paliers
+(3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32). Elle s'arrête à 32 pour que le pas
+suivant soit dit avec des mots plutôt que dessiné : *« l'œil ne fait plus la
+différence, mais 32 n'est pas l'infini : ce n'est pas un découpage. »*
+
+**Le renvoi est scénarisé** : « Aller au robinet ▶ » bascule vers le mode
+Versement en variante **cône → cylindre**, et non vers la variante prisme. Sans
+cela le renvoi serait creux : on ne prouverait pas le cône en versant des
+pyramides. Les mécaniques et les props géraient déjà `cone` et `cylindre` — la
+variante n'a coûté que des libellés.
+
+La valeur du cône reste affichée **« à vérifier »** tant qu'on n'a pas versé.
+Principe 7 : on n'annonce pas un résultat qu'on n'a pas montré.
+
+## La question de sortie
+
+Posée **après** les trois versements, jamais avant : on ne demande pas de deviner
+une règle qu'on n'a pas éprouvée. Elle vérifie que le déclic a eu lieu.
+
+> **Quand 90 % du volume est versé, à quelle hauteur est l'eau ?**
+> Réponse révélée sur bouton : **54 % de la hauteur.**
+
+Vérifié contre la loi du module, non contre une note : `mecPy.niveau()` à
+`rempli = 0,9` donne 53,6 % de la hauteur. La surprise est le but — presque
+tout le monde répond « 90 % », par report inconscient de la règle du prisme.
 
 ## Choix faits
 
@@ -176,20 +211,6 @@ cette version en fait environ 150, dont aucune n'est du socle technique.
 - [ ] **Elle figure au catalogue** — le catalogue n'existe pas encore (Phase 3)
 
 ---
-
-## À prévoir — étape D, mode Versement
-
-**Question de sortie retenue :** « Quand 90 % du volume est versé, à quelle
-hauteur est l'eau ? »
-
-**Réponse : 54 % de la hauteur.** La surprise *est* le but. Presque tous les
-élèves — et beaucoup d'adultes — répondront « 90 % », par report inconscient de
-la règle du prisme. C'est précisément l'erreur que le mode Versement doit rendre
-impossible à conserver : dans une pyramide posée sur sa base, le vide au-dessus
-de l'eau est un solide semblable, donc `h = H × (1 − ∛(1−f))`.
-
-La question ne se pose qu'après avoir versé : on ne demande pas de deviner une
-règle qu'on n'a pas encore éprouvée. Elle vérifie que le déclic a eu lieu.
 
 ## Pistes
 

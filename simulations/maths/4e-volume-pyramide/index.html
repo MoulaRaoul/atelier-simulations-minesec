@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Le volume de la pyramide · Prisme et cube — 4e</title>
+<title>Le volume de la pyramide · Prisme, cube et cône — 4e</title>
 
 <!-- La charte et la bibliothèque : écrites une fois, importées ici. -->
 <link rel="stylesheet" href="../../../bibliotheque/charte.css">
@@ -37,6 +37,13 @@
     <span style="font-size:12px;color:var(--dim);font-family:var(--f-data)">CAS</span>
     <button id="casPrisme" class="primaire">Prisme</button>
     <button id="casCube">Cube</button>
+    <button id="casCone">Cône</button>
+  </div>
+
+  <div class="minesec-carte minesec-actions cone cache">
+    <button id="btnMontee">Montée 3 → 32 côtés</button>
+    <button id="btnRobinet" class="primaire">Aller au robinet ▶</button>
+    <span id="nCotes" style="font-family:var(--f-data);font-size:12px;color:var(--dim)"></span>
   </div>
 
   <div class="minesec-carte minesec-actions geo">
@@ -63,6 +70,17 @@
     <span id="pastilles" style="font-family:var(--f-data);font-size:17px;color:var(--ok);letter-spacing:.18em">○○○</span>
   </div>
 
+  <div class="minesec-carte vers cache" id="sortie" style="display:none">
+    <div style="font-size:13px;line-height:1.5">
+      <b>Question de sortie —</b> quand <b>90 %</b> du volume est versé dans la
+      pyramide, à quelle hauteur est l'eau ?
+    </div>
+    <div class="minesec-actions" style="margin-top:8px">
+      <button id="btnReponse">Voir la réponse</button>
+      <span id="reponse" style="font-family:var(--f-data);font-size:13px;color:var(--saisir)"></span>
+    </div>
+  </div>
+
   <div class="minesec-carte minesec-valeurs" id="valeurs">
     <div class="ligne"><span id="l1">Aire de la base B</span><span id="v1">—</span></div>
     <div class="ligne"><span id="l2">Hauteur h</span><span id="v2">—</span></div>
@@ -82,8 +100,9 @@
 "use strict";
 
 /* ══ Ce qui appartient en propre à cette simulation ══
-   Deux découpages classiques, un par cas étudié. Tout le reste — scène,
-   orbite, boucle, mouvements, cadrage — vient de la bibliothèque.       */
+   Deux preuves — géométrie et versement — et trois cas : le prisme, le cube,
+   et le cône qui ne se découpe pas. Tout le reste — scène, orbite, boucle,
+   mouvements, mécaniques, props, cadrage — vient de la bibliothèque.     */
 
 const moteur = MINESEC.moteur.creer({ conteneur: '#scene', fov: 42, distance: 7.4 });
 const mvt = MINESEC.mouvements.brancher(moteur);
@@ -195,6 +214,55 @@ function casCube() {
   };
 }
 
+/* ─── CAS 3 · Le cône — là où les ciseaux déclarent forfait ───
+   Le cône n'est pas un cas raté : c'est celui qui JUSTIFIE le mode Versement.
+   Aucun découpage fini ne le partage en pyramides — une réunion finie de
+   polyèdres est un polyèdre, et le cône n'en est pas un. Le rapport ⅓ tient
+   pourtant. La géométrie bute, l'expérience tranche.
+
+   La montée 3 → 32 côtés est offerte, jamais imposée : elle montre que le
+   cône est la LIMITE des pyramides, et que 32 n'est pas l'infini. Une limite
+   ne se découpe pas.                                                        */
+function casCone() {
+  const H = 2, R = 1.15;
+  const pieces = [];
+
+  function paire(n) {
+    const g = new THREE.Group();
+    /* n = 0 : les solides ronds eux-mêmes ; n ≥ 3 : leurs approximations. */
+    const geoC = new THREE.CylinderGeometry(0.0001, R, H, n || 64);
+    const geoY = new THREE.CylinderGeometry(R, R, H, n || 64);
+    geoC.translate(-1.35, H / 2, 0);
+    geoY.translate(1.35, H / 2, 0);
+    [[geoC, 0], [geoY, 2]].forEach(([geo, i]) => {
+      const s = solide(geo, i);
+      /* Les arêtes d'un solide rond seraient un grillage illisible : on ne
+         les montre qu'une fois le nombre de côtés devenu un fait pédagogique. */
+      if (!n) s.children[1].visible = false;
+      g.add(s);
+    });
+    return g;
+  }
+
+  const groupe = paire(0);
+  pieces.push(groupe);
+
+  const vCylindre = Math.PI * R * R * H;
+  return {
+    pieces, ampli: 0, superposable: false, hauteurRegard: 0, indecoupable: true,
+    n: 0, groupe, paire,
+    titre: 'Le cône : <b>les ciseaux déclarent forfait</b>',
+    legende: '— aucun découpage fini ne partage le cône',
+    valeurs: [
+      ['Rayon r', R, 'u'],
+      ['Hauteur h', H, 'u'],
+      ['V(cylindre) = π r² h', vCylindre, 'u³'],
+      ['V(cône) = π r² h ÷ 3', vCylindre / 3, 'u³']
+    ],
+    vCylindre
+  };
+}
+
 /* ─── MODE VERSEMENT · la preuve expérimentale ───
    La géométrie démontre par découpage ; ici on mesure par transvasement.
    Même prisme que le cas 1 — base triangulaire équilatérale de côté 2,
@@ -203,16 +271,23 @@ function casCube() {
 
    Les contenances se dérivent l'une de l'autre, jamais des libellés arrondis
    (piège documenté en tête de minesec-mecaniques.js).                     */
-function modeVersement() {
-  const COTES = 3, H = 2, R = 2 / Math.sqrt(3);      /* circonscrit d'un côté 2 */
-  const vPrisme = 0.5 * COTES * R * R * Math.sin(2 * Math.PI / COTES) * H;
+function modeVersement(variante) {
+  const rond = variante === 'cone';
+  const COTES = rond ? 64 : 3, H = 2;
+  const R = rond ? 1.15 : 2 / Math.sqrt(3);          /* circonscrit d'un côté 2 */
+  /* Contenance du récepteur, dérivée de la géométrie réelle du prop. Le
+     récipient versant en vaut le tiers — exactement, jamais l'arrondi. */
+  const vPrisme = rond ? Math.PI * R * R * H
+                       : 0.5 * COTES * R * R * Math.sin(2 * Math.PI / COTES) * H;
   const vPyramide = vPrisme / 3;
+  const nomHaut = rond ? 'cône' : 'pyramide';
+  const nomBas = rond ? 'cylindre' : 'prisme';
 
-  const prisme = MINESEC.props.recipientTransparent(moteur, 'prisme',
+  const prisme = MINESEC.props.recipientTransparent(moteur, rond ? 'cylindre' : 'prisme',
     { hauteur: H, rayon: R, cotes: COTES }, 0xa4e6ba);
   prisme.groupe.position.set(1.6, 0, 0);
 
-  const pyramide = MINESEC.props.recipientTransparent(moteur, 'pyramide',
+  const pyramide = MINESEC.props.recipientTransparent(moteur, rond ? 'cone' : 'pyramide',
     { hauteur: H, rayon: R, cotes: COTES }, 0xa7c2f7);
   pyramide.groupe.position.set(-1.8, 0, 0);
   /* Repère du bec : le sommet de la pyramide, d'où l'eau sortira une fois
@@ -237,10 +312,10 @@ function modeVersement() {
   const _a = new THREE.Vector3(), _b = new THREE.Vector3();
 
   return {
-    pieces, mode: 'versement', occupe: false,
+    pieces, mode: 'versement', occupe: false, variante: rond ? 'cone' : 'prisme',
     prisme, pyramide, robinet, filet, becPy, mecPy, mecPr, compte, REPOS,
-    vPrisme, vPyramide,
-    titre: 'Combien de pyramides pour remplir <b>le prisme</b> ?',
+    vPrisme, vPyramide, nomHaut, nomBas,
+    titre: 'Combien de ' + nomHaut + 's pour remplir <b>le ' + nomBas + '</b> ?',
 
     /* Chaque image : les niveaux d'eau suivent les contenances, et le filet
        relie ce qui verse à ce qui reçoit. */
@@ -266,8 +341,8 @@ function modeVersement() {
        qui n'aurait pas de sens. */
     prochain() {
       if (this.mecPr.estPlein()) return { cle: 'fini', texte: 'Recommencer' };
-      if (this.mecPy.estVide()) return { cle: 'remplir', texte: 'Remplir la pyramide' };
-      return { cle: 'verser', texte: 'Verser dans le prisme' };
+      if (this.mecPy.estVide()) return { cle: 'remplir', texte: 'Remplir le ' + this.nomHaut };
+      return { cle: 'verser', texte: 'Verser dans le ' + this.nomBas };
     }
   };
 }
@@ -277,7 +352,8 @@ const etat = { ecart: 0, cible: 0, rotation: !reduit, cas: null, super: 0, cible
                mode: 'geometrie', vers: null };
 const ui = ['titre','casPrisme','casCube','btnDecomp','btnSuper','btnRot','btnVue',
             'sep','sepVal','valeurs','legFin','aide','l1','l2','l3','l4','v1','v2','v3','v4',
-            'modeGeo','modeVers','btnGeste','btnRecommencer','pastilles']
+            'modeGeo','modeVers','btnGeste','btnRecommencer','pastilles',
+            'casCone','btnMontee','btnRobinet','nCotes','sortie','btnReponse','reponse']
   .reduce((o, id) => (o[id] = document.getElementById(id), o), {});
 const fr = x => x.toFixed(2).replace('.', ',');
 ui.btnRot.setAttribute('aria-pressed', String(etat.rotation));
@@ -299,7 +375,17 @@ function choisir(fabrique, bouton) {
   });
   ui.btnSuper.classList.toggle('cache', !etat.cas.superposable);
   ui.btnSuper.setAttribute('aria-pressed', 'false');
-  [ui.casPrisme, ui.casCube].forEach(b => b.classList.toggle('primaire', b === bouton));
+  [ui.casPrisme, ui.casCube, ui.casCone].forEach(b => b.classList.toggle('primaire', b === bouton));
+  /* Un cas indécoupable n'a ni écartement ni décomposition : on retire les
+     commandes plutôt que de les laisser sans effet. */
+  const ind = !!etat.cas.indecoupable;
+  document.querySelectorAll('.cone').forEach(e => e.classList.toggle('cache', !ind));
+  ui.btnDecomp.classList.toggle('cache', ind);
+  document.querySelector('.minesec-reglage').classList.toggle('cache', ind);
+  ui.nCotes.textContent = '';
+  ui.aide.textContent = ind
+    ? 'Glissez pour orienter · aucun découpage fini ne partage le cône · V : changer de preuve'
+    : 'Glissez pour orienter · molette pour zoomer · Espace : décomposer / recomposer · V : changer de preuve';
 
   moteur.cadrerNet(moteur.spin);
   if (!reduit) {
@@ -313,6 +399,10 @@ function choisir(fabrique, bouton) {
 
 function appliquer() {
   const c = etat.cas;
+  if (c.indecoupable) {
+    ui.valeurs.classList.toggle('revele', false);   /* la valeur du cône se gagne au robinet */
+    return;
+  }
   c.pieces.forEach(p => p.position.copy(p.userData.dir)
     .multiplyScalar(etat.ecart * c.ampli)
     .setY(p.userData.dir.y * etat.ecart * c.ampli + (c.hauteurRegard || 0)));
@@ -344,12 +434,14 @@ function versGeometrie() {
   choisir(etat.derniereFabrique || casPrisme, etat.dernierBouton || ui.casPrisme);
 }
 
-function versVersement() {
-  if (etat.mode === 'versement') return;
+function versVersement(variante) {
+  if (etat.mode === 'versement' && etat.vers && etat.vers.variante === (variante || 'prisme')) return;
   mvt.toutArreter();
   if (etat.cas) { etat.cas.pieces.forEach(p => moteur.spin.remove(p)); etat.cas = null; }
+  if (etat.vers) { etat.vers.pieces.forEach(p => moteur.spin.remove(p)); etat.vers = null; }
   etat.mode = 'versement';
-  etat.vers = modeVersement();
+  etat.vers = modeVersement(variante);
+  ui.reponse.textContent = ''; ui.btnReponse.disabled = false;
   document.querySelectorAll('.geo').forEach(e => e.classList.add('cache'));
   document.querySelectorAll('.vers').forEach(e => e.classList.remove('cache'));
   ui.modeVers.classList.add('primaire'); ui.modeGeo.classList.remove('primaire');
@@ -406,6 +498,38 @@ function agir() {
   majVersement();
 }
 
+/* La montée 3 → 32 côtés — offerte, jamais imposée.
+   Elle montre que le cône est la LIMITE des pyramides. On s'arrête à 32 pour
+   que le pas suivant soit dit avec des mots plutôt que dessiné : 32 n'est pas
+   l'infini, et une limite ne se découpe pas. */
+const PALIERS = [3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32];
+function montee() {
+  const c = etat.cas;
+  if (!c || !c.indecoupable || c.enMontee) return;
+  c.enMontee = true;
+  ui.btnMontee.disabled = true;
+  let i = 0;
+  const pas = () => {
+    if (i >= PALIERS.length) {
+      c.enMontee = false;
+      ui.btnMontee.disabled = false;
+      ui.btnMontee.textContent = 'Revoir la montée';
+      ui.nCotes.textContent = '32 côtés — l’œil ne fait plus la différence, '
+        + 'mais 32 n’est pas l’infini : ce n’est pas un découpage.';
+      return;
+    }
+    const n = PALIERS[i++];
+    moteur.spin.remove(c.groupe);
+    c.groupe = c.paire(n);
+    c.pieces[0] = c.groupe;
+    moteur.spin.add(c.groupe);
+    c.n = n;
+    ui.nCotes.textContent = n + ' côtés';
+    setTimeout(pas, reduit ? 1 : (i < 4 ? 620 : 380));
+  };
+  pas();
+}
+
 function recommencer() {
   const v = etat.vers;
   if (!v) return;
@@ -424,16 +548,19 @@ function majVersement() {
   ui.btnGeste.textContent = p.texte;
   ui.btnGeste.disabled = v.occupe;
   ui.pastilles.textContent = v.compte.pastilles();
-  ui.l1.textContent = 'Contenance du prisme';
+  ui.l1.textContent = 'Contenance du ' + v.nomBas;
   ui.v1.textContent = '≈ ' + fr(v.vPrisme) + ' u³';
-  ui.l2.textContent = 'Contenance de la pyramide';
+  ui.l2.textContent = 'Contenance du ' + v.nomHaut;
   ui.v2.textContent = '≈ ' + fr(v.vPyramide) + ' u³';
-  ui.l3.textContent = 'Versé (' + v.compte.fait + ' pyramide' + (v.compte.fait > 1 ? 's' : '') + ')';
+  ui.l3.textContent = 'Versé (' + v.compte.fait + ' ' + v.nomHaut + (v.compte.fait > 1 ? 's' : '') + ')';
   ui.v3.textContent = '≈ ' + fr(v.mecPr.contenu()) + ' u³';
-  ui.l4.textContent = 'Il faut exactement 3 pyramides';
+  ui.l4.textContent = 'Il faut exactement 3 ' + v.nomHaut + 's';
   ui.v4.textContent = v.compte.acheve() ? 'vérifié' : '—';
-  /* La conclusion ne s'allume qu'une fois le prisme plein : elle se gagne. */
+  /* La conclusion ne s'allume qu'une fois le récepteur plein : elle se gagne. */
   ui.valeurs.classList.toggle('revele', v.compte.acheve());
+  /* La question de sortie ne se pose qu'APRÈS avoir versé : on ne demande pas
+     de deviner une règle qu'on n'a pas éprouvée. */
+  ui.sortie.style.display = v.compte.acheve() ? '' : 'none';
 }
 
 moteur.chaqueImage(dt => {
@@ -466,6 +593,14 @@ ui.btnGeste.addEventListener('click', agir);
 ui.btnRecommencer.addEventListener('click', recommencer);
 ui.casPrisme.addEventListener('click', () => choisir(casPrisme, ui.casPrisme));
 ui.casCube.addEventListener('click', () => choisir(casCube, ui.casCube));
+ui.casCone.addEventListener('click', () => choisir(casCone, ui.casCone));
+ui.btnMontee.addEventListener('click', montee);
+/* Le renvoi scénarisé : la géométrie bute, l'expérience tranche. */
+ui.btnRobinet.addEventListener('click', () => versVersement('cone'));
+ui.btnReponse.addEventListener('click', () => {
+  ui.reponse.textContent = '54 % de la hauteur — l’eau monte lentement d’abord, la base étant large.';
+  ui.btnReponse.disabled = true;
+});
 ui.btnDecomp.addEventListener('click', basculer);
 ui.btnSuper.addEventListener('click', superposer);
 ui.sep.addEventListener('input', e => {
