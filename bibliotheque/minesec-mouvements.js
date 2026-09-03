@@ -29,6 +29,11 @@
      Ces valeurs doublent celles de charte.css : le WebGL ne lit pas le CSS.
      Toute retouche de la charte doit être reportée ici. */
   const OK = 0x22c55e, NO = 0xef4444, AMBRE = 0xf59e0b;
+  /* Ces constantes sont des teintes de charte, donc du sRGB. Elles doivent
+     passer en linéaire avant d'entrer dans un matériau — voir la gestion des
+     couleurs en tête de minesec-moteur.js. Conversion tardive : au moment du
+     geste, quand le moteur est certainement chargé. */
+  const lin = h => (MINESEC.couleurHex ? MINESEC.couleurHex(h) : h);
   const OFF = 1.6;   /* amplitude d'entrée/sortie hors champ */
 
   /* ─── Adoucissements ─── */
@@ -58,7 +63,7 @@
   function fade(o, k)      { const P = _prep(o); P.faces.forEach(m => m.opacity = m.userData.b * k); P.edges.forEach(m => m.opacity = k); }
   function trait(o, hex)   { const P = _prep(o); P.edges.forEach(m => m.color.setHex(hex)); }
   function traitBase(o)    { const P = _prep(o); return P.edges.length ? P.edges[0].userData.b : 0xffffff; }
-  function lueur(o, v)     { const P = _prep(o); P.faces.forEach(m => { if (m.emissive) { m.emissive.setHex(AMBRE); m.emissiveIntensity = v; } }); }
+  function lueur(o, v)     { const P = _prep(o); P.faces.forEach(m => { if (m.emissive) { m.emissive.setHex(lin(AMBRE)); m.emissiveIntensity = v; } }); }
 
   function reset(o) {
     const P = _prep(o);
@@ -97,9 +102,9 @@
     "defilement-profondeur": { d:1.0, ease:eInOut, f:(o,e)=>{o.position.z=-2.6*e;} },
 
     /* 5 · CONSÉQUENCE — la réponse au geste de l'élève */
-    "consequence-juste":     { d:.62, f:(o,e)=>{o.scale.setScalar(1+.12*Math.sin(e*Math.PI)); trait(o, e<1?OK:traitBase(o));} },
-    "consequence-refus":     { d:.50, f:(o,e)=>{o.position.x=.14*Math.sin(e*Math.PI*6)*(1-e); trait(o, e<1?NO:traitBase(o));} },
-    "consequence-attention": { d:.70, f:(o,e)=>{o.scale.setScalar(1+.08*Math.sin(e*Math.PI)); trait(o, e<1?AMBRE:traitBase(o));} },
+    "consequence-juste":     { d:.62, f:(o,e)=>{o.scale.setScalar(1+.12*Math.sin(e*Math.PI)); trait(o, e<1?lin(OK):traitBase(o));} },
+    "consequence-refus":     { d:.50, f:(o,e)=>{o.position.x=.14*Math.sin(e*Math.PI*6)*(1-e); trait(o, e<1?lin(NO):traitBase(o));} },
+    "consequence-attention": { d:.70, f:(o,e)=>{o.scale.setScalar(1+.08*Math.sin(e*Math.PI)); trait(o, e<1?lin(AMBRE):traitBase(o));} },
 
     /* 6 · MANIPULATION — ce que fait la main */
     "manipulation-saisie":  { d:.22, ease:eBack, f:(o,e)=>{o.scale.setScalar(1+.10*e); o.position.y=.12*e;} },
@@ -186,8 +191,8 @@
     jouer, geste, brancher, maj, reset, arreter, toutArreter,
     familles: Object.keys(M),
     estBoucle: nom => !!(M[nom] && M[nom].b),
-    couleurTrait: (o, hex) => { const P = _prep(o); P.edges.forEach(m => { m.userData.b = hex; m.color.setHex(hex); }); },
-    couleurFace:  (o, hex) => { const P = _prep(o); P.faces.forEach(m => m.color.setHex(hex)); },
+    couleurTrait: (o, hex) => { const h = lin(hex); const P = _prep(o); P.edges.forEach(m => { m.userData.b = h; m.color.setHex(h); }); },
+    couleurFace:  (o, hex) => { const h = lin(hex); const P = _prep(o); P.faces.forEach(m => m.color.setHex(h)); },
     teintes: { OK, NO, AMBRE }
   };
 

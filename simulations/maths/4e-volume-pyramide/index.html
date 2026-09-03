@@ -113,14 +113,14 @@ const TEINTES = [[0x3b82f6, 0xa7c2f7], [0xf59e0b, 0xf8d192], [0x22c55e, 0xa4e6ba
 function solide(geo, i) {
   const g = new THREE.Group();
   g.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-    color: TEINTES[i][0], roughness: .42, metalness: .05, flatShading: true,
+    color: MINESEC.couleur(TEINTES[i][0]), roughness: .42, metalness: .05, flatShading: true,
     side: THREE.DoubleSide, transparent: true, opacity: .96,
     /* Décalages distincts : superposées, les trois pièces occupent le même
        espace ; sans cela leurs faces se disputeraient le même pixel. */
     polygonOffset: true, polygonOffsetFactor: -1 - i, polygonOffsetUnits: -1 - i
   })));
   g.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo),
-    new THREE.LineBasicMaterial({ color: TEINTES[i][1] })));
+    new THREE.LineBasicMaterial({ color: MINESEC.couleur(TEINTES[i][1]) })));
   return g;
 }
 
@@ -280,8 +280,11 @@ function modeVersement(variante) {
   const vPrisme = rond ? Math.PI * R * R * H
                        : 0.5 * COTES * R * R * Math.sin(2 * Math.PI / COTES) * H;
   const vPyramide = vPrisme / 3;
-  const nomHaut = rond ? 'cône' : 'pyramide';
-  const nomBas = rond ? 'cylindre' : 'prisme';
+  /* Le genre voyage avec le nom : « le cône » mais « la pyramide ». Sans cela
+     les libellés composés produisent « Remplir le pyramide ». */
+  const nomHaut = rond ? 'cône' : 'pyramide', artHaut = rond ? 'le' : 'la';
+  const nomBas = rond ? 'cylindre' : 'prisme', duBas = 'du';
+  const duHaut = rond ? 'du' : 'de la';
 
   const prisme = MINESEC.props.recipientTransparent(moteur, rond ? 'cylindre' : 'prisme',
     { hauteur: H, rayon: R, cotes: COTES }, 0xa4e6ba);
@@ -314,7 +317,7 @@ function modeVersement(variante) {
   return {
     pieces, mode: 'versement', occupe: false, variante: rond ? 'cone' : 'prisme',
     prisme, pyramide, robinet, filet, becPy, mecPy, mecPr, compte, REPOS,
-    vPrisme, vPyramide, nomHaut, nomBas,
+    vPrisme, vPyramide, nomHaut, nomBas, artHaut, duHaut, duBas,
     titre: 'Combien de ' + nomHaut + 's pour remplir <b>le ' + nomBas + '</b> ?',
 
     /* Chaque image : les niveaux d'eau suivent les contenances, et le filet
@@ -341,7 +344,7 @@ function modeVersement(variante) {
        qui n'aurait pas de sens. */
     prochain() {
       if (this.mecPr.estPlein()) return { cle: 'fini', texte: 'Recommencer' };
-      if (this.mecPy.estVide()) return { cle: 'remplir', texte: 'Remplir le ' + this.nomHaut };
+      if (this.mecPy.estVide()) return { cle: 'remplir', texte: 'Remplir ' + this.artHaut + ' ' + this.nomHaut };
       return { cle: 'verser', texte: 'Verser dans le ' + this.nomBas };
     }
   };
@@ -548,9 +551,9 @@ function majVersement() {
   ui.btnGeste.textContent = p.texte;
   ui.btnGeste.disabled = v.occupe;
   ui.pastilles.textContent = v.compte.pastilles();
-  ui.l1.textContent = 'Contenance du ' + v.nomBas;
+  ui.l1.textContent = 'Contenance ' + v.duBas + ' ' + v.nomBas;
   ui.v1.textContent = '≈ ' + fr(v.vPrisme) + ' u³';
-  ui.l2.textContent = 'Contenance du ' + v.nomHaut;
+  ui.l2.textContent = 'Contenance ' + v.duHaut + ' ' + v.nomHaut;
   ui.v2.textContent = '≈ ' + fr(v.vPyramide) + ' u³';
   ui.l3.textContent = 'Versé (' + v.compte.fait + ' ' + v.nomHaut + (v.compte.fait > 1 ? 's' : '') + ')';
   ui.v3.textContent = '≈ ' + fr(v.mecPr.contenu()) + ' u³';

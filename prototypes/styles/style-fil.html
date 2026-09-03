@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Style Fil de Fer 3D & Silhouettes Dynamiques</title>
+    <style>
+        :root {
+            --fond: #050B14;
+            --panneau: #0A1424;
+            --aretes: #7F95B3;
+            --accent: #4DEEEA;
+            --texte: rgba(255, 255, 255, 0.7);
+            --titre: rgba(255, 255, 255, 0.95);
+            --sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: var(--fond);
+            font-family: var(--sans);
+            color: var(--texte);
+            touch-action: none; /* Empêche le scroll sur mobile pendant l'orbite */
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            cursor: grab;
+        }
+        
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+
+        /* Panneau d'interface reprenant la palette */
+        #ui-panel {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 420px;
+            background: var(--panneau);
+            border: 1px solid rgba(127, 149, 179, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            z-index: 2;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            pointer-events: none; /* Laisse passer les clics vers le canvas */
+            backdrop-filter: blur(4px);
+        }
+
+        #ui-panel h1 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--titre);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #ui-panel h1::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
+
+        #ui-panel h2 {
+            font-size: 13px;
+            color: var(--accent);
+            margin: 16px 0 6px 0;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        #ui-panel p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.5;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 600px) {
+            #ui-panel {
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                width: auto;
+            }
+        }
+    </style>
+    <!-- Chargement exclusif de Three.js core (sans OrbitControls) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div id="ui-panel">
+        <h1>2D Vectoriel au 3D WebGL</h1>
+        
+        <h2>Ce qui reproduit la capture</h2>
+        <p>Le fond abyssal, l'accent cyan, les faces diaphanes et les arêtes fines. Grâce à un algorithme sur mesure, les <b>silhouettes fuyantes</b> des courbes (cylindre, bol) sont désormais recalculées à chaque image selon l'angle de vue, mimant le tracé 2D original. L'eau réagit à une douce lumière.</p>
+        
+        <h2>Ce qui reste différent</h2>
+        <p>En 2D Canvas, le contour est une courbe de Bézier mathématiquement parfaite. En 3D, le contour dépend de la <em>tessellation</em> (les facettes) de la géométrie, ce qui explique un léger effet de segmentation visible sur les bords courbes lors des rotations très proches.</p>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        const Style = {
+            C: {
+                fond: 0x050B14,
+                aretes: 0x7F95B3,
+                accent: 0x4DEEEA
+            },
+
+            appliquerStyleFil: function(mesh) {
+                mesh.material = new THREE.MeshBasicMaterial({
+                    color: this.C.aretes,
+                    transparent: true,
+                    opacity: 0.04,
+                    depthWrite: false,
+                    side: THREE.DoubleSide
+                });
+
+                // EdgesGeometry trace les arêtes topologiques franches (angles vifs)
+                const edgesGeometry = new THREE.EdgesGeometry(mesh.geometry, 15);
+                const edgesMaterial = new THREE.LineBasicMaterial({
+                    color: this.C.aretes,
+                    transparent: true,
+                    opacity: 0.75
+                });
+                
+                const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+                mesh.add(edges);
+            },
+
+            styleContenu: function(mesh) {
+                // Matériau réagissant à la lumière (Lambert) pour le contenu/liquide
+                mesh.material = new THREE.MeshLambertMaterial({
+                    color: this.C.accent,
+                    transparent: true,
+                    opacity: 0.7,
+                    side: THREE.DoubleSide
+                });
+            },
+
+            preparerScene: function(scene) {
+                scene.background = new THREE.Color(this.C.fond);
+                scene.fog = new THREE.FogExp2(this.C.fond, 0.025);
+
+                // Particules en suspension
+                const count = 250;
+                const pos = new Float32Array(count * 3);
+                for (let i = 0; i < count * 3; i++) pos[i] = (Math.random() - 0.5) * 50;
+                
+                const geomPoints = new THREE.BufferGeometry();
+                geomPoints.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+                const matPoints = new THREE.PointsMaterial({
+                    color: this.C.accent, size: 0.15, transparent: true, opacity: 0.6
+                });
+
+                const particles = new THREE.Points(geomPoints, matPoints);
+                particles.name = "poussiere"; 
+                scene.add(particles);
+
+                // Lumière douce et plate pour sublimer le styleContenu
+                const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+                scene.add(ambient);
+                const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+                dirLight.position.set(5, 10, 7);
+                scene.add(dirLight);
+            },
+
+            // Fonction utilitaire interne pour reconstruire la topologie d'un mesh (souder les sommets)
+            _buildTopology: function(mesh) {
+                const pos = mesh.geometry.getAttribute('position');
+                const index = mesh.geometry.getIndex();
+                
+                const uniqueVertices = [];
+                const vertexMap = new Map();
+                // Hashage pour souder les sommets géométriquement proches (coutures de cylindre)
+                const hashVertex = (x, y, z) => `${Math.round(x*1e3)},${Math.round(y*1e3)},${Math.round(z*1e3)}`;
+                
+                const posToUnique = {};
+                for (let i = 0; i < pos.count; i++) {
+                    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+                    const hash = hashVertex(x, y, z);
+                    if (posToUnique[hash] === undefined) {
+                        posToUnique[hash] = uniqueVertices.length;
+                        uniqueVertices.push(new THREE.Vector3(x, y, z));
+                    }
+                    vertexMap.set(i, posToUnique[hash]);
+                }
+
+                const indices = [];
+                const maxLen = index ? index.count : pos.count;
+                for (let i = 0; i < maxLen; i++) {
+                    indices.push(vertexMap.get(index ? index.getX(i) : i));
+                }
+
+                const faces = [];
+                for (let i = 0; i < indices.length; i += 3) {
+                    const a = indices[i], b = indices[i+1], c = indices[i+2];
+                    if (a === b || b === c || c === a) continue; // Face dégénérée
+                    const vA = uniqueVertices[a], vB = uniqueVertices[b], vC = uniqueVertices[c];
+                    
+                    const normal = new THREE.Vector3().subVectors(vB, vA)
+                        .cross(new THREE.Vector3().subVectors(vC, vA)).normalize();
+                    const center = new THREE.Vector3().add(vA).add(vB).add(vC).divideScalar(3);
+                    faces.push({ a, b, c, normal, center });
+                }
+
+                const edgesMap = {};
+                for (let i = 0; i < faces.length; i++) {
+                    const f = faces[i];
+                    const fEdges = [[f.a, f.b], [f.b, f.c], [f.c, f.a]];
+                    for (let e of fEdges) {
+                        const min = Math.min(e[0], e[1]), max = Math.max(e[0], e[1]);
+                        const key = min + '_' + max;
+                        if (!edgesMap[key]) edgesMap[key] = { v1: uniqueVertices[min], v2: uniqueVertices[max], faces: [] };
+                        edgesMap[key].faces.push(i);
+                    }
+                }
+                
+                return { faces, edges: Object.values(edgesMap) };
+            },
+
+            silhouette: function(mesh, camera) {
+                // 1. Initialisation de la topologie (calcul unique)
+                if (!mesh.userData.topology) {
+                    mesh.userData.topology = this._buildTopology(mesh);
+                }
+                
+                // 2. Initialisation des LineSegments pour les contours
+                if (!mesh.userData.silhouetteLines) {
+                    const mat = new THREE.LineBasicMaterial({ color: this.C.aretes, transparent: true, opacity: 0.75 });
+                    const lines = new THREE.LineSegments(new THREE.BufferGeometry(), mat);
+                    lines.frustumCulled = false;
+                    mesh.add(lines);
+                    mesh.userData.silhouetteLines = lines;
+                }
+
+                const topo = mesh.userData.topology;
+                const localCam = mesh.worldToLocal(camera.position.clone());
+                const frontFacing = new Array(topo.faces.length);
+                
+                // 3. Détection des faces orientées vers la caméra
+                for(let i = 0; i < topo.faces.length; i++) {
+                    const f = topo.faces[i];
+                    const dir = new THREE.Vector3().subVectors(localCam, f.center);
+                    frontFacing[i] = f.normal.dot(dir) > 0;
+                }
+
+                // 4. Sélection des arêtes aux frontières (contours dynamiques)
+                const positions = [];
+                for(let i = 0; i < topo.edges.length; i++) {
+                    const e = topo.edges[i];
+                    let isSilhouette = false;
+                    
+                    if (e.faces.length === 1) {
+                        isSilhouette = true; // Arête ouverte (bord)
+                    } else if (e.faces.length === 2) {
+                        if (frontFacing[e.faces[0]] !== frontFacing[e.faces[1]]) {
+                            isSilhouette = true; // Arête entre une face visible et une cachée
+                        }
+                    }
+                    
+                    if (isSilhouette) {
+                        positions.push(e.v1.x, e.v1.y, e.v1.z, e.v2.x, e.v2.y, e.v2.z);
+                    }
+                }
+                
+                // 5. Mise à jour immédiate du BufferGeometry
+                mesh.userData.silhouetteLines.geometry.setAttribute(
+                    'position', new THREE.Float32BufferAttribute(positions, 3)
+                );
+            }
+        };
+
+        const ControleOrbite = {
+            radius: 20, azimuth: 0, polar: Math.PI / 3,
+            target: new THREE.Vector3(0, 0, 0),
+            isDragging: false, lastX: 0, lastY: 0,
+            
+            update: function(camera) {
+                // Restriction de l'angle vertical pour ne pas passer sous ou au-dessus de la scène
+                this.polar = Math.max(0.1, Math.min(Math.PI - 0.1, this.polar));
+                camera.position.x = this.target.x + this.radius * Math.sin(this.polar) * Math.sin(this.azimuth);
+                camera.position.y = this.target.y + this.radius * Math.cos(this.polar);
+                camera.position.z = this.target.z + this.radius * Math.sin(this.polar) * Math.cos(this.azimuth);
+                camera.lookAt(this.target);
+            },
+            
+            attach: function(canvas) {
+                const down = (x, y) => { this.isDragging = true; this.lastX = x; this.lastY = y; };
+                const move = (x, y) => {
+                    if (!this.isDragging) return;
+                    const dx = x - this.lastX, dy = y - this.lastY;
+                    this.azimuth -= dx * 0.008;
+                    this.polar -= dy * 0.008;
+                    this.lastX = x; this.lastY = y;
+                };
+                const up = () => { this.isDragging = false; };
+                
+                canvas.addEventListener('mousedown', e => down(e.clientX, e.clientY));
+                window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+                window.addEventListener('mouseup', up);
+                
+                canvas.addEventListener('touchstart', e => down(e.touches[0].clientX, e.touches[0].clientY), {passive: true});
+                window.addEventListener('touchmove', e => move(e.touches[0].clientX, e.touches[0].clientY), {passive: true});
+                window.addEventListener('touchend', up);
+            }
+        };
+
+        let scene, camera, renderer, dust;
+        let objetsDynamiques = []; // Objets nécessitant le calcul de silhouette
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            Style.preparerScene(scene);
+            dust = scene.getObjectByName("poussiere");
+
+            camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            ControleOrbite.attach(renderer.domElement);
+            
+            // 1. Prisme triangulaire 
+            const prisme = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 6, 3));
+            prisme.position.set(-6, 0, 0);
+            Style.appliquerStyleFil(prisme);
+            scene.add(prisme);
+            objetsDynamiques.push(prisme); // Même si plat, démontre l'algo
+
+            // 2. Cylindre classique
+            const cylindre = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 6, 32));
+            cylindre.position.set(0, 0, 0);
+            Style.appliquerStyleFil(cylindre);
+            scene.add(cylindre);
+            objetsDynamiques.push(cylindre);
+
+            // 2.1 Contenu (eau) à l'intérieur du cylindre
+            const eau = new THREE.Mesh(new THREE.CylinderGeometry(1.95, 1.95, 3, 32));
+            eau.position.set(0, -1.5, 0); // Rempli à moitié, calé en bas
+            Style.styleContenu(eau);
+            cylindre.add(eau);
+
+            // 3. Bol de révolution (Lathe)
+            const pointsBol = [];
+            for (let i = 0; i <= 20; i++) {
+                const t = i / 20;
+                pointsBol.push(new THREE.Vector2(0.5 + 2.2 * Math.pow(t, 0.9), (t - 0.5) * 6));
+            }
+            const bol = new THREE.Mesh(new THREE.LatheGeometry(pointsBol, 40));
+            bol.position.set(6, 0, 0);
+            Style.appliquerStyleFil(bol);
+            scene.add(bol);
+            objetsDynamiques.push(bol);
+
+            window.addEventListener('resize', onWindowResize, false);
+            animate();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotation douce et fluide de la poussière
+            if (dust) {
+                dust.rotation.y += 0.0005;
+                dust.rotation.x += 0.0002;
+            }
+
+            // Mise à jour de la caméra personnalisée
+            ControleOrbite.update(camera);
+
+            // Calcul dynamique des silhouettes à chaque image pour les géométries
+            objetsDynamiques.forEach(mesh => {
+                Style.silhouette(mesh, camera);
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nature morte — three.js</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #efe6d5; }
+  canvas { display: block; touch-action: none; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+  #aide {
+    position: fixed; left: 18px; bottom: 16px; max-width: 42ch;
+    font: 13px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: #8a7457; pointer-events: none;
+    transition: opacity 1.2s ease;
+  }
+  #aide.masque { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) { #aide { transition: none; } }
+</style>
+</head>
+<body>
+<p id="aide">
+  Faites glisser pour tourner autour de la table, molette pour zoomer, clic droit pour déplacer la vue.<br>
+  Z Q S D ou les flèches pour marcher, R et F pour monter ou descendre, double-clic pour revenir au point de départ.
+</p>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  // Les couleurs hex sont données en sRGB (comme sur l'image) et converties en linéaire.
+  const col = (hex) => new THREE.Color(hex).convertSRGBToLinear();
+
+  // ---------------------------------------------------------------- Rendu
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.appendChild(renderer.domElement);
+
+  // ---------------------------------------------------------------- Scène & caméra
+  const scene = new THREE.Scene();
+  scene.background = makeBackdrop();
+  scene.environment = makeStudioEnvironment(renderer);
+
+  const camera = new THREE.PerspectiveCamera(29, window.innerWidth / window.innerHeight, 0.1, 100);
+  const camBase = new THREE.Vector3(0.3, 3.4, 13);
+  const camTarget = new THREE.Vector3(0.3, 2.5, 0);
+  camera.position.copy(camBase);
+  camera.lookAt(camTarget);
+
+  // ---------------------------------------------------------------- Lumières (studio doux)
+  scene.add(new THREE.HemisphereLight(col(0xfff7ec), col(0xcdb391), 0.38));
+
+  const key = new THREE.DirectionalLight(col(0xfff4e6), 0.5);
+  key.position.set(-3, 10, 4);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -7; key.shadow.camera.right = 7;
+  key.shadow.camera.top = 7;   key.shadow.camera.bottom = -7;
+  key.shadow.camera.near = 1;  key.shadow.camera.far = 30;
+  key.shadow.bias = -0.0004;
+  key.shadow.normalBias = 0.02;
+  scene.add(key);
+
+  const fill = new THREE.DirectionalLight(col(0xf3f4ff), 0.2);
+  fill.position.set(6, 4, 6);
+  scene.add(fill);
+
+  const rim = new THREE.DirectionalLight(col(0xffffff), 0.15);
+  rim.position.set(0, 6, -6);
+  scene.add(rim);
+
+  // ---------------------------------------------------------------- Table
+  const TABLE = { x: 3.7, z: 0.3, w: 18, d: 3.2, thick: 0.45, bevel: 0.12, r: 0.32 };
+  {
+    const shape = new THREE.Shape();
+    roundedRect(shape, -TABLE.w / 2, -TABLE.d / 2, TABLE.w, TABLE.d, TABLE.r);
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: TABLE.thick, bevelEnabled: true,
+      bevelThickness: TABLE.bevel, bevelSize: TABLE.bevel, bevelSegments: 6, curveSegments: 24
+    });
+    const table = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+      color: col(0xcbb08a), roughness: 1, metalness: 0, envMapIntensity: 0.25
+    }));
+    table.rotation.x = -Math.PI / 2;
+    table.position.set(TABLE.x, -(TABLE.thick + TABLE.bevel), TABLE.z);
+    scene.add(table);
+
+    // Récepteur d'ombres discret posé sur le plateau
+    const catcher = new THREE.Mesh(
+      new THREE.PlaneGeometry(TABLE.w, TABLE.d),
+      new THREE.ShadowMaterial({ color: col(0x4a3620), opacity: 0.16 })
+    );
+    catcher.rotation.x = -Math.PI / 2;
+    catcher.position.set(TABLE.x, 0.002, TABLE.z);
+    catcher.receiveShadow = true;
+    scene.add(catcher);
+  }
+
+  // ---------------------------------------------------------------- Vase en terre cuite
+  {
+    const body = new THREE.SplineCurve([
+      [0, 0], [0.35, 0.02], [0.7, 0.12], [0.98, 0.35], [1.15, 0.65], [1.2, 0.95],
+      [1.16, 1.3], [1.02, 1.65], [0.8, 1.95], [0.6, 2.12], [0.46, 2.22], [0.42, 2.3]
+    ].map(p => new THREE.Vector2(p[0], p[1]))).getPoints(64);
+    const neck = [[0.40, 2.45], [0.37, 2.6], [0.36, 2.63], [0.34, 2.645], [0.24, 2.645]]
+      .map(p => new THREE.Vector2(p[0], p[1]));
+
+    const clay = new THREE.MeshStandardMaterial({
+      color: col(0xc4735a), roughness: 0.95, metalness: 0,
+      bumpMap: noiseTexture(128), bumpScale: 0.008, envMapIntensity: 0.3
+    });
+    const vase = new THREE.Mesh(new THREE.LatheGeometry(body.concat(neck), 96), clay);
+    vase.castShadow = true;
+
+    // Intérieur sombre du goulot
+    const hole = lathe([[0.24, 2.65], [0.215, 2.35], [0, 2.3]], 48,
+      new THREE.MeshStandardMaterial({ color: col(0x3a2418), roughness: 1, envMapIntensity: 0, side: THREE.DoubleSide }));
+
+    const g = new THREE.Group();
+    g.add(vase, hole, contactShadow(3.2, 2.2, 0.55));
+    g.position.set(-2.6, 0, 0);
+    scene.add(g);
+  }
+
+  // ---------------------------------------------------------------- Verre givré + eau
+  {
+    const frosted = new THREE.MeshPhysicalMaterial({
+      color: col(0xdbe8e2), roughness: 0.55, metalness: 0,
+      transparent: true, opacity: 0.5, depthWrite: false,
+      envMapIntensity: 0.6, clearcoat: 0.25, clearcoatRoughness: 0.6
+    });
+    const glass = lathe([
+      [0, 0], [0.6, 0], [0.66, 0.03], [0.68, 0.08],
+      [0.84, 2.42], [0.845, 2.47], [0.83, 2.5], [0.77, 2.5], [0.76, 2.47],
+      [0.6, 0.2], [0.55, 0.16], [0, 0.16]
+    ], 96, frosted);
+
+    const water = lathe([
+      [0, 0.17], [0.58, 0.17], [0.6, 0.2], [0.745, 1.9], [0, 1.9]
+    ], 96, new THREE.MeshStandardMaterial({
+      color: col(0x4f858d), roughness: 0.25, metalness: 0, envMapIntensity: 0.5
+    }));
+    water.castShadow = true;
+
+    const g = new THREE.Group();
+    g.add(water, glass, contactShadow(2.2, 1.6, 0.5));
+    g.position.set(0.05, 0, 0);
+    scene.add(g);
+  }
+
+  // ---------------------------------------------------------------- Ampoule
+  {
+    const g = new THREE.Group();
+
+    // Culot à vis
+    const brass = new THREE.MeshStandardMaterial({
+      color: col(0xb18f70), roughness: 0.45, metalness: 0.6, envMapIntensity: 0.8
+    });
+    const base = lathe([
+      [0, 0], [0.09, 0], [0.14, 0.02], [0.17, 0.06], [0.19, 0.12], [0.2, 0.18],
+      [0.23, 0.24], [0.29, 0.3], [0.29, 0.74], [0.305, 0.76], [0.3, 0.78], [0.22, 0.78], [0, 0.78]
+    ], 64, brass);
+    base.castShadow = true;
+    g.add(base);
+    [0.38, 0.47, 0.56, 0.65].forEach(y => {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.028, 10, 64), brass);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = y;
+      g.add(ring);
+    });
+
+    // Monture en verre + filament
+    const stemMat = new THREE.MeshStandardMaterial({
+      color: col(0xa0826a), roughness: 0.4, metalness: 0, transparent: true, opacity: 0.95, envMapIntensity: 0.4
+    });
+    const flare = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.2, 0.26, 32), stemMat);
+    flare.position.y = 0.89;
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.7, 24), stemMat);
+    stem.position.y = 1.1;
+    const bead = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 12), stemMat);
+    bead.position.y = 1.45;
+    g.add(flare, stem, bead);
+
+    const wireMat = new THREE.MeshStandardMaterial({ color: col(0x4a3a2e), roughness: 0.5, metalness: 0.6 });
+    const v3 = (x, y) => new THREE.Vector3(x, y, 0);
+    g.add(wire([v3(-0.05, 1.45), v3(-0.2, 2.14)], 0.012, wireMat));
+    g.add(wire([v3(0.05, 1.45), v3(0.2, 2.14)], 0.012, wireMat));
+    g.add(wire([v3(0, 1.45), v3(0, 1.97)], 0.01, wireMat));
+    g.add(wire([
+      v3(-0.2, 2.14), v3(-0.14, 1.97), v3(-0.07, 2.14), v3(0, 1.97),
+      v3(0.07, 2.14), v3(0.14, 1.97), v3(0.2, 2.14)
+    ], 0.008, wireMat));
+
+    // Verre ambré de l'ampoule
+    const bulbProfile = new THREE.SplineCurve([
+      [0.3, 0.74], [0.305, 0.95], [0.34, 1.12], [0.44, 1.32], [0.58, 1.52], [0.69, 1.7],
+      [0.74, 1.88], [0.72, 2.1], [0.63, 2.3], [0.46, 2.48], [0.24, 2.59], [0, 2.62]
+    ].map(p => new THREE.Vector2(p[0], p[1]))).getPoints(64);
+    const bulb = new THREE.Mesh(new THREE.LatheGeometry(bulbProfile, 96), new THREE.MeshPhysicalMaterial({
+      color: col(0xc9a689), roughness: 0.18, metalness: 0,
+      transparent: true, opacity: 0.5, depthWrite: false,
+      envMapIntensity: 1, clearcoat: 1, clearcoatRoughness: 0.12
+    }));
+    g.add(bulb);
+
+    g.add(contactShadow(1.3, 1.0, 0.45));
+    g.position.set(2.2, 0, 0);
+    scene.add(g);
+  }
+
+  // ---------------------------------------------------------------- Pile
+  {
+    const g = new THREE.Group();
+    const bodyMat = new THREE.MeshStandardMaterial({ color: col(0x6b7280), roughness: 0.55, metalness: 0.15, envMapIntensity: 0.5 });
+    const capMat  = new THREE.MeshStandardMaterial({ color: col(0x7b8391), roughness: 0.5, metalness: 0.2, envMapIntensity: 0.5 });
+
+    const body = lathe([[0, 0], [0.3, 0], [0.35, 0.02], [0.36, 0.05], [0.36, 1.54], [0, 1.54]], 64, bodyMat);
+    body.castShadow = true;
+    const cap = lathe([
+      [0, 1.54], [0.36, 1.54], [0.36, 1.66], [0.35, 1.69], [0.32, 1.7],
+      [0.14, 1.7], [0.14, 1.76], [0.12, 1.77], [0, 1.77]
+    ], 64, capMat);
+    const seam = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.007, 8, 64),
+      new THREE.MeshStandardMaterial({ color: col(0x4e5560), roughness: 0.6 }));
+    seam.rotation.x = Math.PI / 2;
+    seam.position.y = 1.54;
+
+    g.add(body, cap, seam, contactShadow(1.1, 0.8, 0.45));
+    g.position.set(3.5, 0, 0);
+    scene.add(g);
+  }
+
+  // ---------------------------------------------------------------- Navigation
+  // Orbite (glisser), zoom (molette / pincement), déplacement latéral (clic droit, Maj+glisser),
+  // marche au clavier (ZQSD / WASD / flèches, R-F pour monter/descendre), double-clic = vue de départ.
+  const canvas = renderer.domElement;
+  const HOME = { target: camTarget.clone(), sph: new THREE.Spherical().setFromVector3(camBase.clone().sub(camTarget)) };
+  const LIMITS = { minR: 2, maxR: 40, minPhi: 0.08, maxPhi: 1.72, minY: 0.1, maxY: 14 };
+  const goal = { target: HOME.target.clone(), sph: HOME.sph.clone() };
+  const cur  = { target: HOME.target.clone(), sph: HOME.sph.clone() };
+
+  function clampGoal() {
+    goal.sph.phi = Math.min(LIMITS.maxPhi, Math.max(LIMITS.minPhi, goal.sph.phi));
+    goal.sph.radius = Math.min(LIMITS.maxR, Math.max(LIMITS.minR, goal.sph.radius));
+    goal.target.y = Math.min(LIMITS.maxY, Math.max(LIMITS.minY, goal.target.y));
+  }
+
+  // Déplace le point visé dans le plan de l'écran, à l'échelle de la distance
+  function pan(dx, dy) {
+    const perPixel = 2 * goal.sph.radius * Math.tan(camera.fov * Math.PI / 360) / canvas.clientHeight;
+    const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+    const up    = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+    goal.target.addScaledVector(right, -dx * perPixel).addScaledVector(up, dy * perPixel);
+    clampGoal();
+  }
+
+  const pointers = new Map();
+  let pinch = 0;
+
+  canvas.addEventListener('pointerdown', e => {
+    canvas.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, button: e.button, shift: e.shiftKey });
+    if (pointers.size === 2) pinch = pinchDistance();
+    hideHelp();
+  });
+  canvas.addEventListener('pointermove', e => {
+    const p = pointers.get(e.pointerId);
+    if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y;
+    p.x = e.clientX; p.y = e.clientY;
+
+    if (pointers.size === 2) {                         // pincement : zoom
+      const d = pinchDistance();
+      if (pinch > 0 && d > 0) goal.sph.radius *= pinch / d;
+      pinch = d;
+      clampGoal();
+    } else if (p.button === 0 && !p.shift) {           // glisser : orbite
+      goal.sph.theta -= dx * 2 * Math.PI / canvas.clientHeight;
+      goal.sph.phi   -= dy * 2 * Math.PI / canvas.clientHeight;
+      clampGoal();
+    } else {                                           // clic droit / Maj : déplacement
+      pan(dx, dy);
+    }
+  });
+  const release = e => { pointers.delete(e.pointerId); pinch = 0; };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    goal.sph.radius *= Math.exp(e.deltaY * 0.0012);
+    clampGoal();
+    hideHelp();
+  }, { passive: false });
+  canvas.addEventListener('dblclick', goHome);
+
+  function pinchDistance() {
+    const [a, b] = [...pointers.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  }
+  function goHome() {
+    goal.target.copy(HOME.target);
+    goal.sph.copy(HOME.sph);
+  }
+
+  // Clavier : e.code désigne la touche physique, donc ZQSD (AZERTY) et WASD (QWERTY) marchent tous les deux
+  const keys = new Set();
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Home' || e.code === 'Digit0') goHome();
+    keys.add(e.code);
+    hideHelp();
+  });
+  window.addEventListener('keyup', e => keys.delete(e.code));
+  window.addEventListener('blur', () => keys.clear());
+
+  const _fwd = new THREE.Vector3(), _right = new THREE.Vector3();
+  function walk(dt) {
+    if (keys.size === 0) return;
+    const step = dt * 3 * Math.max(1, goal.sph.radius / 6);
+    camera.getWorldDirection(_fwd); _fwd.y = 0; _fwd.normalize();
+    _right.crossVectors(_fwd, camera.up).normalize();
+    if (keys.has('KeyW') || keys.has('ArrowUp'))    goal.target.addScaledVector(_fwd,  step);
+    if (keys.has('KeyS') || keys.has('ArrowDown'))  goal.target.addScaledVector(_fwd, -step);
+    if (keys.has('KeyA') || keys.has('ArrowLeft'))  goal.target.addScaledVector(_right, -step);
+    if (keys.has('KeyD') || keys.has('ArrowRight')) goal.target.addScaledVector(_right,  step);
+    if (keys.has('KeyR') || keys.has('PageUp'))     goal.target.y += step;
+    if (keys.has('KeyF') || keys.has('PageDown'))   goal.target.y -= step;
+    clampGoal();
+  }
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  const help = document.getElementById('aide');
+  function hideHelp() { help.classList.add('masque'); }
+  setTimeout(hideHelp, 9000);
+
+  let last = performance.now();
+  (function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    walk(dt);
+
+    // Amortissement vers la position voulue
+    const k = 1 - Math.exp(-dt * 9);
+    cur.sph.theta  += (goal.sph.theta  - cur.sph.theta)  * k;
+    cur.sph.phi    += (goal.sph.phi    - cur.sph.phi)    * k;
+    cur.sph.radius += (goal.sph.radius - cur.sph.radius) * k;
+    cur.target.lerp(goal.target, k);
+
+    camera.position.setFromSpherical(cur.sph).add(cur.target);
+    camera.lookAt(cur.target);
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  })(last);
+
+  // ---------------------------------------------------------------- Helpers
+  function lathe(profile, segments, material) {
+    const pts = profile.map(p => new THREE.Vector2(p[0], p[1]));
+    return new THREE.Mesh(new THREE.LatheGeometry(pts, segments), material);
+  }
+
+  function wire(points, radius, material) {
+    const path = new THREE.CurvePath();
+    for (let i = 0; i < points.length - 1; i++) path.add(new THREE.LineCurve3(points[i], points[i + 1]));
+    return new THREE.Mesh(new THREE.TubeGeometry(path, points.length * 8, radius, 6, false), material);
+  }
+
+  function roundedRect(shape, x, y, w, h, r) {
+    shape.moveTo(x, y + r);
+    shape.lineTo(x, y + h - r);
+    shape.quadraticCurveTo(x, y + h, x + r, y + h);
+    shape.lineTo(x + w - r, y + h);
+    shape.quadraticCurveTo(x + w, y + h, x + w, y + h - r);
+    shape.lineTo(x + w, y + r);
+    shape.quadraticCurveTo(x + w, y, x + w - r, y);
+    shape.lineTo(x + r, y);
+    shape.quadraticCurveTo(x, y, x, y + r);
+  }
+
+  // Fond crème avec vignette douce (plus clair derrière les objets)
+  function makeBackdrop() {
+    const c = document.createElement('canvas');
+    c.width = 1024; c.height = 512;
+    const ctx = c.getContext('2d');
+    const g = ctx.createRadialGradient(512, 340, 30, 512, 300, 760);
+    g.addColorStop(0, '#f8f1e4');
+    g.addColorStop(0.45, '#f1e7d5');
+    g.addColorStop(1, '#e2d3b8');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, c.width, c.height);
+    const t = new THREE.CanvasTexture(c);
+    t.encoding = THREE.sRGBEncoding;
+    return t;
+  }
+
+  // Petit "studio" pour les reflets du verre et du métal
+  function makeStudioEnvironment(renderer) {
+    const env = new THREE.Scene();
+    env.add(new THREE.Mesh(new THREE.BoxGeometry(20, 20, 20), new THREE.MeshStandardMaterial({
+      color: 0x000000, emissive: col(0xe9dfcc), emissiveIntensity: 0.28, side: THREE.BackSide
+    })));
+    const soft = (w, h, x, y, z, i) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({
+        color: 0x000000, emissive: 0xffffff, emissiveIntensity: i, side: THREE.DoubleSide
+      }));
+      m.position.set(x, y, z);
+      m.lookAt(0, 0, 0);
+      env.add(m);
+    };
+    soft(6, 4, -5, 7, 6, 2.5);   // softbox principal, avant-gauche
+    soft(4, 5, 8, 3, 5, 1.2);    // remplissage, droite
+    soft(8, 2, 0, 8, -6, 0.9);   // contre-jour haut
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const rt = pmrem.fromScene(env, 0.04);
+    pmrem.dispose();
+    return rt.texture;
+  }
+
+  // Ombre de contact : halo radial posé au pied de chaque objet
+  function blobTexture() {
+    if (blobTexture.cached) return blobTexture.cached;
+    const c = document.createElement('canvas');
+    c.width = c.height = 256;
+    const ctx = c.getContext('2d');
+    const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.35, 'rgba(255,255,255,0.55)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 256, 256);
+    const t = new THREE.CanvasTexture(c);
+    t.encoding = THREE.sRGBEncoding;
+    blobTexture.cached = t;
+    return t;
+  }
+
+  function contactShadow(w, d, strength) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({
+      map: blobTexture(), color: col(0x5a4630), transparent: true, opacity: strength, depthWrite: false
+    }));
+    m.rotation.x = -Math.PI / 2;
+    m.position.y = 0.004;
+    return m;
+  }
+
+  function noiseTexture(size) {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    const img = ctx.createImageData(size, size);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = 190 + Math.random() * 65 | 0;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+      img.data[i + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(4, 4);
+    return t;
+  }
+})();
+</script>
+</body>
+</html>

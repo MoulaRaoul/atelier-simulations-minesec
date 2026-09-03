@@ -30,6 +30,44 @@
     ? global.matchMedia('(prefers-reduced-motion: reduce)').matches
     : false;
 
+  /* ══════════════════════════════════════════════════════════════════════
+     GESTION DES COULEURS — sRGB en entrée, linéaire pour le calcul
+
+     Un moteur 3D éclaire correctement en espace LINÉAIRE : doubler
+     l'intensité d'une lampe doit doubler l'énergie reçue. Mais les
+     couleurs que nous écrivons — celles de charte.css, celles qu'un
+     designer choisit — sont données en sRGB, un espace courbé pour l'œil.
+
+     Passer un hex sRGB directement à un matériau revient à mentir au
+     calcul d'éclairage : les demi-teintes sortent trop claires, les
+     ombres se bouchent, et tout paraît terne et plat. C'est la mornité
+     que nous traînions depuis le premier jour.
+
+     La règle tient en deux gestes, indissociables :
+       1. convertir chaque couleur d'entrée de sRGB vers le linéaire ;
+       2. demander au rendu de reconvertir vers le sRGB à la sortie.
+     N'en faire qu'un des deux est pire que n'en faire aucun.
+
+     `couleur()` met en cache : une teinte de charte est demandée des
+     centaines de fois, la conversion ne doit se payer qu'une.
+     ══════════════════════════════════════════════════════════════════════ */
+  const _teintes = new Map();
+  function couleur(hex) {
+    let c = _teintes.get(hex);
+    if (!c) {
+      c = new THREE.Color(hex);
+      if (c.convertSRGBToLinear) c.convertSRGBToLinear();
+      _teintes.set(hex, c);
+    }
+    return c;
+  }
+  /* Même conversion, rendue en entier — pour les API de Three.js qui
+     n'acceptent qu'un hex (setHex, GridHelper…). */
+  function couleurHex(hex) { return couleur(hex).getHex(); }
+
+  MINESEC.couleur = couleur;
+  MINESEC.couleurHex = couleurHex;
+
   /* ─── Garde : la 3D n'est pas disponible partout ───
      Mécanisme repris de studio-3d.html, qui affichait un panneau d'alerte
      plutôt que de laisser un cadre noir. Ici le moteur fabrique lui-même le
@@ -115,6 +153,14 @@
        calibrage cesse ainsi d'être une impression d'œil : il se compare à un
        nombre écrit, et se contrôle. 2/3 laisse des marges équilibrées. */
     occupation: 2 / 3,
+    /* Intensités des lumières. Elles ont dû être relevées le 31/08/2026 en
+       même temps que la gestion des couleurs : convertir les teintes en
+       linéaire divise les demi-tons par plus de deux, et des intensités
+       réglées à l'œil sur l'ancien pipeline rendaient la scène terne. Ce
+       n'est pas un embellissement, c'est la contrepartie obligée de la
+       conversion — l'une sans l'autre est pire que rien. */
+    lumiereAmbiante: 1.55,
+    lumierePrincipale: 1.5,
     distanceMin: 2.5,
     distanceMax: 24,
     sensibilite: 0.006,  /* radians par pixel glissé */
@@ -163,10 +209,13 @@
       throw e;
     }
     rendu.setPixelRatio(Math.min(global.devicePixelRatio || 1, 2));
+    /* Second geste de la gestion des couleurs : on reconvertit vers le sRGB
+       à la sortie. Sans lui, la conversion d'entrée assombrirait tout. */
+    if (THREE.sRGBEncoding !== undefined) rendu.outputEncoding = THREE.sRGBEncoding;
     conteneur.appendChild(rendu.domElement);
 
-    scene.add(new THREE.HemisphereLight(0xdfe7ef, 0x14171a, 0.95));
-    const soleil = new THREE.DirectionalLight(0xffffff, 0.8);
+    scene.add(new THREE.HemisphereLight(couleur(0xdfe7ef), couleur(0x14171a), o.lumiereAmbiante));
+    const soleil = new THREE.DirectionalLight(couleur(0xffffff), o.lumierePrincipale);
     soleil.position.set(4, 7, 5);
     scene.add(soleil);
 
@@ -179,7 +228,7 @@
     rig.rotation.x = o.inclinaison;
 
     if (o.grille) {
-      const sol = new THREE.GridHelper(12, 12, 0x3f454d, 0x22262b);
+      const sol = new THREE.GridHelper(12, 12, couleurHex(0x3f454d), couleurHex(0x22262b));
       sol.material.transparent = true;
       sol.material.opacity = 0.35;
       rig.add(sol);
@@ -453,6 +502,6 @@
     };
   }
 
-  MINESEC.moteur = { creer, reduit, disponible, avertir, MESSAGES };
+  MINESEC.moteur = { creer, reduit, disponible, avertir, MESSAGES, couleur, couleurHex };
 
 })(window);

@@ -389,6 +389,62 @@ if (!poste.ok) {
   note('le cadrage vise une occupation', false, e.message);
 }
 
+/* ══ 7 · La gestion des couleurs ══
+   Les couleurs s'écrivent en sRGB et se calculent en linéaire. Les deux
+   gestes sont indissociables : n'en faire qu'un est pire que n'en faire
+   aucun, et rien à l'écran ne dit lequel manque — d'où ces contrôles. */
+section('Couleurs — sRGB en entrée, linéaire pour le calcul');
+{
+  /* Formule de référence, écrite ici indépendamment du moteur. */
+  const versLineaire = c => c < 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+
+  const gris = MINESEC.couleur(0x808080);
+  egal('gris moyen converti selon la formule sRGB', gris.r, versLineaire(128 / 255), 1e-6);
+  vrai('le linéaire est plus sombre que le sRGB', gris.r < 128 / 255,
+       gris.r.toFixed(4) + ' contre ' + (128 / 255).toFixed(4));
+
+  const noir = MINESEC.couleur(0x000000), blanc = MINESEC.couleur(0xffffff);
+  egal('le noir reste noir', noir.r, 0);
+  egal('le blanc reste blanc', blanc.r, 1);
+
+  vrai('la conversion est mise en cache', MINESEC.couleur(0x808080) === gris);
+
+  const accent = MINESEC.couleur(0x3b82f6);
+  egal('l\'accent de charte suit la même loi', accent.b, versLineaire(0xf6 / 255), 1e-6);
+  vrai('couleurHex rend le même résultat en entier',
+       MINESEC.couleurHex(0x3b82f6) === accent.getHex());
+}
+
+if (!poste.ok) {
+  info('2 contrôles non exécutés — ce poste ne fait pas de 3D');
+} else try {
+  const bac = document.createElement('div');
+  bac.style.cssText = 'position:fixed;left:-4000px;top:0;width:200px;height:150px';
+  document.body.appendChild(bac);
+  const m = MINESEC.moteur.creer({ conteneur: bac, grille: true, reserve: false });
+  vrai('le rendu reconvertit vers le sRGB en sortie',
+       m.rendu.outputEncoding === THREE.sRGBEncoding,
+       'outputEncoding = ' + m.rendu.outputEncoding);
+  /* La grille du moteur doit elle aussi être passée en linéaire, sans quoi
+     elle jurerait avec les objets convertis. Attention : GridHelper range
+     ses teintes dans les SOMMETS de la géométrie, pas dans le matériau —
+     lequel reste blanc et se contente de dire « vertexColors ». */
+  const grille = m.rig.children.find(x => x.type === 'GridHelper');
+  const att = grille && grille.geometry.getAttribute('color');
+  const vues = new Set();
+  if (att) for (let i = 0; i < att.count; i++) {
+    vues.add(new THREE.Color(att.getX(i), att.getY(i), att.getZ(i)).getHexString());
+  }
+  const attendus = [MINESEC.couleur(0x3f454d).getHexString(),
+                    MINESEC.couleur(0x22262b).getHexString()];
+  vrai('la grille du moteur est convertie elle aussi',
+       !!att && attendus.every(h => vues.has(h)),
+       'teintes trouvées : ' + [...vues].map(h => '#' + h).join(' · '));
+  bac.remove();
+} catch (e) {
+  note('la gestion des couleurs s\'initialise', false, e.message);
+}
+
 /* ══ Rapport ══ */
 const rap = document.getElementById('rapport');
 groupes.forEach(g => {

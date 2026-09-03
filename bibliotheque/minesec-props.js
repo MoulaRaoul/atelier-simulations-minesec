@@ -26,7 +26,10 @@
 
   const MINESEC = global.MINESEC = global.MINESEC || {};
 
-  /* Teintes de la charte, en hexadécimal (le WebGL ne lit pas le CSS). */
+  /* Teintes de la charte, en hexadécimal sRGB (le WebGL ne lit pas le CSS).
+     Elles passent toutes par MINESEC.couleur() avant d'entrer dans un
+     matériau : voir la gestion des couleurs en tête de minesec-moteur.js. */
+  const C = h => MINESEC.couleur(h);
   const EAU = 0x3b82f6, EAU_SURFACE = 0xa7c2f7;
   const METAL = 0x8a929c, METAL_SOMBRE = 0x4a5568;
   const PAROI = 0xa4e6ba;
@@ -81,18 +84,18 @@
 
     /* La paroi : presque invisible, mais ses arêtes portent la forme. */
     const paroi = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-      color: teinte || PAROI, transparent: true, opacity: 0.10,
+      color: C(teinte || PAROI), transparent: true, opacity: 0.10,
       roughness: 0.15, metalness: 0.0, side: THREE.DoubleSide, depthWrite: false
     }));
     const aretes = new THREE.LineSegments(
       new THREE.EdgesGeometry(geo),
-      new THREE.LineBasicMaterial({ color: teinte || PAROI, transparent: true, opacity: 0.9 })
+      new THREE.LineBasicMaterial({ color: C(teinte || PAROI), transparent: true, opacity: 0.9 })
     );
 
     /* L'eau : le même solide, coupé au niveau voulu. */
     const plan = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
     const eau = new THREE.Mesh(geo.clone(), new THREE.MeshStandardMaterial({
-      color: EAU, transparent: true, opacity: 0.62,
+      color: C(EAU), transparent: true, opacity: 0.62,
       roughness: 0.25, metalness: 0.0, side: THREE.DoubleSide,
       clippingPlanes: [plan], clipShadows: false
     }));
@@ -102,7 +105,7 @@
     const surface = new THREE.Mesh(
       new THREE.CircleGeometry(1, forme === 'cylindre' || forme === 'cone' ? 48 : (d.cotes || 4)),
       new THREE.MeshStandardMaterial({
-        color: EAU_SURFACE, transparent: true, opacity: 0.85,
+        color: C(EAU_SURFACE), transparent: true, opacity: 0.85,
         roughness: 0.1, side: THREE.DoubleSide
       })
     );
@@ -141,8 +144,8 @@
     const d = dims || {};
     const e = d.echelle || 1;
     const g = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color: METAL, roughness: 0.35, metalness: 0.6 });
-    const matSombre = new THREE.MeshStandardMaterial({ color: METAL_SOMBRE, roughness: 0.5, metalness: 0.4 });
+    const mat = new THREE.MeshStandardMaterial({ color: C(METAL), roughness: 0.35, metalness: 0.6 });
+    const matSombre = new THREE.MeshStandardMaterial({ color: C(METAL_SOMBRE), roughness: 0.5, metalness: 0.4 });
 
     const colonne = new THREE.Mesh(new THREE.CylinderGeometry(0.09 * e, 0.09 * e, 1.1 * e, 16), mat);
     colonne.position.y = 0.55 * e;
@@ -171,7 +174,7 @@
     const g = new THREE.Group();
     const m = new THREE.Mesh(
       new THREE.CylinderGeometry(rayon || 0.05, rayon || 0.05, 1, 12),
-      new THREE.MeshStandardMaterial({ color: EAU, transparent: true, opacity: 0.75, roughness: 0.2 })
+      new THREE.MeshStandardMaterial({ color: C(EAU), transparent: true, opacity: 0.75, roughness: 0.2 })
     );
     g.add(m);
     g.visible = false;
