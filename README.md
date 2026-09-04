@@ -26,6 +26,21 @@ moteur se fait une fois, pas neuf.
 | 5. Les Simulations | Les livrables remis aux enseignants et aux élèves | `simulations/` |
 | 6. La Documentation | Les leçons écrites pour se former et former ses collaborateurs | `docs/` |
 
+### Les modèles
+
+Une pyramide s'écrit en trois lignes de Three.js. Une graine qui germe, non.
+Les formes qui ne se décrivent pas par des primitives sont **cuisinées par
+recette** : un script Blender paramétré (`outils/blender/`) qui produit un
+`.glb` dans `modeles/`, chargé par `bibliotheque/minesec-modeles.js`.
+
+La recette est la source, pas le maillage : changer une hauteur ne demande pas
+de re-sculpter, mais de rejouer la recette. Le `.blend` reste néanmoins dans le
+dépôt — c'est la matière, et l'endroit des retouches à la main.
+
+Premier objet : **la pousse** — un maillage, quatre clés de forme
+`etape_0 … etape_3`, 1 unité = 1 cm, pivot à la base. Banc d'essai :
+`studios/pousse.html`. Contrôle : `python outils/controle-pousse.py`.
+
 ## Organisation du dépôt
 
 ```
@@ -40,8 +55,9 @@ atelier-simulations-minesec/
 │   ├── maths/
 │   ├── informatique/
 │   └── svt/
+├── modeles/             ← les objets 3D livrés (.glb) et leur matière (.blend)
 ├── gabarits/            ← modèles vierges (brief enseignant…)
-├── outils/              ← scripts (build hors-ligne…)
+├── outils/              ← scripts (recettes Blender, contrôles, build…)
 ├── prototypes/          ← esquisses en cours, pas encore rangées
 └── archives/            ← le corpus d'origine, intouché
     └── 2026-08-corpus-initial/

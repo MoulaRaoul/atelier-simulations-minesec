@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Banc d'essai — La pousse · MINESEC</title>
+<link rel="stylesheet" href="../bibliotheque/charte.css">
+<style>
+  body { overflow: hidden; }
+  /* Une jauge d'étapes n'appartient pas encore à la charte : aucune
+     simulation ne l'a réclamée. Elle reste donc ici, et n'encombre pas
+     charte.css tant qu'elle n'a pas fait ses preuves. */
+  .etapes { display: flex; gap: 6px; align-items: center; }
+  .etapes button { min-width: 40px; font-family: var(--f-data); }
+  .attente {
+    position: fixed; inset: 0; z-index: 4; display: flex;
+    align-items: center; justify-content: center; padding: 24px;
+    background: var(--bg); color: var(--dim);
+    font-family: var(--f-data); font-size: 13px; text-align: center;
+  }
+  .attente[hidden] { display: none; }
+</style>
+</head>
+<body>
+
+<div class="minesec-scene" id="scene"></div>
+
+<header class="minesec-entete">
+  <div>
+    <div class="minesec-surtitre">MINESEC · Banc d'essai · Modèles</div>
+    <h1>La pousse — quatre étapes sur les <b>mêmes sommets</b></h1>
+  </div>
+  <span class="minesec-etiquette">pousse.glb · 1 carreau = 1 cm</span>
+</header>
+
+<div class="minesec-pupitre">
+  <div class="minesec-carte minesec-actions">
+    <button id="btnVue4" class="primaire" aria-pressed="true">Les quatre étapes</button>
+    <button id="btnVue1" aria-pressed="false">Une seule, animée</button>
+    <button id="btnTourner" aria-pressed="false">Tourner</button>
+    <button id="btnRecentrer">Recentrer la vue</button>
+  </div>
+
+  <div class="minesec-carte minesec-actions" id="carteSolo" hidden>
+    <div class="etapes" role="group" aria-label="Étape de croissance">
+      <button data-etape="0" aria-pressed="true">0</button>
+      <button data-etape="1" aria-pressed="false">1</button>
+      <button data-etape="2" aria-pressed="false">2</button>
+      <button data-etape="3" aria-pressed="false">3</button>
+    </div>
+    <button id="btnPousser">Faire pousser</button>
+  </div>
+
+  <div class="minesec-carte minesec-reglage" id="carteCurseur" hidden>
+    <label for="croissance">Croissance continue <span id="croissanceVal">étape 0,00</span></label>
+    <input type="range" id="croissance" min="0" max="300" value="0" step="1">
+  </div>
+
+  <div class="minesec-carte minesec-valeurs" id="valeurs">
+    <div class="ligne"><span>Clés de forme</span><span id="vCles">—</span></div>
+    <div class="ligne"><span>Maillage</span><span id="vMaillage">—</span></div>
+    <div class="ligne"><span>Hauteurs mesurées</span><span id="vHauteur">—</span></div>
+    <div class="ligne cle"><span><b>Un seul maillage, un seul pivot</b></span><span id="vPivot">—</span></div>
+  </div>
+
+  <div class="minesec-aide">
+    Touches <b>1</b> à <b>4</b> : étapes · <b>←</b> <b>→</b> : pas à pas ·
+    glissez pour orienter · molette pour zoomer
+  </div>
+</div>
+
+<div class="attente" id="attente">Chargement de&nbsp;<b>modeles/pousse.glb</b>&nbsp;…</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="../bibliotheque/three-gltf-loader.js"></script>
+<script src="../bibliotheque/minesec-moteur.js"></script>
+<script src="../bibliotheque/minesec-mouvements.js"></script>
+<script src="../bibliotheque/minesec-modeles.js"></script>
+<script>
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   Ce banc n'est pas une simulation : il ne démontre rien à un élève. Il
+   sert à JUGER UNE FORME — la nôtre, sur des captures — et à vérifier
+   que la chaîne recette Blender → .glb → chargeur → clés de forme tient
+   debout de bout en bout.
+
+   Deux vues, parce qu'elles ne répondent pas à la même question :
+     · « Les quatre étapes » — les quatre côte à côte, à la MÊME échelle.
+       C'est la vue qui montre une croissance ; une capture suffit.
+     · « Une seule, animée » — le morphage continu, qui prouve que les
+       quatre clés portent bien sur les mêmes sommets. Un maillage mal
+       fait s'y déchire à la première valeur intermédiaire.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const ECART = 4.6;        /* cm entre deux plants de la rangée */
+
+const moteur = MINESEC.moteur.creer({
+  conteneur: '#scene', regard: [0, 0, 0], grille: false
+});
+const mvt = MINESEC.mouvements.brancher(moteur);
+
+/* Fond opaque aux couleurs de la charte : le moteur rend en transparence
+   et laisse le CSS derrière lui, mais une capture doit porter son fond,
+   sans quoi elle s'ouvre sur du blanc et la teinte des feuilles ne se
+   juge plus. La teinte passe par couleurHex(), comme toute la charte. */
+moteur.rendu.setClearColor(MINESEC.couleurHex(0x121416), 1);
+
+/* ── Le plateau ──
+   Le moteur vise un point fixe, décidé à la création, et ne fait ensuite
+   que reculer la caméra. Or ce banc doit cadrer aussi bien une graine
+   d'un centimètre qu'une rangée de quinze, et une visée réglée pour
+   l'une est absurde pour l'autre.
+   Plutôt que de déplacer la caméra — ce qui reviendrait à réécrire le
+   moteur dans une page — on déplace LA SCÈNE : tout ce qu'il y a à voir
+   vit dans ce plateau, que l'on glisse verticalement pour amener son
+   milieu sur l'origine. La caméra vise (0,0,0) et n'a plus jamais à
+   changer d'avis. La grille voyage avec, donc les plantes restent
+   posées dessus. */
+const plateau = new THREE.Group();
+moteur.spin.add(plateau);
+
+/* Grille au centimètre : c'est l'étalon de la capture. Sans elle, une
+   plante de dix centimètres et une de dix mètres donnent exactement la
+   même image. Celle du moteur ferait 12 cm — trop courte pour la rangée. */
+const grille = new THREE.GridHelper(24, 24,
+  MINESEC.couleurHex(0x3f454d), MINESEC.couleurHex(0x22262b));
+grille.material.transparent = true;
+grille.material.opacity = 0.35;
+plateau.add(grille);
+
+const attente  = document.getElementById('attente');
+const boutons  = Array.prototype.slice.call(document.querySelectorAll('[data-etape]'));
+const curseur  = document.getElementById('croissance');
+const curseurV = document.getElementById('croissanceVal');
+const carteSolo = document.getElementById('carteSolo');
+const carteCurseur = document.getElementById('carteCurseur');
+
+let solo = null;          /* l'exemplaire animé            */
+let rangee = [];          /* les quatre exemplaires figés  */
+let mire = null;          /* sphère invisible de cadrage   */
+let enRangee = true;
+
+/* Jeton de génération : toute action manuelle l'incrémente, et
+   l'animation en cours cesse d'écrire. Plus sûr que d'arrêter le
+   mouvement par son objet — celui-ci n'en porte aucun. */
+let generation = 0;
+
+MINESEC.modeles.charger('../modeles/pousse.glb').then(modele => {
+  solo = modele;
+  attente.hidden = true;
+
+  /* Le pivot est au pied : la plante se pose sur le sol de la scène sans
+     aucun décalage à écrire. C'est ce que la recette promet, et ce que
+     la capture doit rendre évident. */
+  plateau.add(solo.racine);
+
+  /* Les trois autres exemplaires partagent la géométrie et n'ont que
+     leurs propres influences — un seul téléchargement, quatre étapes. */
+  rangee = [solo];
+  for (let i = 1; i < solo.etapes.length; i++) rangee.push(solo.cloner());
+  rangee.forEach((m, i) => {
+    if (i) plateau.add(m.racine);
+    m.etape(i);
+    /* Chaque plant est tourné pour lui-même, et le reste dans les deux
+       vues : les feuilles s'ouvrent en profondeur, et de face on n'en
+       verrait que la tranche — deux limbes superposés en un seul paquet.
+       Tourner la rangée entière, elle, la ferait fuir en perspective et
+       fausserait la comparaison des tailles. */
+    m.racine.rotation.y = -0.95;
+  });
+
+  document.getElementById('vCles').textContent = solo.etapes.join(' · ');
+  let faces = 0, sommets = 0;
+  solo.pieces.forEach(p => {
+    const g = p.geometry;
+    faces += (g.index ? g.index.count : g.attributes.position.count) / 3;
+    sommets += g.attributes.position.count;
+  });
+  document.getElementById('vMaillage').textContent =
+    faces + ' triangles · ' + sommets + ' sommets · ' + solo.pieces.length + ' matières';
+  document.getElementById('vHauteur').textContent = rangee
+    .map(m => m.hauteur().toFixed(2).replace('.', ',')).join(' · ') + ' cm';
+  document.getElementById('vPivot').textContent =
+    'base y = ' + solo.boite().min.y.toFixed(3).replace('.', ',');
+
+  mire = new THREE.Mesh(new THREE.SphereGeometry(1, 4, 2));
+  mire.visible = false;
+  moteur.spin.add(mire);
+  moteur.suivre(mire);
+
+  vue(true);
+}).catch(erreur => {
+  attente.textContent = erreur.message;
+  console.error(erreur);
+});
+
+/* ══════════════════════════════════════════════════════════════════════
+   LE CADRAGE — pourquoi ce banc ne peut pas se contenter de `cadrer()`
+
+   Le moteur cadre la SPHÈRE qui entoure l'objet, mesurée depuis son
+   origine. Deux hypothèses s'y cachent, vraies pour un prisme, fausses
+   ici :
+
+     · l'origine est au centre de la figure. Notre pivot est au pied :
+       la sphère fait le double du nécessaire et sa moitié basse est
+       sous le sol ;
+     · la figure est aussi haute que large. Une rangée de quatre plants
+       fait quinze centimètres de large pour dix de haut ; la sphère qui
+       l'enveloppe fait vingt-trois de diamètre, et le moteur, qui ajuste
+       sur le champ le plus étroit — le vertical — la rentre entière.
+       Résultat : la rangée occupe le quart de l'image.
+
+   On calcule donc la distance nous-mêmes, à partir de la boîte réelle et
+   de la bande visible, largeur et hauteur traitées séparément. Puis —
+   et c'est le point — on ne court-circuite pas le moteur pour autant :
+   on TAILLE LA MIRE au rayon qui lui fait produire cette distance-là.
+   Le suivi continu, le recentrage vertical et l'adaptation au
+   redimensionnement continuent de venir de lui. Une simulation qui
+   affiche un objet compact n'a rien de tout cela à écrire.
+   ══════════════════════════════════════════════════════════════════════ */
+const OCCUPATION = 2 / 3;   /* même cible que le moteur */
+const _coin = new THREE.Vector3();
+
+function ajusterMire() {
+  if (!mire) return;
+  const vus = (enRangee ? rangee : [solo]).filter(m => m.racine.visible);
+
+  /* Boîte de l'ensemble, dans le repère du plateau. On passe par les
+     huit coins parce que chaque plant est tourné pour lui-même — ses
+     feuilles ne s'étalent plus selon z. */
+  let W = 0, D = 0, yMin = Infinity, yMax = -Infinity;
+  vus.forEach(m => {
+    const b = m.boite();
+    m.racine.updateMatrix();
+    for (let i = 0; i < 8; i++) {
+      _coin.set(i & 1 ? b.max.x : b.min.x,
+                i & 2 ? b.max.y : b.min.y,
+                i & 4 ? b.max.z : b.min.z).applyMatrix4(m.racine.matrix);
+      W = Math.max(W, Math.abs(_coin.x));
+      D = Math.max(D, Math.abs(_coin.z));
+      yMin = Math.min(yMin, _coin.y);
+      yMax = Math.max(yMax, _coin.y);
+    }
+  });
+  if (!isFinite(yMin)) return;
+
+  /* Le milieu de ce qui est montré vient à l'origine : c'est là que la
+     caméra regarde, quelle que soit l'étape. */
+  plateau.position.y = -(yMin + yMax) / 2;
+  const H = (yMax - yMin) / 2;
+
+  /* Demi-angles encore disponibles une fois les bandeaux retirés — même
+     calcul que le moteur, sur les mêmes mesures en direct. */
+  const z = moteur.zoneUtile();
+  const tv = Math.tan(THREE.MathUtils.degToRad(moteur.camera.fov) / 2);
+  /* Le format peut valoir zéro : une page ouverte dans un onglet encore
+     masqué mesure un conteneur de largeur nulle. Sans ce garde-fou le
+     champ horizontal vaut 0, la distance part à l'infini, le rayon de
+     mire sort NaN — et une géométrie NaN empoisonne la scène en silence
+     jusqu'au premier rendu, où plus rien ne s'affiche. */
+  const zone = document.getElementById('scene');
+  const format = moteur.camera.aspect > 0 ? moteur.camera.aspect
+    : (zone.clientWidth / Math.max(1, zone.clientHeight)) || 1;
+  const angV = Math.atan(tv * (z.hauteur / z.H));
+  const angH = Math.atan(tv * format * (z.largeur / z.L));
+  if (!(angV > 0) || !(angH > 0)) return;
+
+  /* La face avant est plus proche que le centre : c'est elle qui déborde
+     en premier, d'où le + D. */
+  const d = D + Math.max(W / (OCCUPATION * Math.tan(angH)),
+                         H / (OCCUPATION * Math.tan(angV)));
+
+  /* Rayon de mire tel que le moteur, appliquant sa propre relation
+     d = r·√(1+T²)/T avec T = occupation·tan(angle le plus étroit),
+     retrouve exactement la distance voulue. */
+  const T = OCCUPATION * Math.tan(Math.min(angV, angH));
+  const rayon = d * T / Math.sqrt(1 + T * T);
+  if (!isFinite(rayon) || rayon <= 0) return;
+
+  mire.geometry.dispose();
+  mire.geometry = new THREE.SphereGeometry(rayon, 4, 2);
+  moteur.cadrerNet(mire);
+}
+
+function vue(quatre) {
+  enRangee = quatre;
+  document.getElementById('btnVue4').setAttribute('aria-pressed', String(quatre));
+  document.getElementById('btnVue1').setAttribute('aria-pressed', String(!quatre));
+  carteSolo.hidden = quatre;
+  carteCurseur.hidden = quatre;
+  rangee.forEach((m, i) => {
+    m.racine.visible = quatre || i === 0;
+    m.racine.position.x = quatre ? (i - 1.5) * ECART : 0;
+    if (quatre) m.etape(i);
+  });
+  if (quatre) {
+    document.getElementById('vHauteur').textContent = rangee
+      .map(m => m.hauteur().toFixed(2).replace('.', ',')).join(' · ') + ' cm';
+    document.getElementById('vPivot').textContent =
+      'base y = ' + rangee[0].boite().min.y.toFixed(3).replace('.', ',');
+  } else {
+    poser(solo.etapeCourante());
+  }
+  ajusterMire();
+}
+
+/* ── Poser une étape, entière ou fractionnaire ──
+   Un seul chemin : boutons, curseur, clavier et animation passent tous
+   par ici, donc l'affichage ne peut pas mentir sur l'état réel. */
+function poser(n) {
+  if (!solo) return;
+  const v = solo.etape(n);
+  curseur.value = Math.round(v * 100);
+  curseurV.textContent = 'étape ' + v.toFixed(2).replace('.', ',');
+  boutons.forEach(b => b.setAttribute('aria-pressed',
+    String(Math.abs(v - Number(b.dataset.etape)) < 1e-6)));
+  if (!enRangee) {
+    /* Hauteur relue sur les sommets réellement affichés, non recopiée de
+       la recette : c'est la seule mesure qui prouve que les clés ont été
+       appliquées. */
+    document.getElementById('vHauteur').textContent =
+      solo.hauteur().toFixed(2).replace('.', ',') + ' cm';
+    document.getElementById('vPivot').textContent =
+      'base y = ' + solo.boite().min.y.toFixed(3).replace('.', ',');
+  }
+  document.getElementById('valeurs').classList.add('revele');
+}
+
+/* ── Pupitre : bouton, curseur et clavier pour chaque action ── */
+document.getElementById('btnVue4').addEventListener('click', () => vue(true));
+document.getElementById('btnVue1').addEventListener('click', () => vue(false));
+
+boutons.forEach(b => b.addEventListener('click', () => {
+  generation++; poser(Number(b.dataset.etape));
+}));
+
+curseur.addEventListener('input', e => {
+  generation++; poser(Number(e.target.value) / 100);
+});
+
+document.getElementById('btnPousser').addEventListener('click', () => {
+  if (!solo) return;
+  const mien = ++generation;
+  if (MINESEC.moteur.reduit) { poser(3); return; }
+  poser(0);
+  mvt.jouer({ d: 3.4, f: k => { if (mien === generation) poser(k * 3); } });
+});
+
+const btnTourner = document.getElementById('btnTourner');
+let tourne = false;
+btnTourner.addEventListener('click', () => {
+  tourne = !tourne;
+  btnTourner.setAttribute('aria-pressed', String(tourne));
+});
+
+document.getElementById('btnRecentrer').addEventListener('click', () => {
+  moteur.recentrer(); ajusterMire();
+});
+
+document.addEventListener('keydown', e => {
+  if (!solo) return;
+  const pas = n => { generation++; if (enRangee) vue(false); poser(n); };
+  if (e.key >= '1' && e.key <= '4') { pas(Number(e.key) - 1); e.preventDefault(); }
+  else if (e.key === 'ArrowRight') { pas(Math.min(3, solo.etapeCourante() + 0.25)); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft')  { pas(Math.max(0, solo.etapeCourante() - 0.25)); e.preventDefault(); }
+});
+
+/* La rotation reste ARRÊTÉE par défaut : ce banc sert à juger une forme
+   sur des captures, et une plante qui tourne toute seule ne se compare
+   pas d'une capture à l'autre. */
+let _l = 0, _h = 0;
+moteur.chaqueImage(dt => {
+  if (tourne && !moteur.enGlisse()) moteur.spin.rotation.y += dt * 0.45;
+  /* La mire dépend du format : elle est taillée pour une largeur et une
+     hauteur de bande données. Un téléphone que l'on tourne les change
+     toutes les deux, et une mire d'hier cadrerait la fenêtre d'avant. */
+  const zone = document.getElementById('scene');
+  if (zone.clientWidth !== _l || zone.clientHeight !== _h) {
+    _l = zone.clientWidth; _h = zone.clientHeight;
+    ajusterMire();
+  }
+  /* Le moteur oriente la caméra UNE FOIS, à la création, puis se contente
+     de la reculer. Sur une figure de géométrie, aussi haute que large et
+     posée près de l'origine, cela ne se voit pas. Sur une rangée cadrée à
+     quarante centimètres, la même visée prise de plus loin fait glisser
+     le centre du champ jusqu'au sol et pousse les plantes dans le quart
+     supérieur de l'image. On re-vise donc à chaque image — sans toucher
+     au moteur, dont ce n'est pas le défaut mais l'hypothèse. */
+  moteur.camera.lookAt(0, 0, 0);
+});
+
+/* Crochet des captures : la page doit pouvoir être mise dans un état
+   précis sans clic, et rendre une image même quand l'onglet n'est pas
+   affiché — un onglet caché ne reçoit aucune image, et une capture prise
+   sans forcer le rendu serait noire. */
+window.bancPousse = {
+  pret: () => !!solo,
+  vue: vue,
+  poser: n => { generation++; poser(n); },
+  orienter: a => { moteur.spin.rotation.y = a; },
+  /* `plein` retire les bandeaux réservés : la capture cadre alors la
+     plante dans toute l'image, sans la place gardée pour un en-tête et
+     un pupitre qu'un rendu hors écran ne dessine pas. C'est la vue qui
+     sert à juger une forme ; l'autre montre la page telle qu'elle est. */
+  capturer: (l, h, plein) => {
+    const zone = document.getElementById('scene');
+    l = l || zone.clientWidth; h = h || zone.clientHeight;
+    moteur.rendu.setSize(l, h);
+    moteur.camera.aspect = l / h;
+    moteur.camera.updateProjectionMatrix();
+    if (plein) moteur.reserver(false);
+    ajusterMire();
+    moteur.camera.lookAt(0, 0, 0);
+    moteur.rendu.render(moteur.scene, moteur.camera);
+    const image = moteur.rendu.domElement.toDataURL('image/png');
+    if (plein) {
+      moteur.reserver({ haut: '.minesec-entete', bas: '.minesec-pupitre' });
+      ajusterMire();
+    }
+    return image;
+  },
+  moteur: moteur
+};
+</script>
+</body>
+</html>

@@ -20,6 +20,12 @@ dist/
 build/
 hors-ligne/
 
+# --- Sauvegardes automatiques de Blender ---
+# Blender double chaque .blend enregistré. Le .blend, lui, se versionne :
+# c'est la matière des modèles, et l'endroit des retouches à la main.
+*.blend1
+*.blend2
+
 # --- Journaux et fichiers temporaires ---
 *.log
 npm-debug.log*

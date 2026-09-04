@@ -4,7 +4,8 @@
 > colle cette fiche, puis `docs/principes-de-conception.md`, puis ton brief.**
 > Le fichier produit ira dans `prototypes/` du dépôt `atelier-simulations-minesec`.
 
-*Fiche engendrée depuis les sources le 30 août 2026 (commit `3b8df99`). Toute
+*Fiche engendrée depuis les sources le 30 août 2026 (commit `3b8df99`), mise à
+jour le 4 septembre 2026 avec `minesec-modeles.js` et la pousse. Toute
 évolution de l'API de la bibliothèque impose de la régénérer dans le même commit.*
 
 ---
@@ -186,6 +187,83 @@ N'anime jamais un niveau linéairement — ce serait plus simple et faux.
 de contenances réelles, trois versements laissent 0,29 % de vide et un quatrième est
 accepté. Dérive les contenances les unes des autres (`vPyramide = vPrisme / 3`) et
 réserve l'arrondi à l'affichage.
+
+---
+
+## 5 bis · API de `minesec-modeles.js` — les objets venus de Blender
+
+Certaines formes ne se décrivent pas par des primitives. Un cube, un prisme, une
+pyramide s'écrivent en trois lignes de Three.js ; une graine qui germe, non. Ces
+objets-là se **cuisinent par recette** dans `outils/blender/`, se livrent en
+`.glb` dans `modeles/`, et se chargent par ce module.
+
+```js
+MINESEC.modeles.charger(url, options)   // → Promise(modèle) ; options : { etape, progres }
+```
+
+Le modèle résolu :
+
+```js
+modele.racine         // l'Object3D à mettre dans moteur.spin
+modele.pieces         // les Mesh porteurs des clés (un par matière)
+modele.etapes         // ['etape_0', 'etape_1', …] — lus DANS le fichier
+modele.etape(n)       // règle les influences ; n entier OU fractionnaire
+modele.etapeCourante()
+modele.influence(cle, v)   // une clé isolée, pour la mise au point
+modele.boite()        // Box3 de la forme AFFICHÉE, en unités du modèle
+modele.hauteur()      // raccourci sur la boîte
+modele.cloner()       // un exemplaire de plus, géométrie partagée
+modele.remesurer()    // appelé tout seul par etape() ; rarement utile
+```
+
+**`etape(n)` accepte les valeurs intermédiaires, et ce n'est pas une
+approximation.** Un morphage glTF est un ÉCART à la forme de repos ; la recette
+pose l'étape 0 comme repos, donc `etape(1.5)` donne le milieu exact des étapes
+1 et 2. C'est ce qui permet d'ANIMER une croissance :
+
+```js
+mvt.jouer({ d: 3.4, f: k => pousse.etape(k * 3) });
+```
+
+**Influences toutes à zéro = étape 0.** Un modèle qui vient d'être chargé montre
+donc la première étape, jamais une forme intermédiaire qui n'existe nulle part.
+
+**Deux dépendances, dans cet ordre**, et le chargeur est LOCAL — une salle sans
+connexion doit pouvoir afficher un modèle :
+
+```html
+<script src="…/bibliotheque/three-gltf-loader.js"></script>
+<script src="…/bibliotheque/minesec-modeles.js"></script>
+```
+
+**Un `.glb` ne se lit pas depuis `file://`.** Le navigateur le refuse. Servez la
+page en `http://` (`python -m http.server` suffit) ; le module le dit dans son
+message d'erreur, parce que c'est la première chose qu'on oublie.
+
+**Ce que le moteur ne sait pas cadrer.** `moteur.cadrer()` ajuste la SPHÈRE
+entourant l'objet, mesurée depuis son origine. Un modèle Blender a son pivot au
+pied : la sphère fait le double du nécessaire, moitié sous le sol, et la figure
+sort petite. Pour un objet nettement plus haut que large, présentez au moteur
+une mire — une sphère invisible taillée sur ce qu'il y a à voir. Voir
+`studios/pousse.html`, qui fait exactement cela et explique pourquoi.
+
+### La pousse
+
+Premier objet organique de l'atelier. `modeles/pousse.glb` : un seul maillage
+(graine, germe, tige, deux feuilles), **1 186 triangles**, quatre clés
+`etape_0 … etape_3`, **1 unité = 1 cm**, pivot à la base.
+
+```
+0 · la graine posée sur le sol          1,15 cm
+1 · le germe perce, recourbé en crosse  2,12 cm
+2 · la tige s'élève, feuilles serrées   6,33 cm
+3 · la plante, réserves résorbées      10,85 cm
+```
+
+Recette : `outils/blender/pousse.py` — tous les réglages en tête du fichier.
+Contrôle : `python outils/controle-pousse.py` — relit le `.glb` octet par octet,
+sans Blender, et vérifie faces, clés, échelle et pivot.
+Banc d'essai : `studios/pousse.html`.
 
 ---
 
