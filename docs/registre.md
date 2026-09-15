@@ -25,6 +25,7 @@
 |---|---|---|
 | Copie d'une règle du magasin | `prototypes/prisme-3-pyramides-3d.html` porte sa propre copie des règles `.cle` (lignes 44 à 46) : il garde l'ancien comportement, conclusion lisible à 35 % dès le chargement. Candidat à signaler, pas à réparer. | Correction de la charte, 15/09/2026 |
 | Une garde ne protège pas de sa propre absence | Le panneau d'avertissement du moteur est dessiné par le moteur lui-même : quand la bibliothèque ne se charge pas, personne ne dessine le panneau et la page s'affiche en texte nu. Candidat : quelques lignes dans le squelette lui-même, indépendantes de la bibliothèque, qui affichent « page copiée sans son dossier ». À écrire quand une simulation le demandera, pas avant. | Vu deux fois le 15/09/2026 — un fichier ouvert depuis un dossier de téléchargements, et une page affichée dans le panneau Navigateur de l'application |
+| Plafond de `docs/contexte-ia.md` | 421 lignes pour un plafond de 350, dépassement antérieur au 15/09/2026. Trois voies possibles : sortir de la fiche les modules qu'aucune simulation n'utilise (§ 5 bis, Blender et la pousse, 76 lignes, qui retourneraient dans le document Blender) ; restructurer en tronc commun plus une section par module, comme le prévoit le plan directeur ; ou relever le plafond, ce que le plan interdit. Non tranché. À décider avant le prochain ajout à la fiche, pas après. | Constaté le 15/09/2026 |
 
 ## À faire à partir de ce registre
 
