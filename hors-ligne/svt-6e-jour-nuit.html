@@ -144,14 +144,18 @@ input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
   display: flex; justify-content: space-between; gap: 16px; padding: 2px 0;
 }
 .minesec-valeurs .ligne span:last-child { color: var(--dim); }
-/* La conclusion reste en retrait tant que l'élève n'a pas fait le geste
-   qui la démontre : elle se révèle, elle ne se donne pas. */
+/* La conclusion est invisible tant que l'élève n'a pas fait le geste qui
+   la démontre : elle se révèle, elle ne se donne pas. Invisible, mais sa
+   place est gardée — au moment où elle apparaît, le pupitre ne bouge pas.
+   « visibility » la retire aussi aux lecteurs d'écran : une opacité seule
+   leur lirait la réponse avant le geste. Elle apparaît en fondu, et
+   disparaît d'un coup si la simulation retire .revele. */
 .minesec-valeurs .cle {
   margin-top: 6px; padding-top: 7px;
   border-top: 1px dashed var(--line);
-  opacity: .35; transition: opacity .45s;
+  visibility: hidden; opacity: 0;
 }
-.minesec-valeurs.revele .cle { opacity: 1; }
+.minesec-valeurs.revele .cle { visibility: visible; opacity: 1; transition: opacity .45s; }
 .minesec-valeurs .cle b { color: var(--saisir); font-weight: 600; }
 
 /* ══ Ligne d'aide ══ */
@@ -231,7 +235,7 @@ input:focus-visible,
     <div class="ligne cache" id="ligneAutre"><span>De l’autre côté</span><span id="vAutre">—</span></div>
     <div class="ligne"><span>Heures écoulées</span><span id="vHeures">—</span></div>
     <div class="ligne"><span>Tours de la Terre</span><span id="vTours">—</span></div>
-    <div class="ligne cle"><span><b>Un tour = 24 heures</b></span><span id="vCle">faites un tour complet</span></div>
+    <div class="ligne cle"><span><b>Un tour = 24 heures</b></span></div>
   </div>
 
   <div class="minesec-carte cache" id="sortie">
@@ -244,7 +248,7 @@ input:focus-visible,
     <div class="verdict" id="verdict" aria-live="polite"></div>
   </div>
 
-  <div class="minesec-aide" id="aide">Glissez sur la scène pour faire tourner la Terre · ← → : une heure · Espace : rotation · V : vue du pôle</div>
+  <div class="minesec-aide" id="aide">Glissez sur la scène pour faire tourner la Terre, et faites un tour complet · ← → : une heure · Espace : rotation · V : vue du pôle</div>
 </div>
 
 <script>
@@ -1191,7 +1195,7 @@ function ajusterMire() {
 const etat = { h: 14.5, h0: 14.5, min: 14.5, max: 14.5, jour: 0,
                tourne: false, pole: false, tourFait: false, repondu: false };
 const ui = ['btnRot','btnVue','heure','heureVal','valeurs','vCam','vAutre','ligneAutre',
-            'vHeures','vTours','vCle','sortie','verdict','legAutre']
+            'vHeures','vTours','sortie','verdict','legAutre']
   .reduce((o, id) => (o[id] = document.getElementById(id), o), {});
 const deux = n => String(n).padStart(2, '0');
 function fmtHeure(h) {
@@ -1239,7 +1243,6 @@ function regler(h, depuisCurseur) {
   if (!etat.tourFait && etat.max - etat.min >= 24 - 1e-6) {
     etat.tourFait = true;
     ui.valeurs.classList.add('revele');
-    ui.vCle.textContent = 'vérifié';
     ui.sortie.classList.remove('cache');
   }
 }

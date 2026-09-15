@@ -61,7 +61,8 @@ Les `button` et `input[type=range]` sont déjà stylés. `button.primaire` marqu
 principale ; `button[aria-pressed="true"]` marque une bascule enclenchée (elle passe en
 `--ok`, jamais en `--accent`).
 
-La classe `.revele` posée sur `.minesec-valeurs` fait apparaître la ligne `.cle` :
+La ligne `.cle` est invisible au chargement, mais sa place est gardée ; la classe `.revele`
+posée sur `.minesec-valeurs` la fait apparaître sans que le pupitre bouge :
 **la conclusion se gagne par le geste, elle ne se donne pas au chargement.**
 
 ---

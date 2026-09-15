@@ -97,9 +97,11 @@ est donc ce que montre la scène. « Lever » et « coucher » du Soleil s'affic
 précisément le langage qui fait croire que le Soleil bouge, et l'élève voit que
 ce moment est celui où le Cameroun franchit la ligne.
 
-**Le « tour complet » se gagne.** La conclusion « Un tour = 24 heures » reste en
-retrait jusqu'à ce que l'élève ait parcouru les 24 heures, dans un sens ou dans
-l'autre. La question de sortie n'apparaît qu'ensuite.
+**Le « tour complet » se gagne.** La conclusion « Un tour = 24 heures » reste
+invisible, sa place gardée, jusqu'à ce que l'élève ait parcouru les 24 heures,
+dans un sens ou dans l'autre. L'invitation « faites un tour complet » est dans la
+ligne d'aide, pas dans la ligne cachée : cachée avec la conclusion, elle ne
+servirait à rien (15/09/2026). La question de sortie n'apparaît qu'ensuite.
 
 **La question de sortie est à choix, et la scène vérifie la réponse.** Trois
 boutons : « Midi aussi », « Minuit », « Le soir » — les deux pièges du brief et

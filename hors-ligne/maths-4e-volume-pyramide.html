@@ -144,14 +144,18 @@ input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
   display: flex; justify-content: space-between; gap: 16px; padding: 2px 0;
 }
 .minesec-valeurs .ligne span:last-child { color: var(--dim); }
-/* La conclusion reste en retrait tant que l'élève n'a pas fait le geste
-   qui la démontre : elle se révèle, elle ne se donne pas. */
+/* La conclusion est invisible tant que l'élève n'a pas fait le geste qui
+   la démontre : elle se révèle, elle ne se donne pas. Invisible, mais sa
+   place est gardée — au moment où elle apparaît, le pupitre ne bouge pas.
+   « visibility » la retire aussi aux lecteurs d'écran : une opacité seule
+   leur lirait la réponse avant le geste. Elle apparaît en fondu, et
+   disparaît d'un coup si la simulation retire .revele. */
 .minesec-valeurs .cle {
   margin-top: 6px; padding-top: 7px;
   border-top: 1px dashed var(--line);
-  opacity: .35; transition: opacity .45s;
+  visibility: hidden; opacity: 0;
 }
-.minesec-valeurs.revele .cle { opacity: 1; }
+.minesec-valeurs.revele .cle { visibility: visible; opacity: 1; transition: opacity .45s; }
 .minesec-valeurs .cle b { color: var(--saisir); font-weight: 600; }
 
 /* ══ Ligne d'aide ══ */
