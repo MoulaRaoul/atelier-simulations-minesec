@@ -18,6 +18,7 @@
 | G-03 | Révélation d'une ligne de conclusion | Invisible au chargement, sa place gardée ; la classe `.revele` sur `.minesec-valeurs` la fait apparaître en fondu de 0,45 s, sans que le pupitre bouge. Une ligne cachée ne contient que la conclusion — jamais une consigne que l'élève doit lire avant d'agir. | Charte corrigée le 15/09/2026, commit `769457c` |
 | G-04 | Matière d'un solide | Rugosité 0,42, celle de l'exemple minimal du moteur, sauf fiche de matière contraire. | Signalé par B |
 | G-05 | Balise `<title>` | « Titre · Surtitre ». | Signalé par A |
+| G-06 | Teinte de l'objet principal | La couleur des faces se lit dans `var(--piece)`, déclarée dans le bloc `<style>` du squelette : une seule ligne commande la teinte, ce qui prépare la décision de style clair/sombre. Ne vaut que pour les simulations à venir ; les existantes gardent leur couleur écrite en dur. | Squelette du § 7 corrigé le 16/09/2026 |
 
 ## Vu, non tranché
 

@@ -346,10 +346,11 @@ const moteur = MINESEC.moteur.creer({ conteneur: '#scene' });
 const mvt = MINESEC.mouvements.brancher(moteur);
 
 /* ── La géométrie : tout ce qui suit est propre à la simulation ── */
+const teinte = getComputedStyle(document.documentElement).getPropertyValue('--piece').trim();
 const geo = new THREE.BoxGeometry(1.6, 1.6, 1.6);
 const piece = new THREE.Group();
 piece.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-  color: 0x3b82f6, roughness: .42, flatShading: true,
+  color: new THREE.Color(teinte), roughness: .42, flatShading: true,
   transparent: true, opacity: .96
 })));
 piece.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo),
