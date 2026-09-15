@@ -14,7 +14,7 @@
 **Le prisme répondait :** que le volume augmente avec la hauteur, alors que la base ne change pas.
 **À remplir :**
 
-Tant que cette phrase n'est pas écrite, ne remplissez pas la suite : c'est elle qui décide de tout le reste.
+Cette phrase se recopie de `gabarits/brief-enseignant.md`, rubrique « Ce que l'élève doit constater ». Tant qu'elle n'est pas écrite, ne remplissez pas la suite : c'est elle qui décide de tout le reste.
 
 ---
 
@@ -72,6 +72,14 @@ Cette ligne ne contient que la conclusion : jamais une consigne que l'élève do
 **La question :** quels boutons, quels mots dessus, et lequel est l'action principale ? Que fait chacun, exactement ?
 **Le prisme :** « Révéler la formule » (principal) puis « Recentrer la vue ».
 **À remplir :** un bouton par ligne, son libellé exact et ce qu'il fait.
+
+### 3e · La question de sortie
+
+**La question à l'enseignant :** elle est déjà dans le brief — quelle question posez-vous pour vérifier que le déclic a eu lieu ? Ici, on dit seulement où elle s'affiche et quand.
+**Le prisme :** il n'en avait pas ; c'était un essai, pas une simulation de classe.
+**À remplir :** le texte exact de la question, l'endroit où elle apparaît, et le geste qui la fait venir.
+
+Une simulation destinée à une classe en a une. Si vous laissez cette case vide, dites-le : ce n'est pas un oubli, c'est un choix.
 
 ---
 
@@ -142,7 +150,7 @@ Une couleur qui n'est pas dans la charte se demande avant d'être écrite ici.
 
 ## Comment on s'en sert
 
-1. L'enseignant décrit ce que l'élève doit constater. C'est le § 0.
+1. L'enseignant remplit `gabarits/brief-enseignant.md` : son intention, et la question de sortie. Ce fichier reste dans le dossier de la simulation, sous le nom `notes.md`.
 2. Vous remplissez le reste : c'est votre poste, traduire « ce qu'il doit constater » en « ce qui doit se voir ».
 3. Le paquet à coller, dans cet ordre : `docs/contexte-ia.md`, puis cette fiche remplie, puis la consigne finale du § 10.
 4. Deux chats vierges, le même paquet. Les deux fichiers vont dans `prototypes/`, jamais dans un dossier de téléchargements.

@@ -20,18 +20,23 @@ du brief d'origine et des choix faits.
 
 **Objectif observable** (ce que l'élève saura faire après) :
 
-**Ce que l'élève manipule** (variables, curseurs, objets) :
+**Ce que l'élève manipule** (ce sur quoi il agit, dans ses mots) :
 
 **Ce que l'élève doit constater** (le déclic attendu) :
-
-**Mouvements pressentis** (parmi les 7 familles : apparition · disparition ·
-ouverture · défilement · conséquence · manipulation · mécanisme) :
-
-**Props nécessaires :**
 
 **Question de sortie** (pour vérifier que le déclic a eu lieu) :
 
 **Contraintes** (salle, matériel, connexion, durée de séance) :
+
+---
+
+## Ce qui vient après
+
+Ce brief dit l'intention ; il ne dit pas ce qui doit se voir à l'écran. Cette
+traduction est l'étape suivante, et elle ne revient pas à l'enseignant : elle se
+fait dans `gabarits/gabarit-fiche-simulation.md`, qui reprend « ce que l'élève
+doit constater » et la question de sortie, puis fixe les objets, les mouvements,
+les valeurs et les commandes.
 
 ---
 
