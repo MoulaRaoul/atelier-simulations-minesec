@@ -24,6 +24,7 @@
 | Sujet | Constat | Origine |
 |---|---|---|
 | Copie d'une règle du magasin | `prototypes/prisme-3-pyramides-3d.html` porte sa propre copie des règles `.cle` (lignes 44 à 46) : il garde l'ancien comportement, conclusion lisible à 35 % dès le chargement. Candidat à signaler, pas à réparer. | Correction de la charte, 15/09/2026 |
+| Une garde ne protège pas de sa propre absence | Le panneau d'avertissement du moteur est dessiné par le moteur lui-même : quand la bibliothèque ne se charge pas, personne ne dessine le panneau et la page s'affiche en texte nu. Candidat : quelques lignes dans le squelette lui-même, indépendantes de la bibliothèque, qui affichent « page copiée sans son dossier ». À écrire quand une simulation le demandera, pas avant. | Vu deux fois le 15/09/2026 — un fichier ouvert depuis un dossier de téléchargements, et une page affichée dans le panneau Navigateur de l'application |
 
 ## À faire à partir de ce registre
 

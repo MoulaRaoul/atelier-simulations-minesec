@@ -410,7 +410,8 @@ document.getElementById('reg').addEventListener('input', e => {
    objectif observable, ce que l'élève manipule et doit constater, question de
    sortie, contraintes.
 4. **Récupère le fichier produit** et dépose-le dans `prototypes/`, en kebab-case.
-5. **Ouvre-le dans un navigateur** pour vérifier qu'il s'affiche et répond.
+5. **Ouvre-le dans un navigateur** pour vérifier qu'il s'affiche et répond — par un double-clic dans
+   l'Explorateur ou un serveur local, jamais le panneau Navigateur d'un outil, qui affiche une copie figée sans son dossier.
 6. **Reviens dans Claude Code** : il branchera la simulation sur la bibliothèque, la
    rangera dans `simulations/discipline/classe-notion/`, écrira son `notes.md` et
    figera l'étape par un commit.

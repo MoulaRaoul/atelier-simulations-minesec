@@ -55,7 +55,7 @@
     <div class="ligne cache" id="ligneAutre"><span>De l’autre côté</span><span id="vAutre">—</span></div>
     <div class="ligne"><span>Heures écoulées</span><span id="vHeures">—</span></div>
     <div class="ligne"><span>Tours de la Terre</span><span id="vTours">—</span></div>
-    <div class="ligne cle"><span><b>Un tour = 24 heures</b></span></div>
+    <div class="ligne cle"><span><b>Un tour = 24 heures</b></span><span id="vCle"></span></div>
   </div>
 
   <div class="minesec-carte cache" id="sortie">
@@ -281,7 +281,7 @@ function ajusterMire() {
 const etat = { h: 14.5, h0: 14.5, min: 14.5, max: 14.5, jour: 0,
                tourne: false, pole: false, tourFait: false, repondu: false };
 const ui = ['btnRot','btnVue','heure','heureVal','valeurs','vCam','vAutre','ligneAutre',
-            'vHeures','vTours','sortie','verdict','legAutre']
+            'vHeures','vTours','vCle','sortie','verdict','legAutre']
   .reduce((o, id) => (o[id] = document.getElementById(id), o), {});
 const deux = n => String(n).padStart(2, '0');
 function fmtHeure(h) {
@@ -329,6 +329,7 @@ function regler(h, depuisCurseur) {
   if (!etat.tourFait && etat.max - etat.min >= 24 - 1e-6) {
     etat.tourFait = true;
     ui.valeurs.classList.add('revele');
+    ui.vCle.textContent = 'vérifié';
     ui.sortie.classList.remove('cache');
   }
 }
