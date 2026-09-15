@@ -42,15 +42,9 @@ les valeurs et les commandes.
 
 ## Rappel — la définition de « fini »
 
-La simulation issue de ce brief n'est terminée que lorsque tous ces points
-sont vrais :
-
-- [ ] Elle respecte la charte (jetons, familles de mouvements, vocabulaire des boutons).
-- [ ] Sa version sans connexion (fichier autonome) est générée et testée.
-- [ ] Elle fonctionne au tactile, à la souris et au clavier.
-- [ ] Elle a été essayée sur un téléphone et sur un PC de salle informatique.
-- [ ] Son `notes.md` contient le brief d'origine et les choix faits.
-- [ ] Elle figure au catalogue.
+La simulation issue de ce brief n'est terminée que lorsque tous les points du
+§ 6 du [plan directeur](../docs/plan-directeur.md) sont vrais ; c'est lui qui
+fait foi, et ils ne sont pas recopiés ici.
 
 ---
 

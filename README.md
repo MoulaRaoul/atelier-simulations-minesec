@@ -90,14 +90,9 @@ De la demande de l'enseignant à la mise à disposition, six étapes :
 
 ## La définition de « fini »
 
-Une simulation n'est terminée que lorsque tous ces points sont vrais :
-
-- [ ] Elle respecte la charte (jetons, familles de mouvements, vocabulaire des boutons).
-- [ ] Sa version sans connexion (fichier autonome) est générée et testée.
-- [ ] Elle fonctionne au tactile, à la souris et au clavier.
-- [ ] Elle a été essayée sur un téléphone et sur un PC de salle informatique.
-- [ ] Son `notes.md` contient le brief d'origine et les choix faits.
-- [ ] Elle figure au catalogue.
+Une simulation n'est terminée que lorsque tous ces points sont vrais. Ils sont
+listés au § 6 du [plan directeur](docs/plan-directeur.md), qui fait foi : ils ne
+sont pas recopiés ici, pour qu'il n'y ait qu'un seul endroit à tenir à jour.
 
 ## Feuille de route
 
