@@ -41,7 +41,7 @@ La simulation issue de ce brief n'est terminée que lorsque tous ces points
 sont vrais :
 
 - [ ] Elle respecte la charte (jetons, familles de mouvements, vocabulaire des boutons).
-- [ ] Sa version hors-ligne autonome est générée et testée.
+- [ ] Sa version sans connexion (fichier autonome) est générée et testée.
 - [ ] Elle fonctionne au tactile, à la souris et au clavier.
 - [ ] Elle a été essayée sur un téléphone et sur un PC de salle informatique.
 - [ ] Son `notes.md` contient le brief d'origine et les choix faits.

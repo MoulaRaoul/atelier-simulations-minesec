@@ -4,8 +4,8 @@
 > colle cette fiche, puis `docs/principes-de-conception.md`, puis ton brief.**
 > Le fichier produit ira dans `prototypes/` du dépôt `atelier-simulations-minesec`.
 
-*Fiche engendrée depuis les sources le 30 août 2026 (commit `3b8df99`), mise à
-jour le 4 septembre 2026 avec `minesec-modeles.js` et la pousse. Toute
+*Fiche engendrée depuis les sources le 30 août 2026 (commit `3b8df99`), mise à jour le 4 septembre
+2026 (`minesec-modeles.js`) et le 15 septembre 2026 (Three.js local, messages du moteur). Toute
 évolution de l'API de la bibliothèque impose de la régénérer dans le même commit.*
 
 ---
@@ -77,7 +77,7 @@ MINESEC.moteur.creer(options)   // crée un moteur et retourne son instance
 MINESEC.moteur.reduit           // booléen : l'utilisateur a demandé « mouvement réduit »
 MINESEC.moteur.disponible()     // true si la machine sait faire de la 3D (WebGL)
 MINESEC.moteur.avertir(conteneur, message)  // affiche un panneau aux couleurs de la charte
-MINESEC.moteur.MESSAGES         // { webgl, three } : les textes des deux échecs possibles
+MINESEC.moteur.MESSAGES         // { webgl → « version 2D », three → « version sans connexion » }
 ```
 
 **Garde intégrée.** Si Three.js manque ou si la machine ne sait pas faire de WebGL, `creer()`
@@ -335,7 +335,7 @@ Squelette à reprendre tel quel. Chemins : `../bibliotheque/` depuis `prototypes
   <div class="minesec-aide">Glissez pour orienter · molette pour zoomer</div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="../bibliotheque/three.min.js"></script>
 <script src="../bibliotheque/minesec-moteur.js"></script>
 <script src="../bibliotheque/minesec-mouvements.js"></script>
 <script>
@@ -393,7 +393,7 @@ document.getElementById('reg').addEventListener('input', e => {
 - **Respecter `prefers-reduced-motion`** via `MINESEC.moteur.reduit`.
 - **Le focus clavier reste visible** — la charte s'en charge, ne l'annule pas.
 - **Des valeurs non rondes** : un élève qui voit 6 et 2 soupçonne un cas fabriqué.
-- **Une page autonome, un seul fichier**, hors la bibliothèque et Three.js.
+- **Un seul fichier, aucune adresse Internet** : tout vient de `bibliotheque/`, Three.js compris (`three.min.js`) — jamais d'un CDN. Le build des versions sans connexion refuse toute adresse.
 
 ---
 

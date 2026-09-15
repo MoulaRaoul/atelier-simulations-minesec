@@ -1,0 +1,4 @@
+# Fichiers tiers repris tels quels : Git ne doit pas toucher à leurs fins de
+# ligne, sinon leur empreinte (consignée dans bibliotheque/tiers.md) ne
+# correspondrait plus à celle de l'amont après un clonage sous Windows.
+bibliotheque/three.min.js -text

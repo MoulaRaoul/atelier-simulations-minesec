@@ -217,8 +217,10 @@ contrôlées sur capture.
 - [ ] **Elle respecte la charte** — à confirmer en revue. Bascules sans
       `primaire`, verdicts en JUSTE / REFUS, jetons de scène propres à la page
       (principe 9).
-- [ ] **Sa version hors-ligne autonome est générée et testée** — le script de
-      build n'existe pas encore. Three.js vient toujours de cdnjs.
+- [ ] **Sa version sans connexion est générée et testée** — **générée le
+      15/09/2026** (`hors-ligne/svt-6e-jour-nuit.html`, 657 Ko) et vérifiée dans
+      le navigateur de l'atelier : aucune requête réseau. Reste l'essai sur un
+      poste réellement débranché.
 - [ ] **Elle fonctionne au tactile, à la souris et au clavier** — souris et
       clavier vérifiés ; tactile non essayé sur appareil.
 - [ ] **Elle a été essayée sur un téléphone et sur un PC de salle informatique** —

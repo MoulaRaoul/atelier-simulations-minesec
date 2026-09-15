@@ -16,9 +16,12 @@ node_modules/
 
 # --- Livrables fabriqués par les scripts de outils/ ---
 # Ils se régénèrent à partir des sources : inutile de les mémoriser.
+# dist/ reçoit l'archive .zip, jointe à chaque version publiée sur GitHub.
 dist/
 build/
-hors-ligne/
+# EXCEPTION DÉLIBÉRÉE (15/09/2026) : hors-ligne/ n'est PAS ignoré. Les versions
+# sans connexion sont versionnées pour être servies par GitHub Pages ; le script
+# « node outils/build-hors-ligne.js --verifier » dit si elles sont en retard.
 
 # --- Sauvegardes automatiques de Blender ---
 # Blender double chaque .blend enregistré. Le .blend, lui, se versionne :

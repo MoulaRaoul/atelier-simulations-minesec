@@ -111,7 +111,11 @@ atelier-simulations-minesec/          ← le dépôt Git
 │   ├── minesec-moteur.js             ← scène, caméra, rendu, orbite, boucle
 │   ├── minesec-mouvements.js         ← les 7 familles + jouer()
 │   ├── minesec-mecaniques.js
-│   └── minesec-props.js
+│   ├── minesec-props.js
+│   ├── minesec-modeles.js            ← les objets venus de Blender (.glb)
+│   ├── three.min.js                  ← Three.js r128, copie locale : aucun CDN
+│   ├── three-gltf-loader.js
+│   └── tiers.md                      ← origine, licence, empreinte des fichiers tiers
 ├── banques/                          ← les vitrines HTML consultables des banques
 ├── studios/                          ← les bancs d'essai
 ├── simulations/
@@ -121,12 +125,15 @@ atelier-simulations-minesec/          ← le dépôt Git
 │   │       └── notes.md              ← brief d'origine, choix, pistes
 │   ├── informatique/
 │   └── svt/
+│       └── 6e-jour-nuit/
+├── hors-ligne/                       ← versions sans connexion, un fichier par
+│                                        simulation — FABRIQUÉES, jamais éditées
 ├── gabarits/
 │   └── brief-enseignant.md           ← voir Annexe A
 ├── tests/
 │   └── index.html                    ← suite de non-régression de la bibliothèque
 ├── outils/
-│   └── build-hors-ligne.js           ← fabrique la version autonome un-seul-fichier
+│   └── build-hors-ligne.js           ← fabrique les versions sans connexion (15/09/2026)
 └── archives/
     └── 2026-08-corpus-initial/       ← les 22 fichiers d'origine, intouchés
 ```
@@ -155,6 +162,41 @@ test rouge dit qu'il y a désaccord, pas où est l'erreur.
 des principes de conception, appliquée au code : jamais la même correction deux
 fois à la main.
 
+**Les versions sans connexion suivent dans le même commit** (depuis le
+15/09/2026). Toute modification de la bibliothèque ou d'une simulation impose de
+relancer `node outils/build-hors-ligne.js` et de commiter `hors-ligne/` avec elle.
+`node outils/build-hors-ligne.js --verifier` dit, sans rien écrire, si ces
+fichiers sont en retard sur leurs sources. Un fichier sans connexion périmé ne
+se signale par aucune erreur : il montre en salle la simulation d'hier.
+
+---
+
+### Règle des messages
+
+**Un message de diagnostic doit envoyer réparer la bonne chose.** Un message
+d'erreur, un verdict de poste, un avertissement ne se juge pas à sa politesse
+mais au geste qu'il déclenche : si ce geste ne guérit pas la panne, le message
+ment, même poliment.
+
+L'origine est un défaut trouvé le 15/09/2026 en préparant le build. Le moteur et
+le diagnostic de poste promettaient « la version hors-ligne » à deux pannes
+différentes. Or il existe deux remèdes, qui ne se remplacent pas :
+
+- la **version sans connexion** — un fichier autonome qui contient tout. Elle
+  guérit un fichier manquant ou une salle sans réseau ; elle embarque Three.js
+  et **exige la 3D** comme l'original ;
+- la **version 2D** — elle seule sert un poste qui ne fait pas de 3D.
+
+Promettre la première à un poste sans 3D envoyait l'enseignant chercher un
+fichier qui ne l'aurait pas aidé. Le même examen a montré que « vérifiez la
+connexion Internet » était devenu faux : Three.js étant dans la bibliothèque,
+son absence veut dire que la page a été copiée sans son dossier.
+
+**En pratique** : le mot « hors-ligne », à double sens, ne figure plus dans aucun
+message. Chaque message nomme sa panne et son remède, et `tests/index.html`
+vérifie les textes du moteur et du diagnostic (section « Messages »). Un message
+nouveau entre dans ces contrôles avec le code qui l'affiche.
+
 ---
 
 ## 4 · Règles de nommage
@@ -171,8 +213,20 @@ Chaque simulation, de la demande à la mise à disposition, suit six étapes :
 2. **Prototype** — avec l'IA de son choix, munie de la fiche de contexte (`docs/contexte-ia.md`), on produit une première version jouable et on itère sur la pédagogie, pas sur la technique. La conversation Claude reste la table à dessin des cas complexes ; pour le reste, n'importe quelle IA munie de la fiche produit du code compatible avec la bibliothèque. Le fichier obtenu se dépose dans `prototypes/`.
 3. **Revue** — le prototype est confronté à la « définition de fini » (section 6) et au brief ; l'enseignant valide.
 4. **Intégration** — dans Claude Code, la simulation est branchée sur la bibliothèque, rangée dans son dossier, et un commit fige l'étape.
-5. **Publication** — GitHub Pages sert la version en ligne ; le script de build fabrique la version hors-ligne autonome pour les établissements sans connexion.
+5. **Publication** — GitHub Pages sert la version en ligne **et** les versions sans connexion (`hors-ligne/`, versionnées) ; chaque version publiée sur GitHub reçoit en pièce jointe l'archive `.zip` de ces fichiers, pour la clé USB. Voir « Procédure de publication » ci-dessous.
 6. **Catalogue** — la simulation reçoit son entrée dans l'index général et son `notes.md` est complété.
+
+### Procédure de publication (décidée le 15/09/2026)
+
+1. `node outils/build-hors-ligne.js` — fabrique `hors-ligne/`. Le script refuse
+   d'écrire si un fichier contient encore une adresse Internet ou une référence
+   locale non embarquée ; il n'écrit alors **rien**.
+2. `node outils/build-hors-ligne.js --verifier` — doit répondre « à jour ».
+3. Commit, puis push : GitHub Pages sert les simulations et `hors-ligne/`.
+4. Pour une version remise aux établissements :
+   `node outils/build-hors-ligne.js --zip`, puis publier une version GitHub
+   (*release*) et y joindre `dist/minesec-hors-ligne.zip`. L'archive contient un
+   `LISEZMOI.txt` qui fait commencer par le diagnostic de poste.
 
 ### Règle d'entretien des documents d'usage
 
@@ -236,7 +290,7 @@ on taillera ailleurs.
 Une simulation n'est terminée que lorsque tous ces points sont vrais :
 
 - [ ] Elle respecte la charte (jetons, familles de mouvements, vocabulaire des boutons).
-- [ ] Sa version hors-ligne autonome est générée et testée.
+- [ ] Sa version sans connexion (fichier autonome) est générée et testée.
 - [ ] Elle fonctionne au tactile, à la souris et au clavier.
 - [ ] Elle a été essayée sur un téléphone et sur un PC de salle informatique.
 - [ ] Son `notes.md` contient le brief d'origine et les choix faits.
@@ -274,6 +328,13 @@ Il n'y a rien à apprendre par cœur : dans Claude Code, on demande en français
 > l'écart entre « cela fonctionne sur ma machine » et « cela fonctionne en salle sans
 > connexion ». Une simulation que l'établissement ne peut pas ouvrir n'est pas une
 > simulation livrée. Les autres travaux de la Phase 3 suivront.
+>
+> **Confirmée le 15/09/2026, et tenue.** La priorité reprend dès la revue de
+> `6e-jour-nuit`. Le script est écrit le jour même : Three.js passe en copie
+> locale (plus aucune adresse Internet dans le dépôt, hors archives), les
+> fichiers autonomes sont versionnés et servis par Pages, une archive `.zip`
+> accompagne chaque version publiée. Reste à faire : l'essai sur un poste
+> réellement débranché.
 
 **Phase 4 — Expansion.** Compléter les familles de la banque des opérations ; constituer `minesec-props.js` ; ouvrir les packs disciplinaires (maths, informatique, SVT, puis les autres).
 

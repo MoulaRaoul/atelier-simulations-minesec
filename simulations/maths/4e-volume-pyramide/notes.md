@@ -187,10 +187,13 @@ cette version en fait environ 150, dont aucune n'est du socle technique.
 ## Définition de « fini » — état
 
 - [x] Elle respecte la charte
-- [ ] **Sa version hors-ligne autonome est générée et testée** — attend le script
-      de build de la Phase 3 ; en attendant, la version 2D archivée
-      (`archives/2026-08-corpus-initial/prisme-3-pyramides.html`) sert de
-      solution de secours sans connexion
+- [ ] **Sa version sans connexion est générée et testée** — **générée le
+      15/09/2026** (`hors-ligne/maths-4e-volume-pyramide.html`, 673 Ko) et
+      vérifiée dans le navigateur de l'atelier : aucune requête réseau, mode
+      Versement jouable. **Reste l'essai sur un poste réellement débranché.**
+      Pour un poste qui ne fait pas de 3D, la version 2D archivée
+      (`archives/2026-08-corpus-initial/prisme-3-pyramides.html`) reste le seul
+      recours : la version sans connexion exige la 3D, elle aussi.
 - [x] Elle fonctionne au tactile, à la souris et au clavier
 - [ ] **Elle a été essayée sur un téléphone et sur un PC de salle informatique** —
       **essai du 30/08/2026, Infinix Smart8 sous Chrome : défaut trouvé, corrigé,

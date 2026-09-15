@@ -10,7 +10,8 @@
    Ce qu'il ne fait pas : la géométrie et la pédagogie. C'est le travail
    de la simulation.
 
-   Dépendance : Three.js (r128+), chargé avant ce fichier.
+   Dépendance : Three.js r128, chargé avant ce fichier depuis
+   bibliotheque/three.min.js — copie locale, jamais un CDN.
 
    Usage :
      const moteur = MINESEC.moteur.creer({ conteneur: '#scene' });
@@ -75,16 +76,28 @@
 
      Un écran vide est le pire des messages — l'élève croit que la machine
      est cassée, l'enseignant qu'il s'y prend mal. Un texte lisible dit quoi
-     faire ensuite. */
+     faire ensuite.
+
+     UN MESSAGE ENVOIE RÉPARER LA BONNE CHOSE (règle du plan, 15/09/2026).
+     Deux remèdes existent et ne se remplacent pas :
+       · la VERSION SANS CONNEXION — un fichier autonome qui contient tout.
+         Elle guérit un fichier manquant, jamais un poste sans 3D : elle
+         embarque Three.js et exige WebGL comme l'original ;
+       · la VERSION 2D — elle seule sert un poste qui ne fait pas de 3D.
+     L'ancien texte promettait « la version hors-ligne » aux deux pannes : il
+     envoyait l'enseignant chercher un fichier qui ne l'aurait pas aidé. Et
+     depuis que Three.js est dans la bibliothèque, « vérifiez la connexion
+     Internet » était faux aussi : l'absence de Three.js veut dire que la page
+     a été copiée sans le dossier qui l'accompagne. */
 
   const MESSAGES = {
     webgl: {
-      titre: 'Cette simulation nécessite un ordinateur plus récent',
-      detail: 'Demandez la version hors-ligne à votre enseignant.'
+      titre: 'Cet ordinateur ne sait pas afficher la 3D',
+      detail: 'Ce n’est pas une panne. Ouvrez la simulation sur un autre poste, ou demandez à votre enseignant sa version 2D.'
     },
     three: {
       titre: 'Cette simulation n’a pas pu se charger',
-      detail: 'Vérifiez la connexion Internet, ou demandez la version hors-ligne à votre enseignant.'
+      detail: 'Un fichier manque à côté de la page (three.min.js). Ouvrez plutôt la version sans connexion : un seul fichier, qui contient tout.'
     }
   };
 
@@ -180,8 +193,8 @@
     }
 
     /* Deux échecs possibles, deux causes distinctes, deux messages :
-       Three.js absent (connexion, CDN bloqué) ou WebGL indisponible
-       (machine trop ancienne, pilote désactivé). Dans les deux cas on
+       Three.js absent (page copiée sans bibliotheque/three.min.js) ou WebGL
+       indisponible (machine trop ancienne, pilote désactivé). Dans les deux cas on
        affiche avant de lever : la page montre un texte, jamais du vide. */
     if (typeof THREE === 'undefined') {
       avertir(conteneur, MESSAGES.three);

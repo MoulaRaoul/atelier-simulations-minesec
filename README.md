@@ -55,6 +55,8 @@ atelier-simulations-minesec/
 │   ├── maths/
 │   ├── informatique/
 │   └── svt/
+├── hors-ligne/          ← versions sans connexion, un fichier par simulation
+│                           (fabriquées par outils/build-hors-ligne.js)
 ├── modeles/             ← les objets 3D livrés (.glb) et leur matière (.blend)
 ├── gabarits/            ← modèles vierges (brief enseignant…)
 ├── outils/              ← scripts (recettes Blender, contrôles, build…)
@@ -83,7 +85,7 @@ De la demande de l'enseignant à la mise à disposition, six étapes :
 2. **Prototype** — première version jouable ; on itère sur la pédagogie, pas sur la technique.
 3. **Revue** — confrontation à la définition de « fini » et au brief ; l'enseignant valide.
 4. **Intégration** — branchement sur la bibliothèque, rangement, commit.
-5. **Publication** — GitHub Pages en ligne, build autonome pour le hors-connexion.
+5. **Publication** — GitHub Pages sert les simulations et leurs versions sans connexion ; une archive `.zip` accompagne chaque version publiée, pour la clé USB.
 6. **Catalogue** — entrée dans l'index général, `notes.md` complété.
 
 ## La définition de « fini »
@@ -91,7 +93,7 @@ De la demande de l'enseignant à la mise à disposition, six étapes :
 Une simulation n'est terminée que lorsque tous ces points sont vrais :
 
 - [ ] Elle respecte la charte (jetons, familles de mouvements, vocabulaire des boutons).
-- [ ] Sa version hors-ligne autonome est générée et testée.
+- [ ] Sa version sans connexion (fichier autonome) est générée et testée.
 - [ ] Elle fonctionne au tactile, à la souris et au clavier.
 - [ ] Elle a été essayée sur un téléphone et sur un PC de salle informatique.
 - [ ] Son `notes.md` contient le brief d'origine et les choix faits.
@@ -102,7 +104,11 @@ Une simulation n'est terminée que lorsque tous ces points sont vrais :
 - **Phase 0 — Fondation.** Archivage du corpus initial, arborescence, premier commit. ✅
 - **Phase 1 — Extraction.** Sortir `charte.css`, `minesec-moteur.js` et `minesec-mouvements.js` ; brancher la première simulation nouvelle génération. ✅
 - **Phase 2 — Consolidation.** Élire la version canonique de la famille pyramide/prisme, archiver les autres itérations.
-- **Phase 3 — Industrialisation.** Gabarit de brief en service, catalogue automatique, build hors-ligne.
+- **Phase 3 — Industrialisation.** Gabarit de brief en service, catalogue automatique, build des versions sans connexion (écrit le 15/09/2026 : `node outils/build-hors-ligne.js`).
+
+**Aucune page du dépôt ne charge quoi que ce soit depuis Internet** : Three.js est
+dans `bibliotheque/` (voir `bibliotheque/tiers.md`). Seules les `archives/`, intouchables,
+gardent leurs liens d'origine.
 - **Phase 4 — Expansion.** Compléter les banques, ouvrir les packs disciplinaires.
 
 **Horizon :** un portail catalogue destiné aux enseignants.

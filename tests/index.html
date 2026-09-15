@@ -49,14 +49,15 @@
 
 <p class="mode"><b>Pour le lecteur technique.</b> Cette page est aussi la suite de
 non-régression de la bibliothèque : <b>toute modification de celle-ci impose de la
-relancer avant de commiter</b> (règle inscrite au § 3 du plan directeur). Une
-connexion est nécessaire — Three.js vient de cdnjs.</p>
+relancer avant de commiter</b> (règle inscrite au § 3 du plan directeur). Aucune
+connexion n'est nécessaire : Three.js est dans la bibliothèque, et la version sans
+connexion de cette page contient tout.</p>
 
 <div id="bilan">exécution…</div>
 <div id="rapport"></div>
 <div id="banc"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="../bibliotheque/three.min.js"></script>
 <script src="../bibliotheque/minesec-moteur.js"></script>
 <script src="../bibliotheque/minesec-mouvements.js"></script>
 <script src="../bibliotheque/minesec-mecaniques.js"></script>
@@ -445,6 +446,54 @@ if (!poste.ok) {
   note('la gestion des couleurs s\'initialise', false, e.message);
 }
 
+/* ══ Messages — chaque message envoie réparer la bonne chose ══
+   Deux remèdes ne se remplacent pas. La VERSION SANS CONNEXION guérit un
+   fichier manquant ; elle embarque Three.js et exige la 3D comme l'original.
+   Seule la VERSION 2D sert un poste sans 3D. Le 15/09/2026, le moteur et ce
+   diagnostic promettaient « la version hors-ligne » aux deux pannes — un
+   remède qui n'aurait pas guéri la seconde. Ces contrôles l'empêchent de
+   revenir (règle des messages, plan directeur § 3). */
+const VERDICTS = {
+  apte: { grand: 'Ce poste convient aux simulations 3D',
+          suite: 'Vous pouvez ouvrir les simulations sur cet ordinateur.' },
+  inapte: { grand: 'Ce poste ne fait pas de 3D — il lui faudra les versions 2D',
+            suite: 'Notez cet ordinateur dans le recensement de la salle. La version sans '
+              + 'connexion ne l’aidera pas : elle a besoin de la 3D, elle aussi. Ce n’est pas '
+              + 'une panne, et rien n’est à réparer.' }
+};
+section('Messages — chaque message envoie réparer la bonne chose');
+{
+  const MM = MINESEC.moteur.MESSAGES;
+  const texte = m => m.titre + ' ' + m.detail;
+  const inapte = VERDICTS.inapte.grand + ' ' + VERDICTS.inapte.suite;
+  vrai('poste sans 3D : le moteur renvoie à la version 2D', /version 2D/.test(texte(MM.webgl)), MM.webgl.detail);
+  vrai('poste sans 3D : le moteur ne promet pas la version sans connexion',
+       !/sans connexion/i.test(texte(MM.webgl)));
+  vrai('Three.js absent : le moteur renvoie à la version sans connexion',
+       /version sans connexion/.test(texte(MM.three)), MM.three.detail);
+  vrai('Three.js absent : le moteur n\'envoie plus vérifier Internet — Three.js est local',
+       !/internet/i.test(texte(MM.three)));
+  vrai('verdict « poste inapte » : il renvoie aux versions 2D', /versions? 2D/.test(inapte));
+  vrai('verdict « poste inapte » : il dit que la version sans connexion ne l\'aidera pas',
+       /sans connexion ne l’aidera pas/.test(inapte));
+  const tous = [texte(MM.webgl), texte(MM.three), inapte,
+                VERDICTS.apte.grand + ' ' + VERDICTS.apte.suite].join(' ');
+  vrai('aucun message n\'emploie « hors-ligne », le mot à double sens', !/hors[- ]ligne/i.test(tous));
+
+  const bac = document.createElement('div');
+  document.body.appendChild(bac);
+  const panneau = MINESEC.moteur.avertir(bac, MM.webgl);
+  vrai('le panneau d\'avertissement affiche le message tel quel',
+       !!panneau && panneau.textContent === MM.webgl.titre + MM.webgl.detail);
+  bac.remove();
+
+  egal('Three.js est bien la révision 128', Number(THREE.REVISION), 128);
+  const balise = document.querySelector('script[src*="three"]');
+  vrai('Three.js ne vient pas d\'Internet',
+       !balise || !/^(https?:)?\/\//i.test(balise.getAttribute('src')),
+       balise ? 'chargé depuis ' + balise.getAttribute('src') : 'embarqué dans la page');
+}
+
 /* ══ Rapport ══ */
 const rap = document.getElementById('rapport');
 groupes.forEach(g => {
@@ -472,18 +521,11 @@ bilan.className = echecs ? 'rouge' : 'vert';
    une phrase qui dit quoi faire, et le nom de la carte pour le recensement. */
 function afficherVerdict(p) {
   const v = document.getElementById('verdict');
+  const t = p.ok ? VERDICTS.apte : VERDICTS.inapte;   /* textes contrôlés plus haut */
   v.className = p.ok ? 'apte' : 'inapte';
   v.innerHTML =
-    '<div class="grand">' +
-      (p.ok ? 'Ce poste convient aux simulations 3D'
-            : 'Ce poste ne fait pas de 3D — il attendra la version hors-ligne') +
-    '</div>' +
-    '<div class="suite">' +
-      (p.ok
-        ? 'Vous pouvez ouvrir les simulations sur cet ordinateur.'
-        : 'Notez cet ordinateur dans le recensement de la salle : il lui faudra la '
-          + 'version hors-ligne. Ce n\'est pas une panne, et rien n\'est à réparer.') +
-    '</div>' +
+    '<div class="grand">' + t.grand + '</div>' +
+    '<div class="suite">' + t.suite + '</div>' +
     '<div class="carte">Carte graphique : ' +
       (p.carte ? p.carte : 'non communiquée par le navigateur') + '</div>';
 }

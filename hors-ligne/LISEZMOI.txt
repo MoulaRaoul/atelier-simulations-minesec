@@ -1,0 +1,16 @@
+MINESEC — Simulations, versions sans connexion
+==============================================
+
+Chaque fichier .html de ce dossier est une simulation complète : il
+s'ouvre d'un double-clic, sans connexion Internet, sans rien installer.
+
+COMMENCEZ PAR  diagnostic-poste.html
+  Il dit en quelques secondes si cet ordinateur sait afficher la 3D.
+
+Si le diagnostic répond que le poste ne fait pas de 3D, ces fichiers ne
+l'aideront pas : ils ont besoin de la 3D, eux aussi. Il faudra la
+version 2D de la simulation.
+
+Simulations :
+  maths-4e-volume-pyramide.html  Le volume de la pyramide · Prisme, cube et cône — 4e
+  svt-6e-jour-nuit.html          Le jour et la nuit · La rotation de la Terre — 6e

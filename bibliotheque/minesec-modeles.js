@@ -252,9 +252,13 @@
         if (o.etape != null) modele.etape(o.etape);
         resoudre(modele);
       }, o.progres || undefined, erreur => {
+        /* Aucune amorce d'adresse Internet écrite en toutes lettres, même dans
+           un conseil : la garde du build les refuse dans la bibliothèque, sans
+           exception. */
         rejeter(new Error('minesec-modeles : « ' + url + ' » n\'a pas pu être chargé. '
-          + 'Vérifiez le chemin, et servez la page en http:// — un navigateur '
-          + 'refuse de lire un .glb depuis file://.'));
+          + 'Vérifiez le chemin. Une page ouverte directement depuis le disque ne '
+          + 'peut pas lire un .glb : servez-la par un serveur local (python -m '
+          + 'http.server), ou ouvrez sa version sans connexion, où le modèle est embarqué.'));
       });
     });
   }
