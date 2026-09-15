@@ -386,18 +386,7 @@ disparaître, c'est instruire un dossier périmé.
 
 ## Annexe A · Gabarit de brief enseignant
 
-À remplir par l'enseignant (ou avec lui) avant tout prototype. Copie vierge à conserver dans `gabarits/brief-enseignant.md`.
-
-**Discipline :**
-**Classe :**
-**Notion du programme :**
-**Objectif observable** (ce que l'élève saura faire après) :
-**Ce que l'élève manipule** (variables, curseurs, objets) :
-**Ce que l'élève doit constater** (le déclic attendu) :
-**Mouvements pressentis** (parmi les 7 familles : apparition · disparition · ouverture · défilement · conséquence · manipulation · mécanisme) :
-**Props nécessaires** :
-**Question de sortie** (pour vérifier que le déclic a eu lieu) :
-**Contraintes** (salle, matériel, connexion, durée de séance) :
+À remplir par l'enseignant (ou avec lui) avant tout prototype. Les rubriques sont dans `gabarits/brief-enseignant.md`, qui fait foi : elles ne sont pas recopiées ici, pour qu'il n'y ait qu'un seul endroit à tenir à jour.
 
 ---
 
