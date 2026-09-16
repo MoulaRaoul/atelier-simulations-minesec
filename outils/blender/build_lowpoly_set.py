@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""build_lowpoly_set.py — construit cinq objets low-poly et les exporte en glTF binaire (.glb), un fichier par objet.
+"""build_lowpoly_set.py (v2) — construit cinq objets low-poly et les exporte en glTF binaire (.glb), un fichier par objet.
 
-Usage (Blender 4.2 ou plus récent, y compris 5.x, sans interface) :
-    blender -b --python build_lowpoly_set.py -- --out <dossier_de_sortie> [--seg 16] [--draco]
+Usage (Blender 4.2 ou plus récent, y compris 5.x, sans interface, Blender fermé) :
+    blender -b --python outils/blender/build_lowpoly_set.py -- --out modeles [--seg 16] [--draco]
 
 Conventions (voir lowpoly_set_plan.md) :
-- unité : mètre ; le glTF est exporté avec +Y vertical (conversion depuis Blender, Z vertical) ;
+- unité : mètre ; glTF exporté avec +Y vertical (conversion depuis Blender, Z vertical) ;
 - « avant » = -Y dans Blender = +Z dans le glTF ;
-- origine : centre de la base (jar, house, tree) ou centre géométrique (sun, cloud) ;
+- origine : centre de la base (jarre, case, arbre) ou centre de la boîte englobante (soleil, nuage) ;
 - une matière mate unie par maillage (Principled, gris 0.8, roughness 1, metallic 0), sans texture ni UV ;
 - aucune lumière, caméra, animation ni ombre dans les fichiers.
+
+v2 : subdivisions d'icosphère corrigées (dans Blender, 1 = icosaèdre à 20 faces, 2 = 80, 3 = 320) et exposées dans SPEC ;
+     soleil et nuage recentrés sur leur boîte ; matière robuste jusqu'à Blender 6 ; repli d'export annoncé ; noms configurables.
 """
 import argparse
 import json
@@ -22,6 +25,17 @@ import bpy
 from mathutils import Matrix, Vector
 
 MERGE_PARTS = False  # True : un seul maillage et une seule matière par fichier (perte du recolorage par partie)
+
+# ----------------------------------------------------------------------------- noms de sortie (convention du dépôt : français)
+FILE_NAMES = {"jar": "jarre", "house": "case", "tree": "arbre", "sun": "soleil", "cloud": "nuage"}
+MESH_NAMES = {
+    "jar_body": "jarre_corps", "jar_water": "jarre_eau",
+    "house_walls": "case_murs", "house_roof": "case_toit", "house_door": "case_porte",
+    "tree_trunk": "arbre_tronc", "tree_foliage": "arbre_feuillage",
+    "sun_core": "soleil_coeur", "sun_rays": "soleil_rayons",
+    "cloud": "nuage",
+}
+# Pour des noms anglais : FILE_NAMES = {k: k for k in FILE_NAMES} ; MESH_NAMES = {k: k for k in MESH_NAMES}
 
 # ----------------------------------------------------------------------------- cotes (mètres)
 SPEC = {
@@ -39,11 +53,14 @@ SPEC = {
     },
     "tree": {
         "trunk_r_base": 0.14, "trunk_r_top": 0.10, "trunk_h": 1.30, "trunk_seg": 8,
+        "foliage_subdiv": 2,            # 2 = 80 faces par sphère
         "foliage": [((0.00, 0.00, 2.05), 0.95), ((0.60, 0.15, 1.75), 0.60),
                     ((-0.55, -0.20, 2.45), 0.55), ((0.15, -0.45, 2.60), 0.50)],
     },
-    "sun": {"core_r": 0.50, "core_subdiv": 2, "rays": 12, "ray_size": (0.06, 0.06, 0.28), "ray_center_r": 0.78},
+    "sun": {"core_r": 0.50, "core_subdiv": 3,   # 3 = 320 faces
+            "rays": 12, "ray_size": (0.06, 0.06, 0.28), "ray_center_r": 0.78},
     "cloud": {
+        "blob_subdiv": 2,               # 2 = 80 faces par sphère
         "blobs": [((0.00, 0.00, 0.00), 0.50), ((0.60, 0.05, -0.05), 0.38), ((-0.60, -0.05, -0.08), 0.36),
                   ((0.25, -0.10, 0.28), 0.34), ((-0.25, 0.10, 0.25), 0.30)],
         "flatten_z": 0.85,
@@ -62,17 +79,32 @@ def parse_args():
 
 
 def new_material(name, grey=0.8):
+    """Matière mate unie. Robuste aux versions : 'use_nodes' disparaît dans Blender 6 (nœuds toujours actifs)."""
     m = bpy.data.materials.new(name)
-    m.use_nodes = True
-    bsdf = m.node_tree.nodes.get("Principled BSDF")
+    if getattr(m, "node_tree", None) is None:  # Blender < 6 : l'arbre de nœuds n'existe qu'après use_nodes
+        m.use_nodes = True
+    nodes = m.node_tree.nodes
+    bsdf = next((n for n in nodes if n.type == "BSDF_PRINCIPLED"), None)
+    if bsdf is None:
+        bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+        out = next((n for n in nodes if n.type == "OUTPUT_MATERIAL"), None) or nodes.new("ShaderNodeOutputMaterial")
+        m.node_tree.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
     bsdf.inputs["Base Color"].default_value = (grey, grey, grey, 1.0)
     bsdf.inputs["Roughness"].default_value = 1.0
     bsdf.inputs["Metallic"].default_value = 0.0
     return m
 
 
-def finish(bm, name, smooth, location=(0.0, 0.0, 0.0)):
-    """Transforme un bmesh en objet de scène avec sa matière unique."""
+def center_bbox(bm):
+    """Translate les sommets pour que le centre de la boîte englobante soit à l'origine."""
+    xs = [v.co.x for v in bm.verts]; ys = [v.co.y for v in bm.verts]; zs = [v.co.z for v in bm.verts]
+    c = Vector(((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, (min(zs) + max(zs)) / 2))
+    bmesh.ops.translate(bm, verts=list(bm.verts), vec=-c)
+
+
+def finish(bm, key, smooth, location=(0.0, 0.0, 0.0)):
+    """Transforme un bmesh en objet de scène nommé selon MESH_NAMES, avec sa matière unique."""
+    name = MESH_NAMES.get(key, key)
     bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
@@ -184,7 +216,7 @@ def build_tree(seg):
 
     bm = bmesh.new()
     for center, r in s["foliage"]:
-        add_icosphere(bm, 1, r, center)
+        add_icosphere(bm, s["foliage_subdiv"], r, center)
     foliage = finish(bm, "tree_foliage", smooth=True)
     return [trunk, foliage]
 
@@ -203,6 +235,7 @@ def build_sun():
                          matrix=Matrix.Rotation(math.pi / 2 - a, 3, "Y"))   # Z local -> direction (cos a, 0, sin a)
         bmesh.ops.translate(bm, verts=verts,
                             vec=(s["ray_center_r"] * math.cos(a), 0.0, s["ray_center_r"] * math.sin(a)))
+    center_bbox(bm)
     rays = finish(bm, "sun_rays", smooth=False)
     return [core, rays]
 
@@ -211,14 +244,15 @@ def build_cloud():
     s = SPEC["cloud"]
     bm = bmesh.new()
     for center, r in s["blobs"]:
-        add_icosphere(bm, 1, r, center)
+        add_icosphere(bm, s["blob_subdiv"], r, center)
     bmesh.ops.scale(bm, verts=list(bm.verts), vec=(1.0, 1.0, s["flatten_z"]))
+    center_bbox(bm)                        # origine = centre de la boîte englobante
     cloud = finish(bm, "cloud", smooth=True)
     return [cloud]
 
 
 # ----------------------------------------------------------------------------- export et statistiques
-def merge_parts(objs, name):
+def merge_parts(objs, key):
     """Fusionne plusieurs objets en un seul maillage / une seule matière (MERGE_PARTS)."""
     bm = bmesh.new()
     for ob in objs:
@@ -229,29 +263,31 @@ def merge_parts(objs, name):
             v.tag = True
         bpy.data.objects.remove(ob)
         bpy.data.meshes.remove(me)
-    smooth = True
-    return [finish(bm, name, smooth)]
+    return [finish(bm, key, smooth=True)]
 
 
 def stats(ob):
     me = ob.data
-    tris = sum(len(p.vertices) - 2 for p in me.polygons)
-    xs = [v.co.x for v in me.vertices]
-    ys = [v.co.y for v in me.vertices]
-    zs = [v.co.z for v in me.vertices]
     loc = ob.location
-    bbox_min = [min(xs) + loc.x, min(ys) + loc.y, min(zs) + loc.z]
-    bbox_max = [max(xs) + loc.x, max(ys) + loc.y, max(zs) + loc.z]
+    xs = [v.co.x + loc.x for v in me.vertices]
+    ys = [v.co.y + loc.y for v in me.vertices]
+    zs = [v.co.z + loc.z for v in me.vertices]
+    bmin, bmax = [min(xs), min(ys), min(zs)], [max(xs), max(ys), max(zs)]
     return {
         "mesh": ob.name,
-        "triangles": tris,
+        "triangles": sum(len(p.vertices) - 2 for p in me.polygons),
         "vertices": len(me.vertices),
-        "size_m_LxPxH": [round(bbox_max[0] - bbox_min[0], 3), round(bbox_max[1] - bbox_min[1], 3),
-                         round(bbox_max[2] - bbox_min[2], 3)],
-        "bbox_min_blender_xyz": [round(v, 3) for v in bbox_min],
-        "bbox_max_blender_xyz": [round(v, 3) for v in bbox_max],
+        "bbox_min_blender_xyz": [round(v, 3) for v in bmin],
+        "bbox_max_blender_xyz": [round(v, 3) for v in bmax],
         "node_origin_blender_xyz": [round(loc.x, 3), round(loc.y, 3), round(loc.z, 3)],
     }
+
+
+def object_bbox(mesh_stats):
+    bmin = [min(m["bbox_min_blender_xyz"][i] for m in mesh_stats) for i in range(3)]
+    bmax = [max(m["bbox_max_blender_xyz"][i] for m in mesh_stats) for i in range(3)]
+    return {"size_m_LxPxH": [round(bmax[i] - bmin[i], 3) for i in range(3)],
+            "bbox_min_blender_xyz": bmin, "bbox_max_blender_xyz": bmax}
 
 
 def export_glb(objs, path, draco):
@@ -267,9 +303,12 @@ def export_glb(objs, path, draco):
                   export_draco_mesh_compression_enable=draco)
     try:
         bpy.ops.export_scene.gltf(**kwargs)
-    except TypeError:
-        # exportateur d'une autre version : jeu de paramètres minimal
+        return "complet"
+    except TypeError as e:
+        print(f"AVERTISSEMENT : l'exportateur glTF de cette version refuse un paramètre ({e}).")
+        print("               Repli sur un export minimal (GLB, sélection seule) : vérifier UV, axes et matières.")
         bpy.ops.export_scene.gltf(filepath=path, export_format="GLB", use_selection=True)
+        return "minimal (repli)"
 
 
 def main():
@@ -290,32 +329,42 @@ def main():
         "cloud": build_cloud,
     }
     manifest = {
+        "script_version": 2,
+        "blender": bpy.app.version_string,
         "units": "metres", "up_axis_gltf": "+Y", "front_axis_gltf": "+Z (Blender -Y)",
-        "origin": {"jar": "base centre", "house": "base centre", "tree": "base centre",
-                   "sun": "geometric centre", "cloud": "geometric centre"},
-        "water": "jar_water : scale.y = niveau (0..1), origine au fond intérieur, noeud à y = 0.05 m",
+        "origin": {FILE_NAMES["jar"]: "base centre", FILE_NAMES["house"]: "base centre",
+                   FILE_NAMES["tree"]: "base centre", FILE_NAMES["sun"]: "bbox centre",
+                   FILE_NAMES["cloud"]: "bbox centre"},
+        "water": f"{MESH_NAMES['jar_water']} : scale.y = niveau (0..1), origine au fond intérieur, noeud à y = "
+                 f"{SPEC['jar']['water_floor']} m dans le glTF",
         "objects": {},
     }
-    for name, build in builders.items():
+    for key, build in builders.items():
         objs = build()
         if MERGE_PARTS and len(objs) > 1:
-            objs = merge_parts(objs, name)
-        path = os.path.join(out, f"{name}.glb")
-        export_glb(objs, path, args.draco)
-        manifest["objects"][name] = {"file": f"{name}.glb", "meshes": [stats(o) for o in objs],
-                                     "triangles_total": sum(stats(o)["triangles"] for o in objs)}
+            objs = merge_parts(objs, key)
+        fname = FILE_NAMES.get(key, key) + ".glb"
+        path = os.path.join(out, fname)
+        mode = export_glb(objs, path, args.draco)
+        mstats = [stats(o) for o in objs]
+        manifest["objects"][fname] = {"export": mode, "meshes": mstats,
+                                      "triangles_total": sum(m["triangles"] for m in mstats),
+                                      **object_bbox(mstats)}
         for o in objs:
             bpy.data.objects.remove(o)
 
     with open(os.path.join(out, "manifest.json"), "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)
 
-    print("\n=== objets exportés ===")
-    print(f"{'fichier':<12}{'maillage':<16}{'tris':>7}  {'L x P x H (m)':<24}origine (Blender)")
-    for name, o in manifest["objects"].items():
+    print("\n=== objets exportés (dimensions par objet entier, mètres) ===")
+    print(f"{'fichier':<12}{'maillage':<18}{'tris':>7}   {'L x P x H objet':<24}origine (Blender)")
+    for fname, o in manifest["objects"].items():
+        first = True
         for m in o["meshes"]:
-            print(f"{o['file']:<12}{m['mesh']:<16}{m['triangles']:>7}  {str(m['size_m_LxPxH']):<24}{m['node_origin_blender_xyz']}")
-        print(f"{'':<12}{'total':<16}{o['triangles_total']:>7}")
+            size = str(o["size_m_LxPxH"]) if first else ""
+            print(f"{fname:<12}{m['mesh']:<18}{m['triangles']:>7}   {size:<24}{m['node_origin_blender_xyz']}")
+            first = False
+        print(f"{'':<12}{'total':<18}{o['triangles_total']:>7}   export {o['export']}")
     print(f"\nmanifest : {os.path.join(out, 'manifest.json')}")
 
 

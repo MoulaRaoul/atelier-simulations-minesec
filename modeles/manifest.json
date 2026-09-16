@@ -1,0 +1,322 @@
+{
+  "script_version": 2,
+  "blender": "5.1.2",
+  "units": "metres",
+  "up_axis_gltf": "+Y",
+  "front_axis_gltf": "+Z (Blender -Y)",
+  "origin": {
+    "jarre": "base centre",
+    "case": "base centre",
+    "arbre": "base centre",
+    "soleil": "bbox centre",
+    "nuage": "bbox centre"
+  },
+  "water": "jarre_eau : scale.y = niveau (0..1), origine au fond intérieur, noeud à y = 0.05 m dans le glTF",
+  "objects": {
+    "jarre.glb": {
+      "export": "complet",
+      "meshes": [
+        {
+          "mesh": "jarre_corps",
+          "triangles": 288,
+          "vertices": 146,
+          "bbox_min_blender_xyz": [
+            -0.26,
+            -0.26,
+            0.0
+          ],
+          "bbox_max_blender_xyz": [
+            0.26,
+            0.26,
+            0.6
+          ],
+          "node_origin_blender_xyz": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "mesh": "jarre_eau",
+          "triangles": 64,
+          "vertices": 34,
+          "bbox_min_blender_xyz": [
+            -0.115,
+            -0.115,
+            0.05
+          ],
+          "bbox_max_blender_xyz": [
+            0.115,
+            0.115,
+            0.58
+          ],
+          "node_origin_blender_xyz": [
+            0.0,
+            0.0,
+            0.05
+          ]
+        }
+      ],
+      "triangles_total": 352,
+      "size_m_LxPxH": [
+        0.52,
+        0.52,
+        0.6
+      ],
+      "bbox_min_blender_xyz": [
+        -0.26,
+        -0.26,
+        0.0
+      ],
+      "bbox_max_blender_xyz": [
+        0.26,
+        0.26,
+        0.6
+      ]
+    },
+    "case.glb": {
+      "export": "complet",
+      "meshes": [
+        {
+          "mesh": "case_murs",
+          "triangles": 20,
+          "vertices": 14,
+          "bbox_min_blender_xyz": [
+            -1.75,
+            -1.5,
+            0.0
+          ],
+          "bbox_max_blender_xyz": [
+            1.75,
+            1.5,
+            3.34
+          ],
+          "node_origin_blender_xyz": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "mesh": "case_toit",
+          "triangles": 20,
+          "vertices": 12,
+          "bbox_min_blender_xyz": [
+            -2.0,
+            -1.75,
+            2.29
+          ],
+          "bbox_max_blender_xyz": [
+            2.0,
+            1.75,
+            3.4
+          ],
+          "node_origin_blender_xyz": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "mesh": "case_porte",
+          "triangles": 12,
+          "vertices": 8,
+          "bbox_min_blender_xyz": [
+            -0.4,
+            -1.52,
+            0.0
+          ],
+          "bbox_max_blender_xyz": [
+            0.4,
+            -1.5,
+            1.9
+          ],
+          "node_origin_blender_xyz": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles_total": 52,
+      "size_m_LxPxH": [
+        4.0,
+        3.5,
+        3.4
+      ],
+      "bbox_min_blender_xyz": [
+        -2.0,
+        -1.75,
+        0.0
+      ],
+      "bbox_max_blender_xyz": [
+        2.0,
+        1.75,
+        3.4
+      ]
+    },
+    "arbre.glb": {
+      "export": "complet",
+      "meshes": [
+        {
+          "mesh": "arbre_tronc",
+          "triangles": 32,
+          "vertices": 18,
+          "bbox_min_blender_xyz": [
+            -0.14,
+            -0.14,
+            0.0
+          ],
+          "bbox_max_blender_xyz": [
+            0.14,
+            0.14,
+            1.3
+          ],
+          "node_origin_blender_xyz": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "mesh": "arbre_feuillage",
+          "triangles": 320,
+          "vertices": 168,
+          "bbox_min_blender_xyz": [
+            -1.073,
+            -0.95,
+            1.1
+          ],
+          "bbox_max_blender_xyz": [
+            1.171,
+            0.95,
+            3.1
+          ],
+          "node_origin_blender_xyz": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles_total": 352,
+      "size_m_LxPxH": [
+        2.244,
+        1.9,
+        3.1
+      ],
+      "bbox_min_blender_xyz": [
+        -1.073,
+        -0.95,
+        0.0
+      ],
+      "bbox_max_blender_xyz": [
+        1.171,
+        0.95,
+        3.1
+      ]
+    },
+    "soleil.glb": {
+      "export": "complet",
+      "meshes": [
+        {
+          "mesh": "soleil_coeur",
+          "triangles": 320,
+          "vertices": 162,
+          "bbox_min_blender_xyz": [
+            -0.5,
+            -0.5,
+            -0.5
+          ],
+          "bbox_max_blender_xyz": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "node_origin_blender_xyz": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "mesh": "soleil_rayons",
+          "triangles": 144,
+          "vertices": 96,
+          "bbox_min_blender_xyz": [
+            -0.92,
+            -0.03,
+            -0.92
+          ],
+          "bbox_max_blender_xyz": [
+            0.92,
+            0.03,
+            0.92
+          ],
+          "node_origin_blender_xyz": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles_total": 464,
+      "size_m_LxPxH": [
+        1.84,
+        1.0,
+        1.84
+      ],
+      "bbox_min_blender_xyz": [
+        -0.92,
+        -0.5,
+        -0.92
+      ],
+      "bbox_max_blender_xyz": [
+        0.92,
+        0.5,
+        0.92
+      ]
+    },
+    "nuage.glb": {
+      "export": "complet",
+      "meshes": [
+        {
+          "mesh": "nuage",
+          "triangles": 400,
+          "vertices": 210,
+          "bbox_min_blender_xyz": [
+            -0.952,
+            -0.5,
+            -0.476
+          ],
+          "bbox_max_blender_xyz": [
+            0.952,
+            0.5,
+            0.476
+          ],
+          "node_origin_blender_xyz": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles_total": 400,
+      "size_m_LxPxH": [
+        1.904,
+        1.0,
+        0.952
+      ],
+      "bbox_min_blender_xyz": [
+        -0.952,
+        -0.5,
+        -0.476
+      ],
+      "bbox_max_blender_xyz": [
+        0.952,
+        0.5,
+        0.476
+      ]
+    }
+  }
+}
