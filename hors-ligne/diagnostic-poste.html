@@ -269,6 +269,11 @@ connexion de cette page contient tout.</p>
      moteur.spin.add(monObjet);
      moteur.chaqueImage(dt => { ... });
      moteur.cadrer(monObjet);        // ajuste la distance pour tout voir
+
+   Deux façons de cadrer (16/09/2026) :
+     creer({ ... })                     // « sphère », le défaut — inchangé
+     creer({ cadrage: 'figure', ... })  // mesure ce qui est vu : scènes aux
+                                        // tailles mêlées, modèles en centimètres
    ══════════════════════════════════════════════════════════════════════ */
 
 (function (global) {
@@ -417,6 +422,8 @@ connexion de cette page contient tout.</p>
        calibrage cesse ainsi d'être une impression d'œil : il se compare à un
        nombre écrit, et se contrôle. 2/3 laisse des marges équilibrées. */
     occupation: 2 / 3,
+    /* 'sphere' (défaut) ou 'figure' — voir « LE MODE FIGURE » plus bas. */
+    cadrage: 'sphere',
     /* Intensités des lumières. Elles ont dû être relevées le 31/08/2026 en
        même temps que la gestion des couleurs : convertir les teintes en
        linéaire divise les demi-tons par plus de deux, et des intensités
@@ -491,8 +498,9 @@ connexion de cette page contient tout.</p>
     scene.add(rig);
     rig.rotation.x = o.inclinaison;
 
+    let sol = null;
     if (o.grille) {
-      const sol = new THREE.GridHelper(12, 12, couleurHex(0x3f454d), couleurHex(0x22262b));
+      sol = new THREE.GridHelper(12, 12, couleurHex(0x3f454d), couleurHex(0x22262b));
       sol.material.transparent = true;
       sol.material.opacity = 0.35;
       rig.add(sol);
@@ -520,7 +528,7 @@ connexion de cette page contient tout.</p>
       e.preventDefault();
       /* La molette garde ses butées, mais relatives au cadrage en cours :
          un plafond absolu interdirait de reculer devant une grande figure. */
-      distanceCible = borner(distanceCible + e.deltaY * 0.004, distanceCadrage * 1.6);
+      distanceCible = bornes(distanceCible + pasMolette(e.deltaY), distanceCadrage * 1.6);
       camera.position.z = distanceCible;   /* la molette est immédiate */
     }, { passive: false });
 
@@ -571,6 +579,168 @@ connexion de cette page contient tout.</p>
       return rayon;
     }
 
+    /* ══════════════════════════════════════════════════════════════════
+       LE MODE « FIGURE » — 16/09/2026, à demander : creer({ cadrage: 'figure' })
+
+       Le mode « sphère » reste le défaut et ne change pas. Il a un défaut
+       mesuré : sa sphère, centrée sur l'origine, enveloppe bien plus que la
+       figure dès qu'elle est posée au sol ou étalée, et la caméra vise un
+       point fixe (`regard`) au lieu du centre de ce qu'on voit. Sur une
+       scène de 4 m qui porte une jarre de 60 cm, il annonçait 67 %
+       d'occupation quand la scène en occupait 30 %.
+
+       Le mode figure mesure autrement, en trois gestes :
+         1. un CYLINDRE autour de l'axe de rotation : la hauteur réelle et
+            le rayon horizontal. Il ne change pas quand la scène tourne —
+            la caméra ne « respire » pas, comme avec la sphère ;
+         2. une VISÉE : la caméra se translate verticalement jusqu'à ce que
+            le centre projeté de la figure tombe au centre de la bande
+            visible. Elle ne pivote pas, et ne recentre pas à l'horizontale :
+            déplacer l'axe ferait tourner la scène autour d'un point décalé ;
+         3. une ÉCHELLE : plans de coupe, grille, butées et pas de molette
+            sont calculés sur la taille de la figure, et non plus écrits
+            pour des figures de quelques unités. Un modèle en centimètres
+            se cadre comme un modèle en unités.
+
+       La mesure lit les huit coins de la boîte de chaque maillage visible,
+       pas tous ses sommets : un peu plus prudente, et d'un coût qui ne
+       grandit pas avec le détail des modèles.
+       ══════════════════════════════════════════════════════════════════ */
+    const figure = o.cadrage === 'figure';
+    let decalage = 0;      /* translation verticale de visée — reste 0 en mode sphère */
+    let vise = null;       /* objet que la boucle continue de viser */
+    const _inv = new THREE.Matrix4();
+    const _loc = new THREE.Matrix4();
+    const _coin = new THREE.Vector3();
+
+    function visibleEnScene(n) {
+      for (let p = n; p; p = p.parent) if (!p.visible) return false;
+      return true;
+    }
+
+    /* Les huit coins de la boîte d'un maillage, passés par la matrice m. */
+    function coins(n, m, faire) {
+      const g = n.geometry;
+      if (!g.boundingBox) g.computeBoundingBox();
+      const b = g.boundingBox;
+      if (!b || b.isEmpty()) return;
+      for (let i = 0; i < 8; i++) {
+        _coin.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z);
+        faire(_coin.applyMatrix4(m));
+      }
+    }
+
+    /* Le cylindre, dans le repère de `spin` : son axe Y est l'axe de rotation. */
+    function cylindre(objet) {
+      objet.updateWorldMatrix(true, true);
+      spin.updateWorldMatrix(true, false);
+      _inv.copy(spin.matrixWorld).invert();
+      let bas = Infinity, haut = -Infinity, rayon = 0;
+      objet.traverse(n => {
+        if (!n.geometry || !visibleEnScene(n)) return;
+        _loc.multiplyMatrices(_inv, n.matrixWorld);
+        coins(n, _loc, p => {
+          if (p.y < bas) bas = p.y;
+          if (p.y > haut) haut = p.y;
+          const d = Math.hypot(p.x, p.z);
+          if (d > rayon) rayon = d;
+        });
+      });
+      if (bas > haut) return null;
+      return { bas, haut, hauteur: haut - bas, rayon,
+               taille: Math.max(haut - bas, 2 * rayon, 1e-6) };
+    }
+
+    /* Distance qui fait tenir le cylindre : sa hauteur contre la bande
+       verticale, vue depuis sa face avant ; son rayon contre la bande
+       horizontale. La plus exigeante l'emporte. */
+    function distanceFigure(objet, occupation) {
+      const c = cylindre(objet);
+      if (!c) return o.distance;
+      let occ = occupation == null ? o.occupation : occupation;
+      if (occ > 1) {
+        console.warn('minesec-moteur : occupation =', occ,
+          '— au-delà de 1, la figure déborde de la bande visible.');
+      }
+      occ = Math.max(0.05, Math.min(1.5, occ));
+      const z = zoneUtile();
+      const tv = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+      const Tv = Math.max(1e-5, occ * tv * (z.hauteur / z.H));
+      const Th = Math.max(1e-5, occ * tv * camera.aspect * (z.largeur / z.L));
+      const d = Math.max(c.hauteur / (2 * Tv) + c.rayon,
+                         c.rayon * Math.sqrt(1 + Th * Th) / Th);
+      echelle(c, d);
+      return d;
+    }
+
+    /* Les réglages qui comptaient en unités fixes, rapportés à la figure. */
+    function echelle(c, d) {
+      const pres = c.taille / 200, loin = (d + c.taille) * 8;
+      if (Math.abs(camera.near - pres) > pres * 0.01 || Math.abs(camera.far - loin) > loin * 0.01) {
+        camera.near = pres;
+        camera.far = loin;
+        camera.updateProjectionMatrix();
+      }
+      if (sol) sol.scale.setScalar(Math.max(2.4 * c.rayon, c.hauteur) / 12);
+    }
+
+    /* Butées : en mode sphère, celles d'usine ; en mode figure, les mêmes
+       rapports (2,5 et 24 pour 7,4) appliqués à la distance réclamée. */
+    function bornes(d, plafond) {
+      if (!figure) return borner(d, plafond);
+      const ref = distanceCadrage || o.distance;
+      const min = ref * DEFAUTS.distanceMin / DEFAUTS.distance;
+      const max = Math.max(ref * DEFAUTS.distanceMax / DEFAUTS.distance, plafond || 0);
+      return Math.max(min, Math.min(max, d));
+    }
+    function pasMolette(deltaY) {
+      return figure
+        ? deltaY * 0.004 * (distanceCadrage || o.distance) / DEFAUTS.distance
+        : deltaY * 0.004;
+    }
+
+    /* Ce que l'objet occupe VRAIMENT à l'écran, coins projetés — valable
+       dans les deux modes, et seule mesure honnête pour un contrôle. */
+    function mesureEcran(objet) {
+      camera.updateMatrixWorld();
+      objet.updateWorldMatrix(true, true);
+      const z = zoneUtile();
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      objet.traverse(n => {
+        if (!n.geometry || !visibleEnScene(n)) return;
+        coins(n, n.matrixWorld, p => {
+          p.project(camera);
+          const X = (p.x + 1) / 2 * z.L, Y = (1 - p.y) / 2 * z.H;
+          if (X < x0) x0 = X; if (X > x1) x1 = X;
+          if (Y < y0) y0 = Y; if (Y > y1) y1 = Y;
+        });
+      });
+      if (x0 > x1) return null;
+      return {
+        gauche: x0, droite: x1, haut: y0, bas: y1,
+        occupation: Math.max((y1 - y0) / z.hauteur, (x1 - x0) / z.largeur),
+        ecart: (y0 + y1) / 2 - (z.haut + z.hauteur / 2),   /* px ; > 0 : figure trop basse */
+        deborde: y0 < z.haut - 0.5 || y1 > z.H - z.bas + 0.5
+              || x0 < z.gauche - 0.5 || x1 > z.L - z.droite + 0.5
+      };
+    }
+
+    /* La visée : l'écart vertical, converti en unités de scène à la
+       distance de la caméra, corrigé d'une fraction `gain`. */
+    function viser(objet, gain) {
+      const m = mesureEcran(objet);
+      if (!m) return;
+      const z = zoneUtile();
+      const mondeParPixel =
+        2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.position.z / z.H;
+      decalage -= m.ecart * mondeParPixel * gain;
+      camera.position.y = hauteurCamera();
+    }
+    function viserNet(objet) { for (let i = 0; i < 6; i++) viser(objet, 1); }
+
+    /* Hauteur de caméra : en mode sphère, `decalage` vaut toujours 0. */
+    function hauteurCamera() { return recentrageVertical() + decalage; }
+
     /* ─── La zone réellement visible ───
        Une simulation de la charte pose un en-tête en haut et un pupitre en
        bas. Sur un téléphone tenu debout, ces deux bandeaux peuvent manger
@@ -615,7 +785,7 @@ connexion de cette page contient tout.</p>
       /* Appliquer tout de suite, sans attendre la boucle : celle-ci ne tourne
          pas dans un onglet masqué, et un cadrage différé serait un cadrage
          faux pendant tout ce temps. */
-      camera.position.y = recentrageVertical();
+      camera.position.y = hauteurCamera();
       return zoneUtile();
     }
 
@@ -631,6 +801,7 @@ connexion de cette page contient tout.</p>
        Relation exacte, inversée plutôt qu'approchée : c'est elle qui permet au
        contrôle de vérifier l'occupation obtenue au pour-cent près. */
     function distancePour(objet, occupation) {
+      if (figure) return distanceFigure(objet, occupation);
       const rayon = rayonDe(objet);
       if (!rayon) return o.distance;
       let occ = occupation == null ? o.occupation : occupation;
@@ -653,6 +824,7 @@ connexion de cette page contient tout.</p>
 
     /* Occupation réellement obtenue — le calibrage devient vérifiable. */
     function occupationMesuree(objet) {
+      if (figure) { const m = mesureEcran(objet); return m ? m.occupation : null; }
       const rayon = rayonDe(objet);
       const d = camera.position.z;
       if (!rayon || d <= rayon) return null;
@@ -679,15 +851,17 @@ connexion de cette page contient tout.</p>
     /* cadrer() vise ; la boucle rejoint la cible en douceur, ce qui donne
        le zoom automatique de la version 2D sans à-coup. */
     function cadrer(objet, occupation) {
+      if (figure) vise = objet;
       distanceCadrage = distancePour(objet, occupation);
-      distanceCible = borner(distanceCadrage, distanceCadrage);
+      distanceCible = bornes(distanceCadrage, distanceCadrage);
       return distanceCible;
     }
     function cadrerNet(objet, occupation) {
       distanceCadrage = distancePour(objet, occupation);
-      distanceCible = borner(distanceCadrage, distanceCadrage);
+      distanceCible = bornes(distanceCadrage, distanceCadrage);
       camera.position.z = distanceCible;
-      camera.position.y = recentrageVertical();
+      camera.position.y = hauteurCamera();
+      if (figure) { vise = objet; viserNet(objet); }
       return distanceCible;
     }
 
@@ -696,7 +870,10 @@ connexion de cette page contient tout.</p>
        tourné. C'est le réflexe que la version 2D avait et que la 3D avait
        perdu en passant à une caméra fixe. */
     let suivi = null;
-    function suivre(objet, occupation) { suivi = objet ? { objet, occupation } : null; }
+    function suivre(objet, occupation) {
+      suivi = objet ? { objet, occupation } : null;
+      if (figure && objet) vise = objet;
+    }
 
     function recentrer() {
       spin.rotation.y = 0;
@@ -704,9 +881,10 @@ connexion de cette page contient tout.</p>
       /* Si un objet est suivi, « recentrer » veut dire le recadrer lui,
          pas revenir à une distance d'usine qui ne lui convient plus. */
       if (suivi) distanceCadrage = distancePour(suivi.objet, suivi.occupation);
-      distanceCible = suivi ? borner(distanceCadrage, distanceCadrage) : o.distance;
+      distanceCible = suivi ? bornes(distanceCadrage, distanceCadrage) : o.distance;
       camera.position.z = distanceCible;
-      camera.position.y = recentrageVertical();
+      camera.position.y = hauteurCamera();
+      if (figure && vise) viserNet(vise);
     }
 
     /* ─── Redimensionnement ───
@@ -745,13 +923,14 @@ connexion de cette page contient tout.</p>
          revenu au premier plan ne doit pas faire sauter les animations */
       if (suivi) {
         distanceCadrage = distancePour(suivi.objet, suivi.occupation);
-        distanceCible = borner(distanceCadrage, distanceCadrage);
+        distanceCible = bornes(distanceCadrage, distanceCadrage);
       }
       if (Math.abs(camera.position.z - distanceCible) > 0.001) {
         camera.position.z += (distanceCible - camera.position.z)
           * Math.min(1, dt * o.aisance);
       }
-      camera.position.y = recentrageVertical();
+      camera.position.y = hauteurCamera();
+      if (figure && vise) viser(vise, Math.min(1, dt * o.aisance * 2));
       for (let i = 0; i < abonnes.length; i++) abonnes[i](dt);
       rendu.render(scene, camera);
     })();
@@ -761,7 +940,8 @@ connexion de cette page contient tout.</p>
       chaqueImage: f => abonnes.push(f),
       enGlisse: () => glisse,
       cadrer, cadrerNet, suivre, recentrer, taille,
-      reserver, zoneUtile, occupationMesuree,
+      reserver, zoneUtile, occupationMesuree, mesureEcran,
+      mode: figure ? 'figure' : 'sphere',
       distance: () => camera.position.z
     };
   }
@@ -1731,6 +1911,129 @@ if (!poste.ok) {
   bac.remove();
 } catch (e) {
   note('la gestion des couleurs s\'initialise', false, e.message);
+}
+
+/* ══ 8 · Le mode « figure » — ce qui est vu, et non une sphère ══
+   Le mode sphère, défaut du moteur, annonçait 67 % d'occupation quand une
+   scène de 4 m en occupait 30 %, et laissait un cube centré assis dans le
+   tiers bas (registre, 16/09/2026). Le mode figure se demande à la création.
+   Ces contrôles sont bâtis sur ces deux cas, et jugent ce qui est PROJETÉ à
+   l'écran — jamais la formule qui a servi à cadrer. */
+section('Mode figure — la scène vue, à toutes les tailles');
+if (!poste.ok) {
+  info('13 contrôles non exécutés — ce poste ne fait pas de 3D');
+} else try {
+  const cadreDe = (l, h) => {
+    const d = document.createElement('div');
+    d.style.cssText = 'position:fixed;left:-4000px;top:0;width:' + l + 'px;height:' + h + 'px';
+    document.body.appendChild(d);
+    return d;
+  };
+  const matiere = () => new THREE.MeshStandardMaterial({ color: 0x3b82f6 });
+  const pct = v => (v * 100).toFixed(1) + ' %';
+
+  /* ── Cas 1 : le cube centré de l'essai d'enveloppe, zone de 888 × 684 ── */
+  const c1 = cadreDe(888, 684);
+  const sph = MINESEC.moteur.creer({ conteneur: c1, grille: false, reserve: false });
+  vrai('sans option, le moteur reste en mode sphère', sph.mode === 'sphere', sph.mode);
+  sph.spin.add(new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), matiere()));
+  sph.cadrerNet(sph.spin);
+  const e1s = sph.mesureEcran(sph.spin);
+  info('pour comparaison, le mode sphère sur ce cube',
+       'occupation réelle ' + pct(e1s.occupation) + ' · centre ' + e1s.ecart.toFixed(0) + ' px sous la bande');
+  c1.remove();
+
+  const c1f = cadreDe(888, 684);
+  const cub = MINESEC.moteur.creer({ conteneur: c1f, grille: false, reserve: false, cadrage: 'figure' });
+  cub.spin.add(new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), matiere()));
+  cub.cadrerNet(cub.spin);
+  const e1 = cub.mesureEcran(cub.spin), bande1 = cub.zoneUtile().hauteur;
+  vrai('cube centré : la figure occupe les deux tiers visés, à 8 points près',
+       Math.abs(e1.occupation - 2 / 3) < 0.08, 'occupation réelle ' + pct(e1.occupation));
+  vrai('cube centré : le centre de la figure est au centre de la bande',
+       Math.abs(e1.ecart) < bande1 * 0.01, 'écart ' + e1.ecart.toFixed(1) + ' px');
+  vrai('cube centré : rien ne déborde', !e1.deborde);
+  c1f.remove();
+
+  /* ── Cas 2 : une scène de 4 m qui porte une jarre de 60 cm, en centimètres,
+        bandeaux du banc d'essai (81 px en haut, 114 px en bas) ── */
+  function scene(m, u) {           /* u : 1 pour des centimètres, 0,01 pour des mètres */
+    const pose = (geo, x, y, z) => { const o = new THREE.Mesh(geo, matiere()); o.position.set(x * u, y * u, z * u); m.spin.add(o); return o; };
+    pose(new THREE.CylinderGeometry(460 * u, 480 * u, 12 * u, 48), 0, -6, 0);          /* disque de terre */
+    pose(new THREE.BoxGeometry(400 * u, 340 * u, 350 * u), -170, 170, -110);           /* case */
+    pose(new THREE.SphereGeometry(50 * u, 16, 12), -280, 460, -240);                   /* soleil */
+    return pose(new THREE.CylinderGeometry(16 * u, 26 * u, 60 * u, 16), 80, 30, 150);  /* jarre */
+  }
+  const reserve = { haut: 81, bas: 114 };
+
+  const c2 = cadreDe(1280, 860);
+  const ref = MINESEC.moteur.creer({ conteneur: c2, grille: false, reserve });
+  scene(ref, 1);
+  ref.camera.far = 1e5; ref.camera.updateProjectionMatrix();
+  ref.cadrerNet(ref.spin);
+  info('pour comparaison, le mode sphère sur cette scène',
+       'occupation annoncée ' + pct(ref.occupationMesuree(ref.spin))
+       + ' · réelle ' + pct(ref.mesureEcran(ref.spin).occupation));
+  c2.remove();
+
+  const c3 = cadreDe(1280, 860);
+  const fig = MINESEC.moteur.creer({ conteneur: c3, reserve, cadrage: 'figure' });
+  const jarre = scene(fig, 1);
+  fig.cadrerNet(fig.spin);
+  const e2 = fig.mesureEcran(fig.spin), bande2 = fig.zoneUtile().hauteur;
+  vrai('4 m et 60 cm : la scène occupe les deux tiers visés, à 8 points près',
+       Math.abs(e2.occupation - 2 / 3) < 0.08, 'occupation réelle ' + pct(e2.occupation));
+  vrai('4 m et 60 cm : le centre de la scène est au centre de la bande',
+       Math.abs(e2.ecart) < bande2 * 0.01, 'écart ' + e2.ecart.toFixed(1) + ' px');
+  vrai('4 m et 60 cm : rien ne déborde des bandeaux', !e2.deborde);
+  const ej = fig.mesureEcran(jarre);
+  vrai('la jarre de 60 cm se voit', ej.bas - ej.haut >= 25,
+       Math.round(ej.droite - ej.gauche) + ' × ' + Math.round(ej.bas - ej.haut) + ' px');
+
+  /* La scène tourne : la distance ne doit pas bouger (pas de respiration),
+     et aucun angle ne doit faire déborder la figure. */
+  const d0 = fig.distance();
+  let respire = 0, deborde = false;
+  for (const deg of [30, 60, 90, 120, 150]) {
+    fig.spin.rotation.y = deg * Math.PI / 180;
+    fig.cadrerNet(fig.spin);
+    respire = Math.max(respire, Math.abs(fig.distance() - d0) / d0);
+    deborde = deborde || fig.mesureEcran(fig.spin).deborde;
+  }
+  fig.spin.rotation.y = 0; fig.cadrerNet(fig.spin);
+  vrai('en tournant, la caméra ne respire pas et rien ne déborde',
+       respire < 1e-6 && !deborde, 'écart de distance ' + (respire * 100).toFixed(4) + ' %');
+
+  vrai('les plans de coupe suivent la taille de la scène',
+       fig.camera.far > fig.distance() * 2 && fig.camera.near < fig.distance() / 20,
+       'près ' + fig.camera.near.toFixed(2) + ' · loin ' + fig.camera.far.toFixed(0)
+       + ' · distance ' + fig.distance().toFixed(0));
+
+  /* La même scène en mètres : même image, distance cent fois plus courte. */
+  const c4 = cadreDe(1280, 860);
+  const met = MINESEC.moteur.creer({ conteneur: c4, reserve, cadrage: 'figure' });
+  scene(met, 0.01);
+  met.cadrerNet(met.spin);
+  const e4 = met.mesureEcran(met.spin);
+  vrai('en mètres ou en centimètres, la même occupation',
+       Math.abs(e4.occupation - e2.occupation) < 0.005,
+       pct(e4.occupation) + ' en mètres · ' + pct(e2.occupation) + ' en centimètres');
+  egal('en mètres, la caméra est cent fois plus près', fig.distance() / met.distance(), 100, 0.5);
+
+  /* La molette avance d'une même part de la distance dans les deux unités. */
+  const molette = m => {
+    const avant = m.distance();
+    m.rendu.domElement.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true }));
+    return m.distance() / avant;
+  };
+  const kCm = molette(fig), kM = molette(met);
+  vrai('la molette recule d\'une même part, quelle que soit l\'unité',
+       Math.abs(kCm - kM) < 1e-9 && kCm > 1,
+       '× ' + kCm.toFixed(4) + ' en centimètres · × ' + kM.toFixed(4) + ' en mètres');
+
+  c3.remove(); c4.remove();
+} catch (e) {
+  note('le mode figure cadre ce qui est vu', false, e.message);
 }
 
 /* ══ Messages — chaque message envoie réparer la bonne chose ══

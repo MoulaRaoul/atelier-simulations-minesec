@@ -19,6 +19,7 @@
 | G-04 | Matière d'un solide | Rugosité 0,42, celle de l'exemple minimal du moteur, sauf fiche de matière contraire. | Signalé par B |
 | G-05 | Balise `<title>` | « Titre · Surtitre ». | Signalé par A |
 | G-06 | Teinte de l'objet principal | La couleur des faces se lit dans `var(--piece)`, déclarée dans le bloc `<style>` du squelette : une seule ligne commande la teinte, ce qui prépare la décision de style clair/sombre. Ne vaut que pour les simulations à venir ; les existantes gardent leur couleur écrite en dur. | Squelette du § 7 corrigé le 16/09/2026 |
+| G-07 | Deux façons de cadrer | Le mode « sphère » reste le défaut : il mesure une sphère autour de l'origine, ne tremble pas à la rotation, et convient aux figures de quelques unités. Le mode « figure », à demander à la création du moteur, mesure un cylindre autour de l'axe de rotation, vise le centre de ce qui est réellement visible, et calcule ses réglages d'échelle sur la taille de la figure : c'est celui des scènes qui mêlent des objets de tailles très différentes, et des modèles en centimètres. | Essai du 16/09/2026, 30 % d'occupation réelle contre 67 % annoncés |
 
 ## Vu, non tranché
 

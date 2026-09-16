@@ -446,6 +446,129 @@ if (!poste.ok) {
   note('la gestion des couleurs s\'initialise', false, e.message);
 }
 
+/* ══ 8 · Le mode « figure » — ce qui est vu, et non une sphère ══
+   Le mode sphère, défaut du moteur, annonçait 67 % d'occupation quand une
+   scène de 4 m en occupait 30 %, et laissait un cube centré assis dans le
+   tiers bas (registre, 16/09/2026). Le mode figure se demande à la création.
+   Ces contrôles sont bâtis sur ces deux cas, et jugent ce qui est PROJETÉ à
+   l'écran — jamais la formule qui a servi à cadrer. */
+section('Mode figure — la scène vue, à toutes les tailles');
+if (!poste.ok) {
+  info('13 contrôles non exécutés — ce poste ne fait pas de 3D');
+} else try {
+  const cadreDe = (l, h) => {
+    const d = document.createElement('div');
+    d.style.cssText = 'position:fixed;left:-4000px;top:0;width:' + l + 'px;height:' + h + 'px';
+    document.body.appendChild(d);
+    return d;
+  };
+  const matiere = () => new THREE.MeshStandardMaterial({ color: 0x3b82f6 });
+  const pct = v => (v * 100).toFixed(1) + ' %';
+
+  /* ── Cas 1 : le cube centré de l'essai d'enveloppe, zone de 888 × 684 ── */
+  const c1 = cadreDe(888, 684);
+  const sph = MINESEC.moteur.creer({ conteneur: c1, grille: false, reserve: false });
+  vrai('sans option, le moteur reste en mode sphère', sph.mode === 'sphere', sph.mode);
+  sph.spin.add(new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), matiere()));
+  sph.cadrerNet(sph.spin);
+  const e1s = sph.mesureEcran(sph.spin);
+  info('pour comparaison, le mode sphère sur ce cube',
+       'occupation réelle ' + pct(e1s.occupation) + ' · centre ' + e1s.ecart.toFixed(0) + ' px sous la bande');
+  c1.remove();
+
+  const c1f = cadreDe(888, 684);
+  const cub = MINESEC.moteur.creer({ conteneur: c1f, grille: false, reserve: false, cadrage: 'figure' });
+  cub.spin.add(new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), matiere()));
+  cub.cadrerNet(cub.spin);
+  const e1 = cub.mesureEcran(cub.spin), bande1 = cub.zoneUtile().hauteur;
+  vrai('cube centré : la figure occupe les deux tiers visés, à 8 points près',
+       Math.abs(e1.occupation - 2 / 3) < 0.08, 'occupation réelle ' + pct(e1.occupation));
+  vrai('cube centré : le centre de la figure est au centre de la bande',
+       Math.abs(e1.ecart) < bande1 * 0.01, 'écart ' + e1.ecart.toFixed(1) + ' px');
+  vrai('cube centré : rien ne déborde', !e1.deborde);
+  c1f.remove();
+
+  /* ── Cas 2 : une scène de 4 m qui porte une jarre de 60 cm, en centimètres,
+        bandeaux du banc d'essai (81 px en haut, 114 px en bas) ── */
+  function scene(m, u) {           /* u : 1 pour des centimètres, 0,01 pour des mètres */
+    const pose = (geo, x, y, z) => { const o = new THREE.Mesh(geo, matiere()); o.position.set(x * u, y * u, z * u); m.spin.add(o); return o; };
+    pose(new THREE.CylinderGeometry(460 * u, 480 * u, 12 * u, 48), 0, -6, 0);          /* disque de terre */
+    pose(new THREE.BoxGeometry(400 * u, 340 * u, 350 * u), -170, 170, -110);           /* case */
+    pose(new THREE.SphereGeometry(50 * u, 16, 12), -280, 460, -240);                   /* soleil */
+    return pose(new THREE.CylinderGeometry(16 * u, 26 * u, 60 * u, 16), 80, 30, 150);  /* jarre */
+  }
+  const reserve = { haut: 81, bas: 114 };
+
+  const c2 = cadreDe(1280, 860);
+  const ref = MINESEC.moteur.creer({ conteneur: c2, grille: false, reserve });
+  scene(ref, 1);
+  ref.camera.far = 1e5; ref.camera.updateProjectionMatrix();
+  ref.cadrerNet(ref.spin);
+  info('pour comparaison, le mode sphère sur cette scène',
+       'occupation annoncée ' + pct(ref.occupationMesuree(ref.spin))
+       + ' · réelle ' + pct(ref.mesureEcran(ref.spin).occupation));
+  c2.remove();
+
+  const c3 = cadreDe(1280, 860);
+  const fig = MINESEC.moteur.creer({ conteneur: c3, reserve, cadrage: 'figure' });
+  const jarre = scene(fig, 1);
+  fig.cadrerNet(fig.spin);
+  const e2 = fig.mesureEcran(fig.spin), bande2 = fig.zoneUtile().hauteur;
+  vrai('4 m et 60 cm : la scène occupe les deux tiers visés, à 8 points près',
+       Math.abs(e2.occupation - 2 / 3) < 0.08, 'occupation réelle ' + pct(e2.occupation));
+  vrai('4 m et 60 cm : le centre de la scène est au centre de la bande',
+       Math.abs(e2.ecart) < bande2 * 0.01, 'écart ' + e2.ecart.toFixed(1) + ' px');
+  vrai('4 m et 60 cm : rien ne déborde des bandeaux', !e2.deborde);
+  const ej = fig.mesureEcran(jarre);
+  vrai('la jarre de 60 cm se voit', ej.bas - ej.haut >= 25,
+       Math.round(ej.droite - ej.gauche) + ' × ' + Math.round(ej.bas - ej.haut) + ' px');
+
+  /* La scène tourne : la distance ne doit pas bouger (pas de respiration),
+     et aucun angle ne doit faire déborder la figure. */
+  const d0 = fig.distance();
+  let respire = 0, deborde = false;
+  for (const deg of [30, 60, 90, 120, 150]) {
+    fig.spin.rotation.y = deg * Math.PI / 180;
+    fig.cadrerNet(fig.spin);
+    respire = Math.max(respire, Math.abs(fig.distance() - d0) / d0);
+    deborde = deborde || fig.mesureEcran(fig.spin).deborde;
+  }
+  fig.spin.rotation.y = 0; fig.cadrerNet(fig.spin);
+  vrai('en tournant, la caméra ne respire pas et rien ne déborde',
+       respire < 1e-6 && !deborde, 'écart de distance ' + (respire * 100).toFixed(4) + ' %');
+
+  vrai('les plans de coupe suivent la taille de la scène',
+       fig.camera.far > fig.distance() * 2 && fig.camera.near < fig.distance() / 20,
+       'près ' + fig.camera.near.toFixed(2) + ' · loin ' + fig.camera.far.toFixed(0)
+       + ' · distance ' + fig.distance().toFixed(0));
+
+  /* La même scène en mètres : même image, distance cent fois plus courte. */
+  const c4 = cadreDe(1280, 860);
+  const met = MINESEC.moteur.creer({ conteneur: c4, reserve, cadrage: 'figure' });
+  scene(met, 0.01);
+  met.cadrerNet(met.spin);
+  const e4 = met.mesureEcran(met.spin);
+  vrai('en mètres ou en centimètres, la même occupation',
+       Math.abs(e4.occupation - e2.occupation) < 0.005,
+       pct(e4.occupation) + ' en mètres · ' + pct(e2.occupation) + ' en centimètres');
+  egal('en mètres, la caméra est cent fois plus près', fig.distance() / met.distance(), 100, 0.5);
+
+  /* La molette avance d'une même part de la distance dans les deux unités. */
+  const molette = m => {
+    const avant = m.distance();
+    m.rendu.domElement.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true }));
+    return m.distance() / avant;
+  };
+  const kCm = molette(fig), kM = molette(met);
+  vrai('la molette recule d\'une même part, quelle que soit l\'unité',
+       Math.abs(kCm - kM) < 1e-9 && kCm > 1,
+       '× ' + kCm.toFixed(4) + ' en centimètres · × ' + kM.toFixed(4) + ' en mètres');
+
+  c3.remove(); c4.remove();
+} catch (e) {
+  note('le mode figure cadre ce qui est vu', false, e.message);
+}
+
 /* ══ Messages — chaque message envoie réparer la bonne chose ══
    Deux remèdes ne se remplacent pas. La VERSION SANS CONNEXION guérit un
    fichier manquant ; elle embarque Three.js et exige la 3D comme l'original.
