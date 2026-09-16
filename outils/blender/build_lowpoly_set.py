@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""build_lowpoly_set.py (v2) — construit cinq objets low-poly et les exporte en glTF binaire (.glb), un fichier par objet.
+"""build_lowpoly_set.py (v3) — construit cinq objets low-poly et les exporte en glTF binaire (.glb), un fichier par objet.
 
 Usage (Blender 4.2 ou plus récent, y compris 5.x, sans interface, Blender fermé) :
     blender -b --python outils/blender/build_lowpoly_set.py -- --out modeles [--seg 16] [--draco]
 
 Conventions (voir lowpoly_set_plan.md) :
-- unité : mètre ; glTF exporté avec +Y vertical (conversion depuis Blender, Z vertical) ;
+- unité : centimètre (1 unité = 1 cm, convention de l'atelier) ; glTF exporté avec +Y vertical (conversion depuis Blender, Z vertical) ;
 - « avant » = -Y dans Blender = +Z dans le glTF ;
 - origine : centre de la base (jarre, case, arbre) ou centre de la boîte englobante (soleil, nuage) ;
 - une matière mate unie par maillage (Principled, gris 0.8, roughness 1, metallic 0), sans texture ni UV ;
@@ -13,6 +13,8 @@ Conventions (voir lowpoly_set_plan.md) :
 
 v2 : subdivisions d'icosphère corrigées (dans Blender, 1 = icosaèdre à 20 faces, 2 = 80, 3 = 320) et exposées dans SPEC ;
      soleil et nuage recentrés sur leur boîte ; matière robuste jusqu'à Blender 6 ; repli d'export annoncé ; noms configurables.
+v3 : passage en centimètres (1 unité = 1 cm), comme la pousse, minesec-modeles.js et controle-pousse.py ;
+     toutes les cotes de SPEC multipliées par 100, subdivisions et rapports inchangés.
 """
 import argparse
 import json
@@ -37,33 +39,33 @@ MESH_NAMES = {
 }
 # Pour des noms anglais : FILE_NAMES = {k: k for k in FILE_NAMES} ; MESH_NAMES = {k: k for k in MESH_NAMES}
 
-# ----------------------------------------------------------------------------- cotes (mètres)
+# ----------------------------------------------------------------------------- cotes (centimètres : 1 unité = 1 cm)
 SPEC = {
     "jar": {
         # profil (rayon, hauteur) du corps : extérieur de bas en haut, puis intérieur de haut en bas
-        "profile": [(0.00, 0.00), (0.12, 0.00), (0.21, 0.04), (0.26, 0.20), (0.25, 0.36),
-                    (0.17, 0.50), (0.145, 0.56), (0.16, 0.60),          # bord extérieur
-                    (0.12, 0.60), (0.12, 0.05), (0.00, 0.05)],          # cavité cylindrique r = 0.12
-        "water_radius": 0.115, "water_floor": 0.05, "water_height": 0.53,
+        "profile": [(0.0, 0.0), (12.0, 0.0), (21.0, 4.0), (26.0, 20.0), (25.0, 36.0),
+                    (17.0, 50.0), (14.5, 56.0), (16.0, 60.0),           # bord extérieur
+                    (12.0, 60.0), (12.0, 5.0), (0.0, 5.0)],             # cavité cylindrique r = 12
+        "water_radius": 11.5, "water_floor": 5.0, "water_height": 53.0,
     },
     "house": {
-        "walls": (3.5, 3.0, 2.44),      # L (X), P (Y), H murs
-        "ridge_z": 3.40, "roof_thickness": 0.06, "overhang": 0.25,
-        "door": (0.80, 0.02, 1.90),     # L, épaisseur, H — sur la face avant (-Y)
+        "walls": (350.0, 300.0, 244.0),     # L (X), P (Y), H murs
+        "ridge_z": 340.0, "roof_thickness": 6.0, "overhang": 25.0,
+        "door": (80.0, 2.0, 190.0),         # L, épaisseur, H — sur la face avant (-Y)
     },
     "tree": {
-        "trunk_r_base": 0.14, "trunk_r_top": 0.10, "trunk_h": 1.30, "trunk_seg": 8,
-        "foliage_subdiv": 2,            # 2 = 80 faces par sphère
-        "foliage": [((0.00, 0.00, 2.05), 0.95), ((0.60, 0.15, 1.75), 0.60),
-                    ((-0.55, -0.20, 2.45), 0.55), ((0.15, -0.45, 2.60), 0.50)],
+        "trunk_r_base": 14.0, "trunk_r_top": 10.0, "trunk_h": 130.0, "trunk_seg": 8,
+        "foliage_subdiv": 2,                # 2 = 80 faces par sphère
+        "foliage": [((0.0, 0.0, 205.0), 95.0), ((60.0, 15.0, 175.0), 60.0),
+                    ((-55.0, -20.0, 245.0), 55.0), ((15.0, -45.0, 260.0), 50.0)],
     },
-    "sun": {"core_r": 0.50, "core_subdiv": 3,   # 3 = 320 faces
-            "rays": 12, "ray_size": (0.06, 0.06, 0.28), "ray_center_r": 0.78},
+    "sun": {"core_r": 50.0, "core_subdiv": 3,   # 3 = 320 faces
+            "rays": 12, "ray_size": (6.0, 6.0, 28.0), "ray_center_r": 78.0},
     "cloud": {
-        "blob_subdiv": 2,               # 2 = 80 faces par sphère
-        "blobs": [((0.00, 0.00, 0.00), 0.50), ((0.60, 0.05, -0.05), 0.38), ((-0.60, -0.05, -0.08), 0.36),
-                  ((0.25, -0.10, 0.28), 0.34), ((-0.25, 0.10, 0.25), 0.30)],
-        "flatten_z": 0.85,
+        "blob_subdiv": 2,                   # 2 = 80 faces par sphère
+        "blobs": [((0.0, 0.0, 0.0), 50.0), ((60.0, 5.0, -5.0), 38.0), ((-60.0, -5.0, -8.0), 36.0),
+                  ((25.0, -10.0, 28.0), 34.0), ((-25.0, 10.0, 25.0), 30.0)],
+        "flatten_z": 0.85,                  # un rapport, pas une cote : inchangé
     },
 }
 
@@ -286,7 +288,7 @@ def stats(ob):
 def object_bbox(mesh_stats):
     bmin = [min(m["bbox_min_blender_xyz"][i] for m in mesh_stats) for i in range(3)]
     bmax = [max(m["bbox_max_blender_xyz"][i] for m in mesh_stats) for i in range(3)]
-    return {"size_m_LxPxH": [round(bmax[i] - bmin[i], 3) for i in range(3)],
+    return {"size_cm_LxPxH": [round(bmax[i] - bmin[i], 3) for i in range(3)],
             "bbox_min_blender_xyz": bmin, "bbox_max_blender_xyz": bmax}
 
 
@@ -318,8 +320,11 @@ def main():
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene = bpy.context.scene
+    # 1 unité = 1 cm. Ce réglage ne change AUCUNE coordonnée exportée : il fait seulement
+    # afficher « 60 cm » plutôt que « 60 m » dans les panneaux de Blender (comme pousse.py).
     scene.unit_settings.system = "METRIC"
-    scene.unit_settings.scale_length = 1.0
+    scene.unit_settings.scale_length = 0.01
+    scene.unit_settings.length_unit = "CENTIMETERS"
 
     builders = {
         "jar": lambda: build_jar(args.seg),
@@ -329,14 +334,14 @@ def main():
         "cloud": build_cloud,
     }
     manifest = {
-        "script_version": 2,
+        "script_version": 3,
         "blender": bpy.app.version_string,
-        "units": "metres", "up_axis_gltf": "+Y", "front_axis_gltf": "+Z (Blender -Y)",
+        "units": "centimetres (1 unite = 1 cm)", "up_axis_gltf": "+Y", "front_axis_gltf": "+Z (Blender -Y)",
         "origin": {FILE_NAMES["jar"]: "base centre", FILE_NAMES["house"]: "base centre",
                    FILE_NAMES["tree"]: "base centre", FILE_NAMES["sun"]: "bbox centre",
                    FILE_NAMES["cloud"]: "bbox centre"},
         "water": f"{MESH_NAMES['jar_water']} : scale.y = niveau (0..1), origine au fond intérieur, noeud à y = "
-                 f"{SPEC['jar']['water_floor']} m dans le glTF",
+                 f"{SPEC['jar']['water_floor']} cm dans le glTF",
         "objects": {},
     }
     for key, build in builders.items():
@@ -356,12 +361,12 @@ def main():
     with open(os.path.join(out, "manifest.json"), "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)
 
-    print("\n=== objets exportés (dimensions par objet entier, mètres) ===")
+    print("\n=== objets exportés (dimensions par objet entier, centimètres) ===")
     print(f"{'fichier':<12}{'maillage':<18}{'tris':>7}   {'L x P x H objet':<24}origine (Blender)")
     for fname, o in manifest["objects"].items():
         first = True
         for m in o["meshes"]:
-            size = str(o["size_m_LxPxH"]) if first else ""
+            size = str(o["size_cm_LxPxH"]) if first else ""
             print(f"{fname:<12}{m['mesh']:<18}{m['triangles']:>7}   {size:<24}{m['node_origin_blender_xyz']}")
             first = False
         print(f"{'':<12}{'total':<18}{o['triangles_total']:>7}   export {o['export']}")

@@ -1,7 +1,7 @@
 {
-  "script_version": 2,
+  "script_version": 3,
   "blender": "5.1.2",
-  "units": "metres",
+  "units": "centimetres (1 unite = 1 cm)",
   "up_axis_gltf": "+Y",
   "front_axis_gltf": "+Z (Blender -Y)",
   "origin": {
@@ -11,7 +11,7 @@
     "soleil": "bbox centre",
     "nuage": "bbox centre"
   },
-  "water": "jarre_eau : scale.y = niveau (0..1), origine au fond intérieur, noeud à y = 0.05 m dans le glTF",
+  "water": "jarre_eau : scale.y = niveau (0..1), origine au fond intérieur, noeud à y = 5.0 cm dans le glTF",
   "objects": {
     "jarre.glb": {
       "export": "complet",
@@ -21,14 +21,14 @@
           "triangles": 288,
           "vertices": 146,
           "bbox_min_blender_xyz": [
-            -0.26,
-            -0.26,
+            -26.0,
+            -26.0,
             0.0
           ],
           "bbox_max_blender_xyz": [
-            0.26,
-            0.26,
-            0.6
+            26.0,
+            26.0,
+            60.0
           ],
           "node_origin_blender_xyz": [
             0.0,
@@ -41,37 +41,37 @@
           "triangles": 64,
           "vertices": 34,
           "bbox_min_blender_xyz": [
-            -0.115,
-            -0.115,
-            0.05
+            -11.5,
+            -11.5,
+            5.0
           ],
           "bbox_max_blender_xyz": [
-            0.115,
-            0.115,
-            0.58
+            11.5,
+            11.5,
+            58.0
           ],
           "node_origin_blender_xyz": [
             0.0,
             0.0,
-            0.05
+            5.0
           ]
         }
       ],
       "triangles_total": 352,
-      "size_m_LxPxH": [
-        0.52,
-        0.52,
-        0.6
+      "size_cm_LxPxH": [
+        52.0,
+        52.0,
+        60.0
       ],
       "bbox_min_blender_xyz": [
-        -0.26,
-        -0.26,
+        -26.0,
+        -26.0,
         0.0
       ],
       "bbox_max_blender_xyz": [
-        0.26,
-        0.26,
-        0.6
+        26.0,
+        26.0,
+        60.0
       ]
     },
     "case.glb": {
@@ -82,14 +82,14 @@
           "triangles": 20,
           "vertices": 14,
           "bbox_min_blender_xyz": [
-            -1.75,
-            -1.5,
+            -175.0,
+            -150.0,
             0.0
           ],
           "bbox_max_blender_xyz": [
-            1.75,
-            1.5,
-            3.34
+            175.0,
+            150.0,
+            334.0
           ],
           "node_origin_blender_xyz": [
             0.0,
@@ -102,14 +102,14 @@
           "triangles": 20,
           "vertices": 12,
           "bbox_min_blender_xyz": [
-            -2.0,
-            -1.75,
-            2.29
+            -200.0,
+            -175.0,
+            229.0
           ],
           "bbox_max_blender_xyz": [
-            2.0,
-            1.75,
-            3.4
+            200.0,
+            175.0,
+            340.0
           ],
           "node_origin_blender_xyz": [
             0.0,
@@ -122,14 +122,14 @@
           "triangles": 12,
           "vertices": 8,
           "bbox_min_blender_xyz": [
-            -0.4,
-            -1.52,
+            -40.0,
+            -152.0,
             0.0
           ],
           "bbox_max_blender_xyz": [
-            0.4,
-            -1.5,
-            1.9
+            40.0,
+            -150.0,
+            190.0
           ],
           "node_origin_blender_xyz": [
             0.0,
@@ -139,20 +139,20 @@
         }
       ],
       "triangles_total": 52,
-      "size_m_LxPxH": [
-        4.0,
-        3.5,
-        3.4
+      "size_cm_LxPxH": [
+        400.0,
+        350.0,
+        340.0
       ],
       "bbox_min_blender_xyz": [
-        -2.0,
-        -1.75,
+        -200.0,
+        -175.0,
         0.0
       ],
       "bbox_max_blender_xyz": [
-        2.0,
-        1.75,
-        3.4
+        200.0,
+        175.0,
+        340.0
       ]
     },
     "arbre.glb": {
@@ -163,14 +163,14 @@
           "triangles": 32,
           "vertices": 18,
           "bbox_min_blender_xyz": [
-            -0.14,
-            -0.14,
+            -14.0,
+            -14.0,
             0.0
           ],
           "bbox_max_blender_xyz": [
-            0.14,
-            0.14,
-            1.3
+            14.0,
+            14.0,
+            130.0
           ],
           "node_origin_blender_xyz": [
             0.0,
@@ -183,14 +183,14 @@
           "triangles": 320,
           "vertices": 168,
           "bbox_min_blender_xyz": [
-            -1.073,
-            -0.95,
-            1.1
+            -107.308,
+            -95.0,
+            110.0
           ],
           "bbox_max_blender_xyz": [
-            1.171,
-            0.95,
-            3.1
+            117.063,
+            95.0,
+            310.0
           ],
           "node_origin_blender_xyz": [
             0.0,
@@ -200,20 +200,20 @@
         }
       ],
       "triangles_total": 352,
-      "size_m_LxPxH": [
-        2.244,
-        1.9,
-        3.1
+      "size_cm_LxPxH": [
+        224.371,
+        190.0,
+        310.0
       ],
       "bbox_min_blender_xyz": [
-        -1.073,
-        -0.95,
+        -107.308,
+        -95.0,
         0.0
       ],
       "bbox_max_blender_xyz": [
-        1.171,
-        0.95,
-        3.1
+        117.063,
+        95.0,
+        310.0
       ]
     },
     "soleil.glb": {
@@ -224,14 +224,14 @@
           "triangles": 320,
           "vertices": 162,
           "bbox_min_blender_xyz": [
-            -0.5,
-            -0.5,
-            -0.5
+            -50.0,
+            -50.0,
+            -50.0
           ],
           "bbox_max_blender_xyz": [
-            0.5,
-            0.5,
-            0.5
+            50.0,
+            50.0,
+            50.0
           ],
           "node_origin_blender_xyz": [
             0.0,
@@ -244,14 +244,14 @@
           "triangles": 144,
           "vertices": 96,
           "bbox_min_blender_xyz": [
-            -0.92,
-            -0.03,
-            -0.92
+            -92.0,
+            -3.0,
+            -92.0
           ],
           "bbox_max_blender_xyz": [
-            0.92,
-            0.03,
-            0.92
+            92.0,
+            3.0,
+            92.0
           ],
           "node_origin_blender_xyz": [
             0.0,
@@ -261,20 +261,20 @@
         }
       ],
       "triangles_total": 464,
-      "size_m_LxPxH": [
-        1.84,
-        1.0,
-        1.84
+      "size_cm_LxPxH": [
+        184.0,
+        100.0,
+        184.0
       ],
       "bbox_min_blender_xyz": [
-        -0.92,
-        -0.5,
-        -0.92
+        -92.0,
+        -50.0,
+        -92.0
       ],
       "bbox_max_blender_xyz": [
-        0.92,
-        0.5,
-        0.92
+        92.0,
+        50.0,
+        92.0
       ]
     },
     "nuage.glb": {
@@ -285,14 +285,14 @@
           "triangles": 400,
           "vertices": 210,
           "bbox_min_blender_xyz": [
-            -0.952,
-            -0.5,
-            -0.476
+            -95.189,
+            -50.0,
+            -47.6
           ],
           "bbox_max_blender_xyz": [
-            0.952,
-            0.5,
-            0.476
+            95.189,
+            50.0,
+            47.6
           ],
           "node_origin_blender_xyz": [
             0.0,
@@ -302,20 +302,20 @@
         }
       ],
       "triangles_total": 400,
-      "size_m_LxPxH": [
-        1.904,
-        1.0,
-        0.952
+      "size_cm_LxPxH": [
+        190.378,
+        100.0,
+        95.2
       ],
       "bbox_min_blender_xyz": [
-        -0.952,
-        -0.5,
-        -0.476
+        -95.189,
+        -50.0,
+        -47.6
       ],
       "bbox_max_blender_xyz": [
-        0.952,
-        0.5,
-        0.476
+        95.189,
+        50.0,
+        47.6
       ]
     }
   }
