@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atelier de simulations · MINESEC</title>
+<link rel="stylesheet" href="bibliotheque/charte.css">
+<style>
+  html, body { background: var(--bg); color: var(--txt); overflow-y: auto; height: auto; }
+  body { margin: 0; font-family: var(--f-txt); font-size: var(--fs); line-height: 1.5; }
+  .cat { max-width: 1040px; margin: 0 auto; padding: 28px 18px 64px; }
+
+  .cat-entete { padding: 8px 0 26px; border-bottom: 1px solid var(--line); margin-bottom: 30px; }
+  .cat-entete .sur { font-family: var(--f-data); font-size: .78em; letter-spacing: .09em;
+                     text-transform: uppercase; color: var(--dim); }
+  .cat-entete h1 { margin: .35em 0 .3em; font-size: 1.85em; line-height: 1.2; }
+  .cat-entete p { margin: 0; color: var(--dim); max-width: 62ch; }
+
+  .cat h2 { font-size: 1.12em; margin: 38px 0 4px; }
+  .cat h2 + .chapeau { margin: 0 0 16px; color: var(--dim); max-width: 62ch; font-size: .94em; }
+
+  .grille { display: grid; gap: var(--gap);
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+
+  .fiche { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+           padding: 16px 16px 14px; display: flex; flex-direction: column; }
+  .fiche .etiq { font-family: var(--f-data); font-size: .76em; letter-spacing: .06em;
+                 text-transform: uppercase; color: var(--dim); }
+  .fiche h3 { margin: .45em 0 .4em; font-size: 1.06em; line-height: 1.3; }
+  .fiche p { margin: 0 0 16px; color: var(--dim); font-size: .93em; flex: 1; }
+
+  .liens { display: flex; flex-wrap: wrap; gap: 8px; }
+  .lien { display: inline-block; padding: 9px 14px; border-radius: var(--r-ctrl);
+          border: 1px solid var(--line); background: var(--panel2); color: var(--txt);
+          text-decoration: none; font-size: .9em; min-height: 20px; }
+  .lien.principal { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .lien:hover { border-color: var(--accent); }
+  .lien:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .simple { background: var(--panel2); padding: 13px 15px; }
+  .simple h3 { font-size: 1em; }
+
+  .note { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line);
+          color: var(--dim); font-size: .9em; max-width: 68ch; }
+  .note a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main class="cat">
+
+  <header class="cat-entete">
+    <div class="sur">MINESEC · Inspection Générale des Enseignements</div>
+    <h1>Atelier de simulations</h1>
+    <p>Des simulations interactives pour les classes du secondaire. Chacune s'ouvre
+       dans un navigateur, au tableau, en salle informatique ou sur un téléphone,
+       et chacune existe en version autonome pour les salles sans connexion.</p>
+  </header>
+
+  <h2>Les simulations</h2>
+  <p class="chapeau">En 3D, pour un poste récent ou un vidéoprojecteur.</p>
+
+  <div class="grille">
+
+    <article class="fiche">
+      <div class="etiq">Mathématiques · 4<sup>e</sup></div>
+      <h3>Le volume de la pyramide</h3>
+      <p>Un prisme droit se partage exactement en trois pyramides de même volume.
+         Le tiers de la formule n'est pas une convention : c'est un dénombrement.</p>
+      <div class="liens">
+        <a class="lien principal" href="simulations/maths/4e-volume-pyramide/index.html">Ouvrir</a>
+        <a class="lien" href="hors-ligne/maths-4e-volume-pyramide.html">Version clé USB</a>
+      </div>
+    </article>
+
+    <article class="fiche">
+      <div class="etiq">SVT · 6<sup>e</sup></div>
+      <h3>Le jour et la nuit</h3>
+      <p>Le Soleil ne bouge pas : c'est la Terre qui tourne. Quand il fait jour au
+         Cameroun, il fait nuit de l'autre côté. Un tour = 24 heures.</p>
+      <div class="liens">
+        <a class="lien principal" href="simulations/svt/6e-jour-nuit/index.html">Ouvrir</a>
+        <a class="lien" href="hors-ligne/svt-6e-jour-nuit.html">Version clé USB</a>
+      </div>
+    </article>
+
+  </div>
+
+  <h2>Pour une salle sans connexion</h2>
+  <p class="chapeau">Copiez ces fichiers sur une clé. Chacun s'ouvre d'un double-clic et ne
+     demande rien à Internet. Commencez par le contrôle du poste : il dit en dix secondes
+     si la machine sait afficher la 3D.</p>
+
+  <div class="grille">
+
+    <article class="fiche simple">
+      <div class="etiq">À ouvrir en premier</div>
+      <h3>Le contrôle du poste</h3>
+      <div class="liens">
+        <a class="lien principal" href="hors-ligne/diagnostic-poste.html">Ouvrir</a>
+      </div>
+    </article>
+
+    <article class="fiche simple">
+      <div class="etiq">Mode d'emploi</div>
+      <h3>Comment copier et ouvrir les fichiers</h3>
+      <div class="liens">
+        <a class="lien" href="hors-ligne/LISEZMOI.txt">Lire</a>
+      </div>
+    </article>
+
+  </div>
+
+  <h2>Sans 3D, en deux dimensions</h2>
+  <p class="chapeau">Pour un poste qui n'affiche pas la 3D. Ces pages viennent des premiers
+     travaux de l'atelier ; elles fonctionnent seules, sans connexion.</p>
+
+  <div class="grille">
+
+    <article class="fiche simple">
+      <div class="etiq">Mathématiques</div>
+      <h3>Le prisme et les trois pyramides</h3>
+      <div class="liens"><a class="lien" href="archives/2026-08-corpus-initial/prisme-3-pyramides.html">Ouvrir</a></div>
+    </article>
+
+    <article class="fiche simple">
+      <div class="etiq">Mathématiques</div>
+      <h3>Le versement au robinet</h3>
+      <div class="liens"><a class="lien" href="archives/2026-08-corpus-initial/versement-robinet.html">Ouvrir</a></div>
+    </article>
+
+    <article class="fiche simple">
+      <div class="etiq">Informatique</div>
+      <h3>Le labyrinthe logique</h3>
+      <div class="liens"><a class="lien" href="archives/2026-08-corpus-initial/labyrinthe_logique_interface_v2.html">Ouvrir</a></div>
+    </article>
+
+    <article class="fiche simple">
+      <div class="etiq">Informatique</div>
+      <h3>L'architecture de l'ordinateur</h3>
+      <div class="liens"><a class="lien" href="archives/2026-08-corpus-initial/simulateur_architecture_pc.html">Ouvrir</a></div>
+    </article>
+
+    <article class="fiche simple">
+      <div class="etiq">Informatique</div>
+      <h3>L'environnement de travail</h3>
+      <div class="liens"><a class="lien" href="archives/2026-08-corpus-initial/environnement_ent_interactif%20%282%29.html">Ouvrir</a></div>
+    </article>
+
+  </div>
+
+  <p class="note">
+    D'autres pages des débuts de l'atelier dorment dans les archives : elles ont besoin
+    d'Internet pour s'afficher et n'ont pas leur place sur un poste de salle.
+    Le dépôt, son plan et ses documents sont sur
+    <a href="https://github.com/MoulaRaoul/atelier-simulations-minesec">GitHub</a>.
+  </p>
+
+</main>
+</body>
+</html>
