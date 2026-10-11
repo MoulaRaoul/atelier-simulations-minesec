@@ -32,9 +32,9 @@ tétraèdres.
 
 **Question de sortie :** « Pourquoi divise-t-on par 3, et pas par 2 ou par 4 ? »
 
-**Contraintes :** doit tourner sur un PC de salle informatique et sur un
-téléphone ; **exige une connexion** tant que le build hors-ligne de la Phase 3
-n'existe pas (Three.js est chargé depuis cdnjs).
+**Contraintes :** doit fonctionner sur les PC de salle informatique et sur les
+téléphones. Une version HTML autonome est désormais générée avec Three.js
+embarqué ; son essai sur un poste réellement déconnecté reste à effectuer.
 
 ---
 
@@ -167,8 +167,9 @@ distance qui fait tenir la figure entière, en tenant compte du champ horizontal
 | `minesec-mouvements.js` | Les 7 familles de mouvements et le moteur d'interpolation |
 
 Reste en propre : la géométrie du découpage, les valeurs pédagogiques, et le
-câblage du pupitre. La démonstration d'origine faisait 311 lignes tout compris ;
-cette version en fait environ 150, dont aucune n'est du socle technique.
+câblage du pupitre et les cas pédagogiques. La démonstration d'origine faisait
+311 lignes ; la page actuelle a grandi avec les modes et les contrôles. Le
+moteur générique, les styles et les composants restent externalisés.
 
 ---
 
@@ -181,7 +182,8 @@ cette version en fait environ 150, dont aucune n'est du socle technique.
 - [x] Révélation de la formule au-delà de 60 % d'écartement
 - [x] Rotation à la souris, zoom molette
 - [x] Cadrage : la figure entière reste visible à tout écartement
-- [x] Format téléphone (375 × 812) : pupitre réorganisé, figure recadrée
+- [ ] Format téléphone (375 × 812) : adaptation encore partielle sur appareil
+      réel ; défauts M1 et M2 documentés dans `docs/backlog-mobile.md`
 - [x] Valeurs mathématiques exactes (B = √3, V(pyramide) = V(prisme) ÷ 3)
 
 ## Définition de « fini » — état
@@ -211,7 +213,9 @@ cette version en fait environ 150, dont aucune n'est du socle technique.
       (M1, M2) et ne seront pas corrigés à l'aveugle : l'écran sera redessiné.
       **La case reste décochée : une case ne ment jamais.**
 - [x] Son `notes.md` contient le brief d'origine et les choix faits
-- [ ] **Elle figure au catalogue** — le catalogue n'existe pas encore (Phase 3)
+- [x] **Elle figure au catalogue initial** — `index.html` à la racine du dépôt
+      contient un lien vers cette simulation et sa version autonome. La qualité
+      d'affichage et les tests sur les postes cibles restent à valider.
 
 ---
 
